@@ -669,8 +669,14 @@ object SimpleSimplifier {
       catch case _ => proof.InvalidProofTactic("Could not perform a substitution.")
     }
 
+    def leftRight(using lib: lisa.prooflib.Library, proof: lib.Proof)(substitutions: (proof.Fact | Formula | RunningTheory#Justification)*)(premise: proof.Fact): proof.ProofTacticJudgement =
+      once(using lib, proof)(false, substitutions: _*)(premise) match {
+        case v: proof.ValidProofTactic => v
+        case _ => once(using lib, proof)(true, substitutions: _*)(premise)
+      }
+
     def apply(using lib: lisa.prooflib.Library, proof: lib.Proof)(substitutions: (proof.Fact | Formula | RunningTheory#Justification)*)(premise: proof.Fact): proof.ProofTacticJudgement =
-      exhaustive(using lib, proof)(substitutions: _*)(premise)
+      leftRight(using lib, proof)(substitutions: _*)(premise)
   }
 
 }
