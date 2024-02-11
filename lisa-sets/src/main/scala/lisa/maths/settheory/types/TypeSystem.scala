@@ -5,11 +5,12 @@ object TypeSystem {
     import lisa.fol.FOL.{*, given}
     import lisa.SetTheoryLibrary.*
 
-    private val x = Variable("x")
+    val x = variable
+    val y = variable
 
 
 
-  
+  /*
 
 
     class Class(val predicate: Term**1 |-> Formula) extends (Term**1 |-> Formula) {
@@ -39,31 +40,140 @@ object TypeSystem {
     // (N to N).T <: N.T |-> N.T
 
 
+*/
 
 
-    val TopType = new Class(lambda(x, top))
-    object BottomType extends Class(lambda(x, bot))
+
+
+
+
+    trait IsClass[A]{
+        val predicate: Term**1 |-> Formula
+    }
+    def predicateOf[A](using c: IsClass[A]): Term**1 |-> Formula = c.predicate
+
+    trait IsSmallClass[A] extends IsClass[A]{
+        val set: Term
+        val predicate: Term**1 |-> Formula = lambda(x, x ∈ set)
+    }
+    def setOfClass[A](using c: IsSmallClass[A]): Term = c.set
+
+    object IsSmallClass:
+        def apply[T](using c: IsClass[T]) = c
+
+    given given_setSmallClass[C <: Term & Singleton: ValueOf]: IsSmallClass[C] with {
+        val set = valueOf[C]
+    }
+
+
+
+    given [C <: ConstantPredicateLabel[1] & Singleton: ValueOf]: IsClass[C] with {
+        val predicate = valueOf[C]
+    }
+
+
+
+    given IsClass[top.type] with {
+            val predicate = lambda(x, top)
+        }
+    type top = top.type
+    /*
+    given given_setSmallClass[C <: Term & Singleton: ValueOf]: IsSmallClass[C] with {
+        val set = valueOf[C]
+    }*/
+
+    trait ClassFunction[A: IsClass, B: IsClass] {
+        def application(a: TypedTerm[A]): TypedTerm[B]
+    }
+
+    val functionSpace: ConstantFunctionLabel[2] = ConstantFunctionLabel("functionSpace", 2)
+
+    trait TypedTerm[T : IsClass] extends LisaObject[TypedTerm[T]] {
+        this: Term  =>
+
+        type Type = T
+
+        type asType = TypedTerm[this.type]
+        
+        def asTerm: Term = this
+
+        def getTypeJudgement(proof:Proof): proof.Fact //proof of predicateOf[Type](this)
+    }
+
+
+    extension [A: IsClass, B: IsClass] (t: TypedTerm[ClassFunction[A, B]])
+        def apply(a: TypedTerm[A]): TypedTerm[B] = ??? // TypedAppliedFunction(t, a)
+
+    class TypedConstant[Type : IsClass]
+        (id: Identifier, val justif: JUSTIFICATION) extends Constant(id) with TypedTerm[Type] with LisaObject[TypedConstant[Type]]  {
+        val formula = predicateOf[Type](this)
+        def getTypeJudgement(proof: lisa.SetTheoryLibrary.Proof): proof.Fact = ???
+
+        override def substituteUnsafe(map: Map[lisa.fol.FOL.SchematicLabel[?], lisa.fol.FOL.LisaObject[?]]): TypedConstant[Type] = this
+
+    }
+
+    
+    given given_funcSpaceIsSmallClass[A: IsSmallClass, B: IsSmallClass]: IsSmallClass[ClassFunction[A, B]] with {
+        val set = functionSpace(setOfClass[A], setOfClass[B])
+    }
+
+    infix type ==>[A<: TypedTerm[?], B<: TypedTerm[?]] = A match {
+        case TypedTerm[i] => B match {
+            case TypedTerm[j] => TypedTerm[ClassFunction[i, j]]
+            case _ => Nothing
+        }
+        case _ => Nothing
+    }
+
+
+    type DeconstructTT[T <: TypedTerm[?]] = T match {
+        case TypedTerm[t] => t
+        case _ => Nothing
+    }
+
+    def setOf[TT <: TypedTerm[_]](using c: IsSmallClass[DeconstructTT[TT]]): Term = c.set
+
+
+
 
     
 
+    val N: TypedConstant[top] = TypedConstant("N", ???)
+
+    type N = TypedTerm[N.type]
 
 
-    // Define Class Assumptions as containers over a variable and a type, which is also a formula.
+    val n: N = TypedConstant("n", ???)
+    val f: N ==> N = TypedConstant("f", ???)
+    val g: (N ==> N) ==> (N ==> N) = TypedConstant("g", ???)
+
+    f(n)
+    val f2 = g(f)
+    f2(n)
+    assert(setOf[N ==> N] == functionSpace(N, N))
+    
+    //n(f) //does not compile
+
+
+        // Define Class Assumptions as containers over a variable and a type, which is also a formula.
 
     /**
       * A type assumption is a pair of a variable and a type.
       * It is also a formula, equal to the type applied to the variable.
       */
-    trait TypeAssumption {
+    trait TypeAssumption[A <: Singleton : IsClass]{
         this: Formula =>
         val x: Variable
-        val typ: Class
+        type Type = A
+        val predicate = predicateOf[A]
         val formula: Formula
-
+/*
         def unapply(f: Formula): Option[(Variable, Class)] = 
             f match
                 case f: TypeAssumption => Some((f.x, f.typ))
                 case _ => None
+                */
     }
 
     object TypeAssumption {
@@ -71,72 +181,52 @@ object TypeSystem {
           * A type assumption is a pair of a variable and a type.
           * It is also a formula, equal to the type applied to the variable.
           */
-        def apply(x: Variable, typ: Class): TypeAssumption = 
-            val formula = typ(x)
+        def apply[A <: Singleton : IsClass](x: Variable): TypeAssumption[A] = 
+            val formula = predicateOf[A](x)
             formula match
-                case f: VariableFormula => throw new IllegalArgumentException("Class formula cannot be a variable formula, as we require a type to have no free variable.")
-                case f: ConstantFormula => new TypeAssumptionConstant(x, typ, f)
-                case f: AppliedPredicate => new TypeAssumptionPredicate(x, typ, f)
-                case f: AppliedConnector => new TypeAssumptionConnector(x, typ, f)
-                case f: BinderFormula => new TypeAssumptionBinder(x, typ, f)
+                case f: VariableFormula => 
+                    throw new IllegalArgumentException("Class formula cannot be a variable formula, as we require a type to have no free variable.")
+                case f: ConstantFormula => new TypeAssumptionConstant(x, f)
+                case f: AppliedPredicate => new TypeAssumptionPredicate(x, f)
+                case f: AppliedConnector => new TypeAssumptionConnector(x, f)
+                case f: BinderFormula => new TypeAssumptionBinder(x, f)
     }
-    private class TypeAssumptionConstant(val x: Variable, val typ: Class, val formula: ConstantFormula) extends ConstantFormula(formula.id) with TypeAssumption
-    private class TypeAssumptionPredicate(val x: Variable, val typ: Class, val formula: AppliedPredicate) extends AppliedPredicate(formula.label, formula.args) with TypeAssumption
-    private class TypeAssumptionConnector(val x: Variable, val typ: Class, val formula: AppliedConnector) extends AppliedConnector(formula.label, formula.args) with TypeAssumption
-    private class TypeAssumptionBinder(val x: Variable, val typ: Class, val formula: BinderFormula) extends BinderFormula(formula.f, formula.bound, formula.body) with TypeAssumption
-
+    private class TypeAssumptionConstant[A <: Singleton : IsClass](val x: Variable, val formula: ConstantFormula) extends ConstantFormula(formula.id) with TypeAssumption[A]
+    private class TypeAssumptionPredicate[A <: Singleton : IsClass](val x: Variable, val formula: AppliedPredicate) extends AppliedPredicate(formula.label, formula.args) with TypeAssumption[A]
+    private class TypeAssumptionConnector[A <: Singleton : IsClass](val x: Variable, val formula: AppliedConnector) extends AppliedConnector(formula.label, formula.args) with TypeAssumption[A]
+    private class TypeAssumptionBinder[A <: Singleton : IsClass](val x: Variable, val formula: BinderFormula) extends BinderFormula(formula.f, formula.bound, formula.body) with TypeAssumption[A]
     
 
-    class SetTypeAssumption(val x: Variable, val typ: SetType) extends AppliedPredicate(in, Seq(x, typ.set)) with TypeAssumption{
-        val formula = x ∈ typ.set
+
+/*
+    trait TypedFunctional[In <: SetType & Singleton, +Out <: SetType & Singleton] extends LisaObject[TypedFunctional[In, Out]] {
+        this: FunctionLabel[1] =>
+        val typIn: In
+        val typOut: Out
+
+        def apply(arg: TypedTerm[In]): TypedAppliedFunction[In, Out] = ???
     }
 
 
 
-
-
-    trait TypedTerm[+Type <: Class] extends LisaObject[TypedTerm[Type]] {
-        this: Term  =>
-        val typ: Class
-
-        def getTypeJudgement(proof:Proof): proof.Fact
-
-        def apply[A <: SetType & Singleton, B <: SetType & Singleton](using ev: Type <:< FunctionType[A, B])(a: TypedTerm[A]): TypedTerm[B] = ???
     }
 
-
-    trait Func[T, A] {
-        type T1
-        type T2
-        extension (t:T){
-            def apply(a: T1): T2
-        }
+    class TypedConstantFunction[In <: SetType & Singleton, +Out <: SetType & Singleton]
+        (id: Identifier, val typIn: In, val typOut: Out, val justif: JUSTIFICATION) extends ConstantFunctionLabel[1](id, 1) with  TypedFunctional[In, Out] with LisaObject[TypedConstantFunction[In, Out]] {
+        
+        def getTypeJudgement(proof: lisa.SetTheoryLibrary.Proof): proof.Fact = ???
+        
+        override def substituteUnsafe(map: Map[lisa.fol.FOL.SchematicLabel[?], lisa.fol.FOL.LisaObject[?]]): TypedConstantFunction[In, Out] = this
     }
 
-    //  TypedTerm[FunctionType[A, B]] = SetType((A to B)).T
-
-    given thing[A <: SetType & Singleton, B <: SetType & Singleton] : Func[TypedTerm[FunctionType[A, B]], Int] = new Func[TypedTerm[FunctionType[A, B]], Int]{
-        type T1 = TypedTerm[A] 
-        type T2 = TypedTerm[B]
-        def apply(a: TypedTerm[A]): TypedTerm[B] = ???
-    }
-
-
-    def foo[V: Func[V, Int]](v:V)(a: v.T1): v.T2 = v.apply(a)
-
-
-
-
-
-    class TypedConstant[+Type <: Class & Singleton](id: Identifier, val typ:Type, val justif: JUSTIFICATION) extends Constant(id) with TypedTerm[Type] with LisaObject[TypedConstant[Type]]  {
+    class TypedAppliedFunction[In <: SetType & Singleton, +Type <: SetType & Singleton]
+        (label: TypedConstantFunction[In, Type], arg: TypedTerm[In], val out: Type, val typ: Type, val justif: JUSTIFICATION) extends AppliedFunction(label, Seq(arg.asTerm)) with TypedTerm[Type] with LisaObject[TypedAppliedFunction[In, Type]] {
         val formula = typ(this)
         def getTypeJudgement(proof: lisa.SetTheoryLibrary.Proof): proof.Fact = ???
 
-        override def substituteUnsafe(map: Map[lisa.fol.FOL.SchematicLabel[?], lisa.fol.FOL.LisaObject[?]]): TypedConstant[Type] = this
-
+        override def substituteUnsafe(map: Map[lisa.fol.FOL.SchematicLabel[?], lisa.fol.FOL.LisaObject[?]]): TypedAppliedFunction[In, Type] = label.substituteUnsafe(map).apply(arg.substituteUnsafe(map))
     }
-
-    class TypedConstantFunction[N <: Arity](id: Identifier, arity: N, val typs: Class**N, val justif: JUSTIFICATION) extends ConstantFunctionLabel[N](id, arity) 
+*/
 
 
 
