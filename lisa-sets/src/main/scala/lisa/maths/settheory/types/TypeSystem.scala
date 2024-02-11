@@ -8,6 +8,14 @@ object TypeSystem {
     val x = variable
     val y = variable
 
+    def main(args: Array[String]): Unit = {
+        val ℕ: TypedConstant[top] = TypedConstant("ℕ", extensionalityAxiom)
+        type ℕ = ℕ.asType
+        assert(setOf[ℕ ==> ℕ] == functionSpace(ℕ, ℕ))
+
+        println(setOf[ℕ ==> ℕ])
+    }
+
 
 
   /*
@@ -48,13 +56,13 @@ object TypeSystem {
 
 
     trait IsClass[A]{
-        val predicate: Term**1 |-> Formula
+        def predicate: Term**1 |-> Formula
     }
     def predicateOf[A](using c: IsClass[A]): Term**1 |-> Formula = c.predicate
 
     trait IsSmallClass[A] extends IsClass[A]{
-        val set: Term
-        val predicate: Term**1 |-> Formula = lambda(x, x ∈ set)
+        def set: Term
+        def predicate: Term**1 |-> Formula = lambda(x, in(x, set))
     }
     def setOfClass[A](using c: IsSmallClass[A]): Term = c.set
 
@@ -62,7 +70,7 @@ object TypeSystem {
         def apply[T](using c: IsClass[T]) = c
 
     given given_setSmallClass[C <: Term & Singleton: ValueOf]: IsSmallClass[C] with {
-        val set = valueOf[C]
+        def set = valueOf[C]
     }
 
 
@@ -137,21 +145,16 @@ object TypeSystem {
 
 
 
-    
-
-    val N: TypedConstant[top] = TypedConstant("N", ???)
-
-    type N = TypedTerm[N.type]
-
-
-    val n: N = TypedConstant("n", ???)
-    val f: N ==> N = TypedConstant("f", ???)
-    val g: (N ==> N) ==> (N ==> N) = TypedConstant("g", ???)
+    /*
+    val n: ℕ = TypedConstant("n", ???)
+    val f: ℕ ==> ℕ = TypedConstant("f", ???)
+    val g: (ℕ ==> ℕ) ==> (ℕ ==> ℕ) = TypedConstant("g", ???)
 
     f(n)
     val f2 = g(f)
     f2(n)
-    assert(setOf[N ==> N] == functionSpace(N, N))
+    n(g)
+    */
     
     //n(f) //does not compile
 
