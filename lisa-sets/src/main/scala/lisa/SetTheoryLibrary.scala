@@ -8,6 +8,7 @@ import lisa.prooflib.Library
  * Specific implementation of [[utilities.Library]] for Set Theory, with a RunningTheory that is supposed to be used by the standard library.
  */
 object SetTheoryLibrary extends lisa.prooflib.Library {
+  val setLibrary: this.type = this
 
   val theory = new RunningTheory()
 
