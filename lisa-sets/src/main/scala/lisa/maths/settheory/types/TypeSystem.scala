@@ -13,11 +13,13 @@ object Test extends lisa.Main {
 		have(thesis) by Restate
 	}
 
+
+
 	val ℕ = TypedConstant[top.type]("ℕ", top_is_true)
 	addSymbol(ℕ)
 	type ℕ = ℕ.asType
 
-	val n: ℕ = typedVariable
+	val n: ℕ = typedVariable  //lose information that n is a variable
 	val f: ℕ |=> (ℕ |=> ℕ) = typedVariable
 	val g: (ℕ |=> ℕ) |=> (ℕ |=> ℕ) = typedVariable
 
