@@ -1,5 +1,5 @@
 package lisa.tptp
-
+import KernelParser.unsanitize
 import leo.datastructures.TPTP.AnnotatedFormula
 import leo.datastructures.TPTP.FOF
 import leo.datastructures.TPTP.FOFAnnotated
@@ -79,24 +79,24 @@ object ProofPrinter {
     term match {
       case K.Variable(id, K.Ind) => 
         if strict then
-          if id.name(0).isUpper then FOF.Variable(id)
-          else FOF.Variable("X"+id)
+          if id.name(0).isUpper then FOF.Variable(unsanitize(id))
+          else FOF.Variable(unsanitize("X"+id))
         else if bound.contains(id) then FOF.Variable("X" + id)
         else FOF.Variable(quoted("s" + id))
       case K.Constant(id, K.Ind) => 
         if strict then
-          if id.name(0).isLower then FOF.AtomicTerm(id, Seq())
-          else FOF.AtomicTerm(quoted(id), Seq())
+          if id.name(0).isLower && !id.name.contains(" ") then FOF.AtomicTerm(unsanitize(id), Seq())
+          else FOF.AtomicTerm(quoted(unsanitize(id)), Seq())
         else FOF.AtomicTerm(quoted("c" + id), Seq())
       case K.Multiapp(K.Constant(id, typ), args) =>
         if strict then
-          if id.name(0).isLower then FOF.AtomicTerm(id, args.map(termToFOFTerm(_, bound, strict)))
-          else FOF.AtomicTerm(quoted(id), args.map(termToFOFTerm(_, bound, strict)))
+          if id.name(0).isLower && !id.name.contains(" ") then FOF.AtomicTerm(unsanitize(id), args.map(termToFOFTerm(_, bound, strict)))
+          else FOF.AtomicTerm(quoted(unsanitize(id)), args.map(termToFOFTerm(_, bound, strict)))
         else FOF.AtomicTerm(quoted("c" + id), args.map(termToFOFTerm(_, bound, strict)))
       case K.Multiapp(K.Variable(id, typ), args) =>
         if strict then
-          FOF.AtomicTerm("`" + id, args.map(termToFOFTerm(_, bound, strict)))
-        else FOF.AtomicTerm(quoted("s" + id), args.map(termToFOFTerm(_, bound)))
+          FOF.AtomicTerm("`" + unsanitize(id), args.map(termToFOFTerm(_, bound, strict)))
+        else FOF.AtomicTerm(quoted(unsanitize("s" + id)), args.map(termToFOFTerm(_, bound)))
       case K.Epsilon(v, f) => throw new Exception("Epsilon terms are not supported")
       case _ => throw new Exception("The expression is not purely first order:\n" + term.repr)
     }
@@ -114,28 +114,30 @@ object ProofPrinter {
       case K.implies(f1, f2) => FOF.BinaryFormula(FOF.Impl, formulaToFOFFormula(f1, bound, strict), formulaToFOFFormula(f2, bound, strict))
       case K.iff(f1, f2) => FOF.BinaryFormula(FOF.<=>, formulaToFOFFormula(f1, bound, strict), formulaToFOFFormula(f2, bound, strict))
       case K.forall(K.Lambda(v, f)) => 
-        FOF.QuantifiedFormula(FOF.!, Seq(if strict then v.id else "X" + v.id), formulaToFOFFormula(f, bound + v.id, strict))
-      case K.exists(K.Lambda(v, f)) => 
-        FOF.QuantifiedFormula(FOF.?, Seq(if strict then v.id else "X" + v.id), formulaToFOFFormula(f, bound + v.id, strict))
+        val x = if strict then unsanitize(v.id) else unsanitize("X"+v.id)
+        FOF.QuantifiedFormula(FOF.!, Seq(x), formulaToFOFFormula(f, bound + v.id, strict))
+      case K.exists(K.Lambda(v, f)) =>
+        val x = if strict then unsanitize(v.id) else unsanitize("X"+v.id)
+        FOF.QuantifiedFormula(FOF.?, Seq(x), formulaToFOFFormula(f, bound + v.id, strict))
       case K.forall(p) =>
         val x = K.freshId(p.freeVariables.map(_.id), "x")
-        FOF.QuantifiedFormula(FOF.!, Seq(if strict then x else "X" + x), formulaToFOFFormula(K.Application(p, K.Variable(x, K.Ind)), bound + x, strict))
+        FOF.QuantifiedFormula(FOF.!, Seq(if strict then unsanitize(x) else "X" + x), formulaToFOFFormula(K.Application(p, K.Variable(x, K.Ind)), bound + x, strict))
       case K.exists(p) =>
         val x = K.freshId(p.freeVariables.map(_.id), "x")
-        FOF.QuantifiedFormula(FOF.?, Seq(if strict then x else "X" + x), formulaToFOFFormula(K.Application(p, K.Variable(x, K.Ind)), bound + x, strict))
+        FOF.QuantifiedFormula(FOF.?, Seq(if strict then unsanitize(x) else "X" + x), formulaToFOFFormula(K.Application(p, K.Variable(x, K.Ind)), bound + x, strict))
       case K.Multiapp(K.Constant(id, typ), args) =>
         if strict then 
-          if id.name(0).isLower then FOF.AtomicFormula(id, args.map(termToFOFTerm(_, bound, strict)))
-          else FOF.AtomicFormula(quoted(id), args.map(termToFOFTerm(_, bound, strict)))
+          if id.name(0).isLower then FOF.AtomicFormula(unsanitize(id), args.map(termToFOFTerm(_, bound, strict)))
+          else FOF.AtomicFormula(quoted(unsanitize(id)), args.map(termToFOFTerm(_, bound, strict)))
         else FOF.AtomicFormula(quoted("c" + id), args.map(termToFOFTerm(_, bound, strict)))
       case K.Multiapp(K.Variable(id, typ), args) =>
         if strict then
-          FOF.AtomicFormula("`" + id, args.map(termToFOFTerm(_, bound, strict)))
+          FOF.AtomicFormula("`" + unsanitize(id), args.map(termToFOFTerm(_, bound, strict)))
         else FOF.AtomicFormula(quoted("s" + id), args.map(termToFOFTerm(_, bound, strict)))
       case K.Constant(id, typ) =>
         if strict then
-          if id.name(0).isLower then FOF.AtomicFormula(id, Seq())
-          else FOF.AtomicFormula(quoted(id), Seq())
+          if id.name(0).isLower then FOF.AtomicFormula(unsanitize(id), Seq())
+          else FOF.AtomicFormula(unsanitize(id), Seq())
         else FOF.AtomicFormula(quoted("p" + id), Seq())
       case _ => throw new Exception("The expression is not purely first order: " + formula)
         

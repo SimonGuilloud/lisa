@@ -139,7 +139,15 @@ object KernelParser {
     def search(): String = pattern.findFirstIn(g.next()).getOrElse(search())
 
     val i = Parser.problem(file)
-    val sq = i.formulas map {
+    def problemToFormulas(i: TPTP.Problem): Seq[TPTP.AnnotatedFormula] = {
+      val file = io.Source.fromFile(problemFile)
+      i.formulas ++ i.includes.flatMap(i => {
+        val file = io.Source.fromFile(i._1)
+        problemToFormulas(Parser.problem(file))
+      })
+    }
+    val iformulas = problemToFormulas(i)
+    val sq = iformulas map {
       case TPTP.FOFAnnotated(name, role, formula, annotations, origin) =>
         formula match {
           case FOF.Logical(formula) => AnnotatedFormula(role, name, convertToKernel(formula), annotations)
@@ -148,9 +156,14 @@ object KernelParser {
         }
       case TPTP.CNFAnnotated(name, role, formula, annotations, origin) =>
         formula match {
-          case CNF.Logical(formula) => AnnotatedFormula(role, name, convertToKernel(formula), annotations)
+          case CNF.Logical(formula) => 
+            val inner = convertToKernel(formula)
+            val closure = inner.freeVariables.foldLeft(inner)((acc, v) => K.forall(v, acc))
+            AnnotatedFormula(role, name, closure, annotations)
         }
-      case _ => throw FileNotAcceptedException("Only FOF formulas are supported", problemFile.getPath)
+      case _ => 
+        println("Unknown statement:" + i.pretty)
+        throw FileNotAcceptedException("Only FOF formulas are supported", problemFile.getPath)
     }
     Problem(md.file, md.domain, md.problem, md.status, md.spc, sq)
   }
@@ -171,6 +184,8 @@ object KernelParser {
     problemToKernel(File(problemFile))
   }
 
+
+  val axiomLikeRoles = Set("axiom", "hypothesis", "definition", "assumption", "lemma", "theorem", "corollary", "negated_conjecture")
   /**
    * Given a problem consisting of many axioms and a single conjecture, create a sequent with axioms on the left
    * and conjecture on the right.
@@ -182,7 +197,7 @@ object KernelParser {
     if (problem.spc.contains("CNF")) problem.formulas.map(_.asInstanceOf[AnnotatedFormula].formula) |- ()
     else
       problem.formulas.foldLeft[K.Sequent](() |- ())((s, f) =>
-        if (f.role == "axiom") s +<< f.asInstanceOf[AnnotatedFormula].formula
+        if (axiomLikeRoles.contains(f.role)) s +<< f.asInstanceOf[AnnotatedFormula].formula
         else if (f.role == "conjecture" && s.right.isEmpty) s +>> f.asInstanceOf[AnnotatedFormula].formula
         else throw Exception("Can only agglomerate axioms and one conjecture into a sequents")
       )
@@ -197,6 +212,13 @@ object KernelParser {
       pieces
         .mkString("$u"))
         .replaceAllLiterally(" ", "$s")
+
+  def unsanitize(s: String, no:Int): String =
+    val r1 = s.replaceAllLiterally("$u", "_").replaceAllLiterally("$s", " ")
+    //if r1.contains(" ") then s"'$r1'" else r1
+    r1
+  def unsanitize(id:K.Identifier): String = 
+    unsanitize(id.name, id.no)
 
   val strictMapAtom: ((String, Int) => K.Expression) = (f, n) =>
     val kind = f.head

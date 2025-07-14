@@ -661,7 +661,6 @@ object KernelHelpers {
 
   def prettySCProof(proof: SCProof): String = prettySCProof(SCValidProof(proof), false)
 
-
   def mapStepPremises(step: SCProofStep, mapping: Int => Int): SCProofStep = step match
     case Beta(bot, t1) => Beta(bot, mapping(t1))
     case Cut(bot, t1, t2, phi) => Cut(bot, mapping(t1), mapping(t2), phi)
@@ -691,7 +690,6 @@ object KernelHelpers {
     case SCSubproof(sp, premises) => SCSubproof(sp, premises.map(mapping))
     case Sorry(bot) => Sorry(bot)
     case Weakening(bot, t1) => Weakening(bot, mapping(t1))
-  
 
   def flattenProof(proof: SCProof): SCProof = {
     def flattenProofRecursive(steps: IndexedSeq[SCProofStep], topPremises: IndexedSeq[(Int, Sequent)], offset: Int): IndexedSeq[SCProofStep] = {
@@ -720,6 +718,5 @@ object KernelHelpers {
     }
     SCProof(flattenProofRecursive(proof.steps, proof.imports.zipWithIndex.map { case (imported, i) => (-i - 1, imported) }, 0), proof.imports)
   }
-
 
 }
