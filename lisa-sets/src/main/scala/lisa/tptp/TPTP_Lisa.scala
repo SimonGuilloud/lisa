@@ -52,7 +52,7 @@ object TPTP_Lisa {
             val endproof = tptp_proof :+ {
               val prob_conj = leo.datastructures.TPTP.FOF.Logical(formulaToFOFFormula(problem.conjecture.toFormula.formula, Set(), true))
               val axioms_names = problem.axioms.map(_.name)
-              leo.datastructures.TPTP.FOFAnnotated("final", "theorem", prob_conj, premisesToAnnotationsStr(axioms_names, "big_cut"))
+              leo.datastructures.TPTP.FOFAnnotated("final", "theorem", prob_conj, premisesToAnnotationsStr(axioms_names :+ tptp_proof.last.name, "big_cut"))
             }
             println("% SZS output start Proof")
             println(endproof.map(_.pretty).mkString("\n"))

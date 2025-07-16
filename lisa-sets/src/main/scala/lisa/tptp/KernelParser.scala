@@ -132,6 +132,7 @@ object KernelParser {
   private def problemToKernel(problemFile: File, md: ProblemMetadata)(using maps: ((String, Int) => K.Expression, (String, Int) => K.Expression, String => K.Variable)): Problem = {
     val (mapAtom, mapTerm, mapVariable) = maps
     val file = io.Source.fromFile(problemFile)
+    val folder = problemFile.getParentFile
     val pattern = "SPC\\s*:\\s*[A-z]{3}(_[A-z]{3})*".r
     val g = file.getLines()
     given emptyctx: DefContext = _ => None
@@ -142,7 +143,14 @@ object KernelParser {
     def problemToFormulas(i: TPTP.Problem): Seq[TPTP.AnnotatedFormula] = {
       val file = io.Source.fromFile(problemFile)
       i.formulas ++ i.includes.flatMap(i => {
-        val file = io.Source.fromFile(i._1)
+        val probFile = new File(folder, i._1)
+        val file = if (!probFile.exists) then
+          val tptpEnv = sys.env.getOrElse("TPTP", "")
+          if (tptpEnv.isEmpty) throw new Exception("TPTP environment variable not set, and file " + i._1 + " does not exist.")
+          val probFile = new File(tptpEnv, i._1)
+          if (!probFile.exists) throw new Exception("File " + i._1 + " does not exist in TPTP environment variable " + tptpEnv + " nor in " + folder.getPath)
+          io.Source.fromFile(probFile)
+          else io.Source.fromFile(probFile)
         problemToFormulas(Parser.problem(file))
       })
     }
