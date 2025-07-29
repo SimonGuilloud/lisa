@@ -2,9 +2,32 @@ package lisa.maths
 import lisa.automation.atp.*
 import lisa.utils.KernelHelpers.checkProof
 import lisa.tptp.*
+import lisa.utils.KernelHelpers.repr
 
 object Tests extends lisa.Main {
   draft()
+
+
+//withCache()
+
+  def ssimp(p: Expr[Prop], q: Expr[Prop]) = !p \/ (p /\ q)
+  def ssconj(p: Expr[Prop], q: Expr[Prop]) = p /\ (!p \/ q)
+
+  val a = variable[Prop]
+  val b1 = variable[Prop]
+  val b2 = variable[Prop]
+
+  val f1 = ssconj(a, b1 \/ b2)
+  val f2 = ssconj(a, b1) \/ ssconj(a, b2)
+
+  val r1 = K.reducedNNFForm(f1.underlying)
+  val r2 = K.reducedNNFForm(f2.underlying)
+
+
+  println("f1 same f2: " + isSame(f1, f2))
+  println("f1 normal form: " + K.repr(r1))
+  println("f2 normal form: " + K.repr(r2))
+  /*
 
   val x = variable[Ind]
   val y = variable[Ind]
@@ -55,5 +78,7 @@ object Tests extends lisa.Main {
 
   val example2 = Theorem(∃(x, ∀(y, d(x) ==> d(y)))):
     have(thesis) by Prover9
+
+    */
 
 }
