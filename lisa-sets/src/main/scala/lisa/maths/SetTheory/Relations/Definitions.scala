@@ -32,7 +32,7 @@ object Definitions extends lisa.Main {
    * Definition --- A set `R` is a relation on `X` if `R` only contains pairs
    * of elements of `X`.
    *
-   *   `relation(R, X) <=> R ⊆ X × X`
+   *   `relationOn(R, X) <=> R ⊆ X × X`
    */
   val relationOn = DEF(λ(R, λ(X, R ⊆ (X × X))))
 
@@ -157,6 +157,6 @@ object Definitions extends lisa.Main {
   val equivalence = DEF(λ(R, λ(X, reflexive(R)(X) /\ symmetric(R) /\ transitive(R))))
 
   /**
-   * For ordering relations, see [[lisa.maths.SetTheory.Order.Order]].
+   * For ordering relations, see [[lisa.maths.SetTheory.Order.Definitions]].
    */
 }
