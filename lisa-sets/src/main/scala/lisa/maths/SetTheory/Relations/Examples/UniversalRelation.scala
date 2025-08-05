@@ -10,7 +10,7 @@ import lisa.maths.SetTheory.Relations.Predef.*
  */
 object UniversalRelation extends lisa.Main {
 
-  private val x, y = variable[Ind]
+  private val x, y, z = variable[Ind]
   private val a, b = variable[Ind]
   private val R = variable[Ind]
   private val A, B, X = variable[Ind]
@@ -18,7 +18,7 @@ object UniversalRelation extends lisa.Main {
   /**
    * Theorem --- The [[CartesianProduct]] `X × X` is the universal relation on `X`.
    */
-  val universalRelation = Theorem(
+  val isRelation = Theorem(
     relationOn(X × X)(X)
   ) {
     have(thesis) by Tautology.from(
@@ -57,7 +57,7 @@ object UniversalRelation extends lisa.Main {
     thenHave(∀(x, x ∈ X ==> (x, x) ∈ (X × X))) by RightForall
     thenHave(thesis) by Tautology.fromLastStep(
       reflexive.definition of (R := X × X),
-      universalRelation
+      isRelation
     )
   }
 
@@ -67,7 +67,16 @@ object UniversalRelation extends lisa.Main {
   val universalRelationSymmetric = Theorem(
     symmetric(X × X)
   ) {
-    sorry
+    have((x, y) ∈ (X × X) <=> (y, x) ∈ (X × X)) by Tautology.from(
+      CartesianProduct.pairMembership of (x := x, y := y, A := X, B := X),
+      CartesianProduct.pairMembership of (x := y, y := x, A := X, B := X),
+    )
+    thenHave(∀(x, ∀(y, (x, y) ∈ (X × X) <=> (y, x) ∈ (X × X)))) by Generalize
+    thenHave(thesis) by Tautology.fromLastStep(
+      isRelation,
+      Properties.relationOnIsRelation of (R := X × X),
+      symmetric.definition of (R := X × X),
+    )
   }
 
   /**
@@ -76,7 +85,17 @@ object UniversalRelation extends lisa.Main {
   val universalRelationTransitive = Theorem(
     transitive(X × X)
   ) {
-    sorry
+    have((x, y) ∈ (X × X) /\ (y, z) ∈ (X × X) ==> (x, z) ∈ (X × X)) by Tautology.from(
+      CartesianProduct.pairMembership of (x := x, y := y, A := X, B := X),
+      CartesianProduct.pairMembership of (x := y, y := z, A := X, B := X),
+      CartesianProduct.pairMembership of (x := x, y := z, A := X, B := X),
+    )
+    thenHave(∀(x, ∀(y, ∀(z, (x, y) ∈ (X × X) /\ (y, z) ∈ (X × X) ==> (x, z) ∈ (X × X))))) by Generalize
+    thenHave(thesis) by Tautology.fromLastStep(
+      isRelation,
+      Properties.relationOnIsRelation of (R := X × X),
+      transitive.definition of (R := X × X),
+    )
   }
 
   /**
@@ -99,7 +118,14 @@ object UniversalRelation extends lisa.Main {
   val universalRelationTotal = Theorem(
     total(X × X)(X)
   ) {
-    sorry
+    have((x ∈ X) /\ (y ∈ X) ==> (x, y) ∈ (X × X) \/ ((y, x) ∈ (X × X)) \/ (x === y)) by Tautology.from(
+      CartesianProduct.pairMembership of (A := X, B := X)
+    )
+    thenHave(∀(x, ∀(y, (x ∈ X) /\ (y ∈ X) ==> (x, y) ∈ (X × X) \/ ((y, x) ∈ (X × X)) \/ (x === y)))) by Generalize
+    thenHave(thesis) by Tautology.fromLastStep(
+      isRelation,
+      total.definition of (R := X × X),
+    )
   }
 
   /**
@@ -108,6 +134,13 @@ object UniversalRelation extends lisa.Main {
   val universalRelationStronglyConnected = Theorem(
     stronglyConnected(X × X)(X)
   ) {
-    sorry
+    have((x ∈ X) /\ (y ∈ X) ==> (x, y) ∈ (X × X) \/ ((y, x) ∈ (X × X))) by Tautology.from(
+      CartesianProduct.pairMembership of (A := X, B := X)
+    )
+    thenHave(∀(x, ∀(y, (x ∈ X) /\ (y ∈ X) ==> (x, y) ∈ (X × X) \/ ((y, x) ∈ (X × X))))) by Generalize
+    thenHave(thesis) by Tautology.fromLastStep(
+      isRelation,
+      stronglyConnected.definition of (R := X × X),
+    )
   }
 }

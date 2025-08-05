@@ -5,6 +5,7 @@ import lisa.kernel.proof.RunningTheory
 import lisa.utils.prooflib.Library
 
 import scala.annotation.showAsInfix
+import scala.collection.immutable.Set as ScalaSet
 
 /**
  * Specific implementation of [[utilities.Library]] for Set Theory, with a RunningTheory that is supposed to be used by the standard library.
@@ -14,19 +15,20 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   val theory = new RunningTheory()
 
   /**
-   * Terms in set theory represent sets.
+   * Individuals in set theory represent sets.
    */
-  type set = Expr[Ind]
+  type Set = Ind
+   */
 
   // Predicates
 
   /**
    * The symbol for the set membership predicate.
    */
-  object ∈ extends Constant[Ind >>: Ind >>: Prop]("∈") {
+  object ∈ extends Constant[Set >>: Set >>: Prop]("∈") {
     this.printInfix()
 
-    def unapply(e: Expr[Prop]): Option[(set, set)] =
+    def unapply(e: Expr[Prop]): Option[(Expr[Set], Expr[Set])] =
       val ∈ = this
       e match
         case App(App(`∈`, x), y) => Some(x, y)
@@ -41,10 +43,10 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   /**
    * The symbol for the subset predicate.
    */
-  object ⊆ extends Constant[Ind >>: Ind >>: Prop]("⊆") {
+  object ⊆ extends Constant[Set >>: Set >>: Prop]("⊆") {
     this.printInfix()
 
-    def unapply(e: Expr[Prop]): Option[(set, set)] =
+    def unapply(e: Expr[Prop]): Option[(Expr[Set], Expr[Set])] =
       val ⊆ = this
       e match
         case App(App(`⊆`, x), y) => Some(x, y)
@@ -58,7 +60,7 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   /**
    * The symbol for the equicardinality predicate. Needed for Tarski's axiom.
    */
-  final val sim = constant[Ind >>: Ind >>: Prop]("sameCardinality") // Equicardinality
+  final val sim = constant[Set >>: Set >>: Prop]("sameCardinality") // Equicardinality
 
   /**
    * Set Theory basic predicates
@@ -70,27 +72,27 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   /**
    * The symbol for the empty set constant.
    */
-  final val ∅ = constant[Ind]("∅")
+  final val ∅ = constant[Set]("∅")
 
   /**
    * The symbol for the unordered pair function.
    */
-  final val unorderedPair = constant[Ind >>: Ind >>: Ind]("unorderedPair").printAs(args => s"{${args(0)}, ${args(1)}}")
+  final val unorderedPair = constant[Set >>: Set >>: Set]("unorderedPair").printAs(args => s"{${args(0)}, ${args(1)}}")
 
   /**
    * The symbol for the powerset function.
    */
-  final val 𝒫 = constant[Ind >>: Ind]("𝒫")
+  final val 𝒫 = constant[Set >>: Set]("𝒫")
 
   /**
    * The symbol for the set union function.
    */
-  final val ⋃ = constant[Ind >>: Ind]("⋃")
+  final val ⋃ = constant[Set >>: Set]("⋃")
 
   /**
    * The symbol for the universe function. Defined in TG set theory.
    */
-  final val universe = constant[Ind >>: Ind]("universe")
+  final val universe = constant[Set >>: Set]("universe")
 
   /**
    * Set Theory basic functions.
@@ -107,13 +109,10 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   functions.foreach(s => addSymbol(s))
   addSymbol(∅)
 
-  private val x = variable[Ind]
-  private val y = variable[Ind]
-  private val z = variable[Ind]
-  final val φ = variable[Ind >>: Prop]
-  private val A = variable[Ind]
-  private val B = variable[Ind]
-  private val P = variable[Ind >>: Ind >>: Prop]
+  private val x, y, z = variable[Set]
+  private val A, B = variable[Set]
+  private val φ = variable[Set >>: Prop]
+  private val P = variable[Set >>: Set >>: Prop]
 
   ////////////
   // Axioms //
@@ -282,7 +281,7 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
    *
    * @return
    */
-  def axioms: Set[(String, AXIOM)] = Set(
+  def axioms: ScalaSet[(String, AXIOM)] = Set(
     ("EmptySet", emptySetAxiom),
     ("extensionalityAxiom", extensionalityAxiom),
     ("pairAxiom", pairAxiom),

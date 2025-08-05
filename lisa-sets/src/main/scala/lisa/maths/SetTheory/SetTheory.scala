@@ -29,11 +29,6 @@ object SetTheory extends lisa.Main {
   private val R = variable[Ind >>: Ind >>: Prop]
 
   /**
-   * A set is an arbitrary term of the theory.
-   */
-  type Set = Expr[Ind]
-
-  /**
    * Chapter 1
    */
 
@@ -98,8 +93,8 @@ object SetTheory extends lisa.Main {
   val inductiveSetExists = Theorem(
     ∃(x, inductive(x))
   ) {
-    def S(y: Set) = ⋃(unorderedPair(y, unorderedPair(y, y)))
-    def infinite(x: Set) = ∅ ∈ x /\ ∀(y, y ∈ x ==> S(y) ∈ x)
+    def S(y: Expr[Set]) = ⋃(unorderedPair(y, unorderedPair(y, y)))
+    def infinite(x: Expr[Set]) = ∅ ∈ x /\ ∀(y, y ∈ x ==> S(y) ∈ x)
 
     have(y ∈ x ==> successor(y) ∈ x |- y ∈ x ==> successor(y) ∈ x) by Restate
     thenHave(y ∈ x ==> (y ∪ singleton(y)) ∈ x |- y ∈ x ==> successor(y) ∈ x) by Substitute(successor.definition of (x := y))

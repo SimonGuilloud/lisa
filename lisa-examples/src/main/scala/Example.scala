@@ -13,8 +13,8 @@ object Example extends lisa.Main:
   val f = variable[Ind >>: Ind]
 
   val thing : set = x
-  extension (x: set) {
-    inline infix def subset(y: set): Expr[Prop] = App(App(⊆, x), y)
+  extension (x: Expr[Set]) {
+    inline infix def subset(y: Expr[Set]): Expr[Prop] = App(App(⊆, x), y)
   }
   // Simple proof with LISA's DSL
   val fixedPointDoubleApplication = Theorem(∀(x, P(x) ==> P(f(x))) |- P(x) ==> P(f(f(x)))) {

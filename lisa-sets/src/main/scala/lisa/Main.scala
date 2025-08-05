@@ -8,7 +8,7 @@ import lisa.utils.prooflib.BasicMain
  */
 trait Main extends BasicMain {
 
-  export lisa.utils.fol.FOL.{*, given}
+  export lisa.utils.fol.FOL.{=== as _, ≠ as _, *, given}
   export SetTheoryLibrary.{given, _}
   export lisa.utils.prooflib.BasicStepTactic.*
   export lisa.utils.prooflib.SimpleDeducedSteps.*
