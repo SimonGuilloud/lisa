@@ -14,7 +14,7 @@ import lisa.maths.Quantifiers.Generalize
 object Definitions extends lisa.Main {
 
   private val x, y = variable[Ind]
-  private val A = variable[Ind]
+  private val A, B = variable[Ind]
   private val <, <= = variable[Ind]
 
   /**
@@ -32,16 +32,22 @@ object Definitions extends lisa.Main {
   val partialOrder = DEF(λ(A, λ(<=, relationOn(<=)(A) /\ transitive(<=) /\ reflexive(<=)(A) /\ antisymmetric(<=))))
 
   /**
+   * Total order --- `(A, <=)` is a total order if `(A, <=)` is a
+   * [[partialOrder]] and `<=` is [[stronglyConnected]].
+   */
+  val totalOrder = DEF(λ(A, λ(<, partialOrder(A)(<) /\ stronglyConnected(<)(A))))
+
+  /**
    * Strict partial order --- `(A, <)` is a strict partial order if `<` is a
    * binary relation that is [[transitive]] and [[irreflexive]].
    */
   val strictPartialOrder = DEF(λ(A, λ(<, relationOn(<)(A) /\ transitive(<) /\ irreflexive(<))))
 
   /**
-   * Total order --- `(A, <)` is a total order if `(A, <)` is a
+   * Strict total order --- `(A, <)` is a strict total order if `(A, <)` is a
    * [[strictPartialOrder]] and `<` is [[total]].
    */
-  val totalOrder = DEF(λ(A, λ(<, strictPartialOrder(A)(<) /\ total(<)(A))))
+  val strictTotalOrder = DEF(λ(A, λ(<, strictPartialOrder(A)(<) /\ total(<)(A))))
 
   /**
    * Maximal element --- `x` is a maximal element on `A` with respect to `<` if

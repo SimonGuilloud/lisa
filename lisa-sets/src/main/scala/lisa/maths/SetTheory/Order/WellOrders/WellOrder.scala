@@ -28,14 +28,14 @@ object WellOrder extends lisa.Main {
 
   /**
    * Well ordering --- We say that `<` well-orders `A` (or `(A, <)` is a
-   * well-ordering) if `(A, <)` is a [[totalOrder]] such that every non-empty set
-   * has a `<`-minimal element:
+   * well-ordering) if `(A, <)` is a [[strictTotalOrder]] such that every
+   * non-empty set has a `<`-minimal element:
    *
-   *   `wellOrdering(A, <) <=> totalOrder(A, <) /\ ∀B ⊆ A. B ≠ ∅ ==> ∃ x ∈ B. ∀ y ∈ B. ¬(y < x)`
+   *   `wellOrdering(A, <) <=> strictTotalOrder(A, <) /\ ∀B ⊆ A. B ≠ ∅ ==> ∃ x ∈ B. ∀ y ∈ B. ¬(y < x)`
    *
-   * @see [[totalOrder]]
+   * @see [[strictTotalOrder]]
    */
-  val wellOrdering = DEF(λ(A, λ(<, totalOrder(A)(<) /\ ∀(B, (B ⊆ A) /\ (B ≠ ∅) ==> ∃(x, x ∈ B /\ ∀(y, y ∈ B ==> (y, x) ∉ <))))))
+  val wellOrdering = DEF(λ(A, λ(<, strictTotalOrder(A)(<) /\ ∀(B, (B ⊆ A) /\ (B ≠ ∅) ==> ∃(x, x ∈ B /\ ∀(y, y ∈ B ==> (y, x) ∉ <))))))
 
   /**
    * Empty well-ordering --- The empty set well-orders the empty set.
@@ -61,7 +61,7 @@ object WellOrder extends lisa.Main {
   ) {
     have(thesis) by Tautology.from(
       wellOrdering.definition,
-      totalOrder.definition,
+      strictTotalOrder.definition,
       strictPartialOrder.definition
     )
   }
@@ -74,7 +74,7 @@ object WellOrder extends lisa.Main {
   ) {
     have(thesis) by Tautology.from(
       wellOrdering.definition,
-      totalOrder.definition
+      strictTotalOrder.definition
     )
   }
 

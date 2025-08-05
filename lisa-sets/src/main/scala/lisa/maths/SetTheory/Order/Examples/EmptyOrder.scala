@@ -31,10 +31,10 @@ object EmptyOrder extends lisa.Main {
    * Theorem --- The empty set is a total order on the empty-set.
    */
   val emptyOrderTotalOrder = Theorem(
-    totalOrder(∅)(∅)
+    strictTotalOrder(∅)(∅)
   ) {
     have(thesis) by Tautology.from(
-      totalOrder.definition of (A := ∅, < := ∅),
+      strictTotalOrder.definition of (A := ∅, < := ∅),
       emptyOrderStrictPartialOrder,
       EmptyRelation.emptyRelationTotal
     )
