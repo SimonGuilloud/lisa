@@ -38,7 +38,7 @@ object TransfiniteInduction extends lisa.Main {
 
     // Thus the existence of any ordinal that does not satisfy `P` is a contradiction.
     have((ordinal(α), ¬(P(α))) |- ()) by Cut(
-      Ordinal.ordinalClassMinimalElement of (P := λ(α, ¬(P(α)))),
+      Ordinal.classOfOrdinalsMinimalElement of (P := λ(α, ¬(P(α)))),
       lastStep
     )
     thenHave(ordinal(α) ==> P(α)) by Restate

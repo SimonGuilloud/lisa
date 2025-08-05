@@ -256,7 +256,7 @@ object Ordinal extends lisa.Main {
   /**
    * Theorem --- Any two ordinals `α` and `β` are comparable.
    */
-  val ordinalComparison = Theorem(
+  val comparability = Theorem(
     (ordinal(α), ordinal(β)) |- (α === β) \/ (α < β) \/ (β < α)
   ) {
     sorry
@@ -270,7 +270,7 @@ object Ordinal extends lisa.Main {
    *
    *   `∀α ∈ A. ordinal(α) /\ A ≠ ∅ ==> ∃α ∈ A. ∀β ∈ A. α <= β.
    */
-  val ordinalSetMinimalElement = Theorem(
+  val setOfOrdinalsMinimalElement = Theorem(
     (∀(α, α ∈ A ==> ordinal(α)), A ≠ ∅) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))
   ) {
     assume(A ≠ ∅)
@@ -284,14 +284,14 @@ object Ordinal extends lisa.Main {
       have((α ∈ A, ∀(β, β ∈ A ==> (α <= β))) |- α ∈ A /\ ∀(β, β ∈ A ==> (α <= β))) by Restate
       thenHave((α ∈ A, ∀(β, β ∈ A ==> (α <= β))) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))) by RightExists
 
-    // If ∃β ∈ A, ¬(α <= β), then it means that β < α by [[ordinalComparison]]
+    // If ∃β ∈ A, ¬(α <= β), then it means that β < α by [[comparability]]
     val case2 = have((α ∈ A, β ∈ A, ¬(α <= β)) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))) subproof {
       assume(α ∈ A)
       assume(β ∈ A)
       assume(¬(α <= β))
 
       have(β < α) by Tautology.from(
-        ordinalComparison,
+        comparability,
         `α ordinal`,
         `α ordinal` of (α := β)
       )
@@ -323,7 +323,7 @@ object Ordinal extends lisa.Main {
           Intersection.membership of (z := δ, x := A, y := α)
         )
         thenHave(β ∈ (A ∩ α) ==> δ <= β) by Tautology.fromLastStep(
-          Ordinal.ordinalComparison of (α := β, β := δ),
+          Ordinal.comparability of (α := β, β := δ),
           Intersection.membership of (z := β, x := A, y := α),
           Ordinal.elementOfOrdinal of (β := δ)
         )
@@ -342,7 +342,7 @@ object Ordinal extends lisa.Main {
    *
    *   `∃α ∈ On. P(α) ==> ∃α ∈ On. P(α) /\ ∀β < α. ¬P(β)`
    */
-  val ordinalClassMinimalElement = Theorem(
+  val classOfOrdinalsMinimalElement = Theorem(
     (ordinal(α), P(α)) |- ∃(α, ordinal(α) /\ P(α) /\ ∀(β, β ∈ α ==> ¬(P(β))))
   ) {
     assume(ordinal(α))
@@ -418,14 +418,14 @@ object Ordinal extends lisa.Main {
       thenHave((β ∈ Q) /\ ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x)) |- ∃(β, ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x))))) by RightExists
       val conclusion = thenHave(∃(β, (β ∈ Q) /\ ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x))) |- ∃(β, ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x))))) by LeftExists
 
-      // We show that `Q` is a non-empty set of ordinals to satisfy the assumptions of [[ordinalSetMinimalElement]]
+      // We show that `Q` is a non-empty set of ordinals to satisfy the assumptions of [[setOfOrdinalsMinimalElement]]
       have(β ∈ Q ==> β ∈ α) by Tautology.from(`β ∈ Q`)
       thenHave(β ∈ Q ==> ordinal(β)) by Tautology.fromLastStep(elementOfOrdinal)
       thenHave(∀(β, β ∈ Q ==> ordinal(β))) by RightForall
 
       have(thesis) by Tautology.from(
         lastStep,
-        ordinalSetMinimalElement of (A := Q),
+        setOfOrdinalsMinimalElement of (A := Q),
         conclusion
       )
     }
