@@ -73,21 +73,21 @@ object Definitions extends lisa.Main {
   }
 
   /**
-   * Injective function --- `f : A -> B` is said to be injective on `A` if `f(x) = f(y)` implies `x = y`.
+   * Injective function --- `f` is said to be injective on `A` if `f(x) = f(y)` implies `x = y`.
    */
-  val injective = DEF(λ(f, λ(A, λ(B, ∀(x, ∀(y, (x ∈ A) /\ (y ∈ A) /\ (f(x) === f(y)) ==> (x === y)))))))
-  val oneToOne = injective
+  val injective = DEF(λ(f, λ(A, ∀(x, ∀(y, (x ∈ A) /\ (y ∈ A) /\ (f(x) === f(y)) ==> (x === y))))))
+  inline def oneToOne = injective
 
   /**
-   * Surjective function --- `f : A -> B` is said to be surjective (or onto) if `range(f) = B`.
+   * Surjective function --- `f` is said to be surjective on (or onto) `B` if `range(f) = B`.
    */
-  val surjective = DEF(λ(f, λ(A, λ(B, (f :: A -> B) /\ (range(f) === B)))))
-  val onto = surjective
+  val surjective = DEF(λ(f, λ(B, range(f) === B)))
+  inline def onto = surjective
 
   /**
    * Bijective function --- `f : A -> B` is said to be bijective if is both injective
    * and surjective.
    */
-  val bijective = DEF(λ(f, λ(A, λ(B, injective(f)(A)(B) /\ surjective(f)(A)(B)))))
+  val bijective = DEF(λ(f, λ(A, λ(B, (f :: A -> B) /\ injective(f)(A) /\ surjective(f)(B)))))
 
 }
