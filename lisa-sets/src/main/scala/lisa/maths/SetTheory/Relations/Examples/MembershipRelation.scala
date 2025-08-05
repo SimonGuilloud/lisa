@@ -11,9 +11,9 @@ import lisa.maths.SetTheory.Relations.Predef.*
  */
 object MembershipRelation extends lisa.Main {
 
-  private val x, y = variable[Ind]
+  private val x, y, z = variable[Ind]
   private val a, b = variable[Ind]
-  private val A, B = variable[Ind]
+  private val A, B, C, D = variable[Ind]
   private val R, X = variable[Ind]
 
   /**
@@ -84,5 +84,25 @@ object MembershipRelation extends lisa.Main {
     )
     thenHave(membershipRelation(∅) ⊆ ∅) by Substitute(CartesianProduct.leftEmpty of (x := ∅))
     thenHave(thesis) by Tautology.fromLastStep(Subset.rightEmpty of (x := membershipRelation(∅)))
+  }
+
+  /**
+    * Theorem --- The membership relation is monotonic: if `A ⊆ B` then `∈_A ⊆ ∈_B`.
+    */
+  val monotonic = Theorem(
+    A ⊆ B |- membershipRelation(A) ⊆ membershipRelation(B)
+  ) {
+    assume(A ⊆ B)
+
+    have(x ∈ { x ∈ (A × A) | fst(x) ∈ snd(x) } <=> x ∈ (A × A) /\ (fst(x) ∈ snd(x))) by Comprehension.apply
+    thenHave(x ∈ membershipRelation(A) <=> x ∈ (A × A) /\ (fst(x) ∈ snd(x))) by Substitute(membershipRelation.definition)
+    thenHave(x ∈ membershipRelation(A) ==> x ∈ (B × B) /\ (fst(x) ∈ snd(x))) by Tautology.fromLastStep(
+      CartesianProduct.monotonic of (B := A, C := B, D := B),
+      Subset.membership of (x := (A × A), y := (B × B), z := x),
+    )
+    thenHave(x ∈ membershipRelation(A) ==> x ∈ { x ∈ (B × B) | fst(x) ∈ snd(x) }) by Substitute(Comprehension.membership of (A := (B × B), φ := λ(x, fst(x) ∈ snd(x))))
+    thenHave(x ∈ membershipRelation(A) ==> x ∈ membershipRelation(B)) by Substitute(membershipRelation.definition of (A := B))
+    thenHave(∀(x, x ∈ membershipRelation(A) ==> x ∈ membershipRelation(B))) by Generalize
+    thenHave(thesis) by Substitute(⊆.definition)
   }
 }
