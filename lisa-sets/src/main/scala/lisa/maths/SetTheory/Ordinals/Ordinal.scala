@@ -233,10 +233,10 @@ object Ordinal extends lisa.Main {
   }
 
   /**
-   * Theorem --- If `β ∈ α` and `α` is an ordinal then `initialSegment(β)(α)(membershipRelation(α)) = β`.
+   * Theorem --- If `β ∈ α` and `α` is an ordinal then `predecessors(β)(α)(membershipRelation(α)) = β`.
    */
   val ordinalInitialSegment = Theorem(
-    (ordinal(α), β ∈ α) |- initialSegment(β)(α)(membershipRelation(α)) === β
+    (ordinal(α), β ∈ α) |- predecessors(β)(α)(membershipRelation(α)) === β
   ) {
     sorry
   }

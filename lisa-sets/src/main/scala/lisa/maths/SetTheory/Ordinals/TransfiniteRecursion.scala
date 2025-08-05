@@ -42,18 +42,18 @@ object TransfiniteRecursion extends lisa.Main {
     assume(ordinal(α))
 
     // Since `∈_α` is a well-ordering on `α`, we apply well-ordered recursion.
-    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α))))))) by Tautology.from(
+    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))))) by Tautology.from(
       ordinal.definition,
       WellOrderedRecursion.recursionExistence of (A := α, < := membershipRelation(α))
     )
 
-    // It remains to replace `initialSegment(β, α, <)` with `β` under the binders.
-    have(G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α))) |- (G(β) === F(G ↾ β))) by Congruence.from(Ordinal.ordinalInitialSegment)
-    thenHave(β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α)))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by Tautology
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by LeftForall
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- ∀(β, β ∈ α ==> (G(β) === F(G ↾ β)))) by RightForall
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by RightExists
-    thenHave(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ initialSegment(β)(α)(membershipRelation(α)))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by LeftExists
+    // It remains to replace `predecessors(β, α, <)` with `β` under the binders.
+    have(G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))) |- (G(β) === F(G ↾ β))) by Congruence.from(Ordinal.ordinalInitialSegment)
+    thenHave(β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α)))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by Tautology
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by LeftForall
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- ∀(β, β ∈ α ==> (G(β) === F(G ↾ β)))) by RightForall
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by RightExists
+    thenHave(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α)))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by LeftExists
 
     have(thesis) by Cut(wellOrderedRecursion, lastStep)
   }
