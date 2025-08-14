@@ -155,8 +155,8 @@ trait ProofsHelpers {
     val (vars, body) = leadingVarsAndBody(e)
     if vars.size == e.sort.depth then DirectDefinition[S](name.value, line.value, file.value)(e, vars).cst
     else
-      val maxV: Int = vars.maxBy(_.id.no).id.no
-      val maxB: Int = body.freeVars.maxBy(_.id.no).id.no
+      val maxV: Int = vars.map(_.id.no).maxOption.getOrElse(0)
+      val maxB: Int = body.freeVars.map(_.id.no).maxOption.getOrElse(0)
       var no = List(maxV, maxB).max
       val newvars = K.flatTypeParameters(body.sort).map(i => { no += 1; Variable.unsafe(K.Identifier("x", no), i) })
       val totvars = vars ++ newvars
