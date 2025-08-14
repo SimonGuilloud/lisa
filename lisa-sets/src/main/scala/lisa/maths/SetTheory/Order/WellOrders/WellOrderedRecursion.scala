@@ -19,9 +19,9 @@ import InitialSegment.*
   * Given a well-order `(A, <)`, one can build a function `G` by recursion over
   * `A` that satisfies the following formula:
   *
-  *   `G(x) = F(G↾initialSegment(x, A, <))` for all `x ∈ A`
+  *   `G(x) = F(x, G↾initialSegment(x, A, <))` for all `x ∈ A`
   *
-  * where `F : V -> V` is a class function, and `initialSegment(x, A, <) = {y ∈ A | y < x}`.
+  * where `F : V × V -> V` is a class function, and `initialSegment(x, A, <) = {y ∈ A | y < x}`.
   */
 object WellOrderedRecursion extends lisa.Main {
 
@@ -927,7 +927,7 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-   * Well-ordered recursion --- Given `F : V -> V` and a well-order `(A, <)`
+   * Well-ordered recursion --- Given `F : V × V -> V` and a well-order `(A, <)`
    * there exists a function `G : A -> V` such that
    *
    *   `∀x ∈ A. G(x) = F(x, G↾A_<x)`
