@@ -240,7 +240,7 @@ object Ordinal extends lisa.Main {
 
         // Since `∈_β ⊆ ∈_α`, x is also `∈_β`-minimal
         have(minimal(x)(B)(membershipRelation(α)) ==> minimal(x)(B)(membershipRelation(β))) by Tautology.from(
-          Order.Theorems.minimalElementSubset of (a := x, R := membershipRelation(α), Q := membershipRelation(β), A := B),
+          Order.BasicTheorems.minimalElementSubset of (a := x, R := membershipRelation(α), Q := membershipRelation(β), A := B),
           MembershipRelation.monotonic of (A := β, B := α),
           `β ⊆ α`
         )

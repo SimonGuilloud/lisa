@@ -11,7 +11,7 @@ import Extrema.*
 /**
  * Properties and theorems about orders.
  */
-object Theorems extends lisa.Main {
+object BasicTheorems extends lisa.Main {
 
   private val Q = variable[Ind]
 
