@@ -175,24 +175,6 @@ object Union extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `y ⊆ A` for all `y ∈ x` then `⋃x ⊆ A`.
-    *
-    * Generalization of [[monotonic]].
-    */
-  val unaryMonotonic = Theorem(
-    ∀(y ∈ x, y ⊆ A) |- ⋃(x) ⊆ A
-  ) {
-    assume(∀(y ∈ x, y ⊆ A))
-    thenHave(y ∈ x |- y ⊆ A) by InstantiateForall(y)
-    thenHave((y ∈ x) /\ (z ∈ y) |- z ∈ A) by Tautology.fromLastStep(Subset.membership of (x := y, y := A))
-    thenHave(∃(y ∈ x, z ∈ y) |- z ∈ A) by LeftExists
-    thenHave(z ∈ ⋃(x) |- z ∈ A) by Substitute(⋃.definition)
-    thenHave(z ∈ ⋃(x) ==> (z ∈ A)) by Restate
-    thenHave(∀(z, z ∈ ⋃(x) ==> (z ∈ A))) by RightForall
-    thenHave(thesis) by Substitute(⊆.definition of (x := ⋃(x), y := A))
-  }
-
-  /**
    * Theorem --- The union preserves the subset relation on the left.
    *
    *   `x ⊆ z /\ y ⊆ z ==> x ∪ y ⊆ z`

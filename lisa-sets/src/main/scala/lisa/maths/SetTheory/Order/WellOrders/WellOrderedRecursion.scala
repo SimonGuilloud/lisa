@@ -739,7 +739,7 @@ object WellOrderedRecursion extends lisa.Main {
         thenHave(d ∈ D |- d ⊆ initialSegment(x)(A)(<)) by Substitute(`d ∈ D`)
         thenHave(d ∈ D ==> (d ⊆ initialSegment(x)(A)(<))) by Restate
         thenHave(∀(d ∈ D, d ⊆ initialSegment(x)(A)(<))) by RightForall
-        thenHave(thesis) by Tautology.fromLastStep(Union.unaryMonotonic of (A := initialSegment(x)(A)(<), x := D))
+        thenHave(thesis) by Tautology.fromLastStep(Union.leftUnaryUnionSubset of (z := initialSegment(x)(A)(<), x := D))
       }
 
       val `<==` = have(initialSegment(x)(A)(<) ⊆ ⋃(D)) subproof {
