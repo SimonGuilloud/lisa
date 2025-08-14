@@ -18,7 +18,26 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
    * Individuals in set theory represent sets.
    */
   type Set = Ind
+
+  /**
+   * A class is nothing more than a first-order formula with a free
+   * variable.
    */
+  type Class = Set >>: Prop
+
+  /**
+   * A class-function is a binary predicate `F` that is functional: for any `x`,
+   * there is at most one `y` such that `F(x, y)` holds.
+   *
+   * Equivalently, we can use meta-functions to represent class-functions, since
+   * from a meta-function `f` one can define the predicate `F(x, y) := f(x) = y`,
+   * and conversely from a class-function `F`, one defines the meta-function
+   * `f := λ(x, ε(y, F(x, y)))`.
+   *
+   * Meta-functions are more convenient to use that functional predicates, and hence
+   * will be used instead.
+   */
+  type ClassFunction = Set >>: Set
 
   // Predicates
 
@@ -35,11 +54,6 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
         case _ => None
   }
 
-  extension (x: set) {
-    inline infix def ∈(y: set): Expr[Prop] = App(App(SetTheoryLibrary.∈, x), y)
-    inline infix def ∉(y: set): Expr[Prop] = !(x ∈ y)
-  }
-
   /**
    * The symbol for the subset predicate.
    */
@@ -53,9 +67,130 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
         case _ => None
   }
 
-  extension (x: set) {
-    inline infix def ⊆(y: set): Expr[Prop] = App(App(SetTheoryLibrary.⊆, x), y)
+  /**
+    * For a set `x`, we define the following notations:
+    * - `x ∈ y` for `x` is a member of `y`
+    * - `x ∉ y` for `x` is not a member of `y`
+    * - `x ⊆ y` for `x` is a subsetx of `y`
+    *
+    * Additionaly, if `C` is a class, we define:
+    * - `x ∈ C` to mean `C(x)`
+    * - `x ∉ C` to mean `¬C(x)`
+    * - `x ⊆ C` to mean `∀y ∈ x. C(y)` (for some `y ≠ x`)
+    * - `x = C` to mean `∀y. y ∈ x <=> C(y)`
+    * - `x ≠ C` to mean `¬(x = C)`
+    */
+  extension (x: Expr[Set]) {
+    /** `x ∈ y` means that `x` is a member of `y`. */
+    infix def ∈(y: Expr[Set]): Expr[Prop] = App(App(SetTheoryLibrary.∈, x), y)
+
+    /** `x ∉ y` means that `x` is not a member of `y`. */
+    infix def ∉(y: Expr[Set]): Expr[Prop] = ¬(x ∈ y)
+
+    /** `x ⊆ y` means that `x` is a subset of `y`. */
+    infix def ⊆(y: Expr[Set]): Expr[Prop] = App(App(SetTheoryLibrary.⊆, x), y)
+
+    /** `x ∈ C` abbreviates `C(x)`, for `C` a class. */
+    @targetName("set_∈_class")
+    infix def ∈(C: Expr[Class]): Expr[Prop] = C(x)
+
+    /** `x ∉ C` abbreviates `¬C(x)`, for `C` a class. */
+    @targetName("set_∉_class")
+    infix def ∉(C: Expr[Class]): Expr[Prop] = ¬(C(x))
+
+    /** `x ⊆ C` abbreviates `∀y ∈ x. C(y)` for some variable `y ≠ x`. */
+    @targetName("set_⊆_class")
+    infix def ⊆(C: Expr[Class]): Expr[Prop] =
+      val y = variable[Ind].freshRename(x.freeTermVars)
+      ∀(y ∈ x, C(y))
+
+    /** `x = y` is the regular equality between sets. We redefine it here
+      * for overload resolution to work properly.
+      */
+    infix def ===(y: Expr[Set]): Expr[Prop] = equality(x)(y)
+
+    /** `x ≠ y` is the regular inequality between sets. We redefine it here
+      * for overload resolution to work properly.
+      */
+    infix def ≠(y: Expr[Set]): Expr[Prop] = ¬(equality(x)(y))
+
+    /** `x = C` abbreviates `∀y. y ∈ C <=> C(y)` for some variable `y ≠ x`. */
+    @targetName("set_=_class")
+    infix def ===(C: Expr[Class]): Expr[Prop] =
+      val y = variable[Ind].freshRename(x.freeTermVars)
+      ∀(y, y ∈ x <=> C(y))
+
+    /** `x ≠ C` abbreviates `¬(x = C)`. */
+    @targetName("set_≠_class")
+    infix def ≠(C: Expr[Class]): Expr[Prop] = ¬(x === C)
   }
+
+  /**
+    * For a class `C`, we define the following notations:
+    * - `C ⊆ x` to mean `∀y. C(y) ==> y ∈ x`
+    * - `C ⊆ D` to mean `∀x. C(x) ==> D(x)`
+    * - `C = x` to mean `∀y. y ∈ x <=> C(y)`
+    * - `C = D` to mean `∀x. C(x) <=> D(x)`
+    */
+  extension (C: Expr[Class]) {
+    /** `C ⊆ x` abbreviates `∀y. C(y) ==> y ∈ x` */
+    @targetName("class_⊆_set")
+    infix def ⊆(x: Expr[Set]): Expr[Prop] =
+      val y = variable[Ind].freshRename(x.freeTermVars)
+      ∀(y, C(y) ==> y ∈ x)
+
+    /** `C ⊆ D` abbreviates `∀x. C(x) ==> D(x)` */
+    @targetName("class_⊆_class")
+    infix def ⊆(D: Expr[Class]): Expr[Prop] = ∀(x, C(x) ==> D(x))
+
+    /** `C = x` abbreviates `∀y. y ∈ x <=> C(y)` */
+    @targetName("class_=_set")
+    infix def ===(y: Expr[Set]): Expr[Prop] = (y === C)
+
+    /** `C ≠ x` abbreviates `¬(C = x)` */
+    @targetName("class_≠_set")
+    infix def ≠(y: Expr[Set]): Expr[Prop] = ¬(y === C)
+
+    /** `C = D` abbreviates `∀x. C(x) <=> D(x)` */
+    @targetName("class_=_class")
+    infix def ===(D: Expr[Class]): Expr[Prop] = ∀(x, C(x) <=> D(x))
+
+    /** `C ≠ D` abbreviates `¬(C = D)` */
+    @targetName("class_≠_class")
+    infix def ≠(D: Expr[Class]): Expr[Prop] = ¬(C === D)
+  }
+
+  /**
+    * Bounded universal quantifier: `∀x ∈ S. φ` abbreviates `∀x. x ∈ S ==> φ`
+    */
+  def ∀(e: Variable[Set] | Expr[Prop], φ: Expr[Prop]): Expr[Prop] =
+    e match {
+      // Unbounded quantifier
+      case x: Variable[Set] => forall(x, φ)
+
+      // Bounded quantifiers
+      case (x: Variable[Set]) ∈ s => forall(x, x ∈ s ==> φ)
+      case (x: Variable[Set]) ⊆ s => forall(x, x ⊆ s ==> φ)
+      case App(p: Expr[Set >>: Prop], x: Variable[Set]) => forall(x, p(x) ==> φ)
+
+      case _ => throw new IllegalArgumentException("Ill-formed bounded quantifier.")
+    }
+
+  /**
+    * Bounded existential quantifier: `∃x ∈ S. φ` abbreviates `∃x. x ∈ S /\ φ`
+    */
+  def ∃(e: Variable[Set] | Expr[Prop], φ: Expr[Prop]): Expr[Prop] =
+    e match {
+      // Unbounded quantifier
+      case x: Variable[Set] => exists(x, φ)
+
+      // Bounded quantifiers
+      case (x: Variable[Set]) ∈ s => exists(x, x ∈ s /\ φ)
+      case (x: Variable[Set]) ⊆ s => exists(x, x ⊆ s /\ φ)
+      case App(p: Expr[Set >>: Prop], x: Variable[Set]) => exists(x, p(x) /\ φ)
+
+      case _ => throw new IllegalArgumentException("Ill-formed bounded quantifier.")
+    }
 
   /**
    * The symbol for the equicardinality predicate. Needed for Tarski's axiom.
@@ -220,7 +355,7 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
    *
    * `() |- x ≠ ∅ ==> ∃ y ∈ x. ∀ z. z ∈ x ⇒ z ∉ y`
    */
-  final val axiomOfFoundation: AXIOM = Axiom(x ≠ ∅ ==> ∃(y, (y ∈ x) /\ ∀(z, z ∈ x ==> z ∉ y)))
+  final val axiomOfFoundation: AXIOM = Axiom(x ≠ ∅ ==> ∃(y ∈ x, ∀(z, z ∈ x ==> z ∉ y)))
 
   // ZF
   /////////
@@ -299,7 +434,7 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
   // Notations //
   ///////////////
 
-  def unorderedPair(x: set, y: set): set = App(App(unorderedPair, x), y)
+  def unorderedPair(x: Expr[Set], y: Expr[Set]): Expr[Set] = App(App(unorderedPair, x), y)
 
   /*
   private val db = HintDatabase.empty

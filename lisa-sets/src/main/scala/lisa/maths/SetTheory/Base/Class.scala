@@ -12,27 +12,6 @@ import lisa.maths.Quantifiers.∃!
 object Class extends lisa.Main {
 
   private val x, y, z = variable[Ind]
-
-  /**
-   * A class is nothing more than a first-order formula with a free
-   * variable.
-   */
-  type Class = Ind >>: Prop
-
-  /**
-   * A class-function is a binary predicate `F` that is functional: for any `x`,
-   * there is at most one `y` such that `F(x, y)` holds.
-   *
-   * Equivalently, we can use meta-functions to represent class-functions, since
-   * from a meta-function `f` one can define the predicate `F(x, y) := f(x) = y`,
-   * and conversely from a class-function `F`, one defines the meta-function
-   * `f := λ(x, ε(y, F(x, y)))`.
-   *
-   * Meta-functions are more convenient to use that functional predicates, and hence
-   * will be used instead.
-   */
-  type ClassFunction = Ind >>: Ind
-
   private val C = variable[Class]
 
   /**
