@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 /**
  * A singleton is a set of the form `{x}` for some set `x`. The sole element of
  * a singleton `{x}` is `x`.
@@ -9,9 +11,6 @@ package lisa.maths.SetTheory.Base
  * @see [[UnorderedPair]]
  */
 object Singleton extends lisa.Main {
-
-  private val x, y, z = variable[Ind]
-  private val a, b, c, d = variable[Ind]
 
   /**
    * Singleton Set --- `{x}`. Shorthand for `{x, x}`.

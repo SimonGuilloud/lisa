@@ -19,13 +19,13 @@ import MembershipRelation.*
  */
 object TransfiniteRecursion extends lisa.Main {
 
-  private val α, β = variable[Ind]
-  private val A, < = variable[Ind]
-  private val F = variable[Ind >>: Ind]
-  private val G = variable[Ind]
+  private val α, β = variable[Set]
+  private val A, < = variable[Set]
+  private val F = variable[Set >>: Set >>: Set]
+  private val G = variable[Set]
 
-  extension (f: set) {
-    private inline def apply(x: set): set = app(f)(x)
+  extension (f: Expr[Set]) {
+    private inline def apply(x: Expr[Set]): Expr[Set] = app(f)(x)
   }
 
   /**
@@ -37,23 +37,23 @@ object TransfiniteRecursion extends lisa.Main {
    * We obtain the desired class-function `G` by setting `G(β) = g_α(β)` for any `α > β`.
    */
   val transfiniteRecursion = Theorem(
-    ordinal(α) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))
+    ordinal(α) |- ∃(G, ∀(β ∈ α, G(β) === F(β)(G ↾ β)))
   ) {
     assume(ordinal(α))
 
-    // Since `∈_α` is a well-ordering on `α`, we apply well-ordered recursion.
-    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))))) by Tautology.from(
+    // Since `∈_α` is a well-order on `α`, we apply well-ordered recursion.
+    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))))) by Tautology.from(
       ordinal.definition,
-      WellOrderedRecursion.recursionExistence of (A := α, < := membershipRelation(α))
+      WellOrderedRecursion.existence of (A := α, < := membershipRelation(α))
     )
 
-    // It remains to replace `predecessors(β, α, <)` with `β` under the binders.
-    have(G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))) |- (G(β) === F(G ↾ β))) by Congruence.from(Ordinal.ordinalInitialSegment)
-    thenHave(β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α)))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by Tautology
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- β ∈ α ==> (G(β) === F(G ↾ β))) by LeftForall
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- ∀(β, β ∈ α ==> (G(β) === F(G ↾ β)))) by RightForall
-    thenHave(∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by RightExists
-    thenHave(∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ predecessors(β)(α)(membershipRelation(α)))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β))))) by LeftExists
+    // It remains to replace `initialSegment(β, α, <)` with `β` under the binders.
+    have(G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))) |- (G(β) === F(β)(G ↾ β))) by Congruence.from(Ordinal.ordinalInitialSegment)
+    thenHave(β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α)))) |- β ∈ α ==> (G(β) === F(β)(G ↾ β))) by Tautology
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- β ∈ α ==> (G(β) === F(β)(G ↾ β))) by LeftForall
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ β)))) by RightForall
+    thenHave(∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ β))))) by RightExists
+    thenHave(∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α)))))) |- ∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ β))))) by LeftExists
 
     have(thesis) by Cut(wellOrderedRecursion, lastStep)
   }
@@ -61,5 +61,5 @@ object TransfiniteRecursion extends lisa.Main {
   /**
    * Definition --- Returns the function obtained by transfinite recursion of `F` until `α`.
    */
-  val transfiniteRecursionFunction = DEF(λ(F, λ(α, ε(G, ∀(β, β ∈ α ==> (G(β) === F(G ↾ β)))))))
+  val transfiniteRecursionFunction = DEF(λ(F, λ(α, ε(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ β)))))))
 }

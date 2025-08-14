@@ -1,4 +1,5 @@
-package lisa.maths.SetTheory.Relations.Examples
+package lisa.maths.SetTheory.Relations
+package Examples
 
 import lisa.maths.SetTheory.Base.Predef.{*, given}
 import lisa.maths.SetTheory.Relations.Predef.*
@@ -11,7 +12,7 @@ object EmptyRelation extends lisa.Main {
 
   private val x, y, z = variable[Ind]
   private val a, b = variable[Ind]
-  private val R = variable[Ind]
+  private val R, ~ = variable[Ind]
   private val X = variable[Ind]
 
   /**
@@ -30,30 +31,30 @@ object EmptyRelation extends lisa.Main {
   /**
    * Theorem --- The empty relation has an empty domain.
    */
-  val emptyRelationDomain = Theorem(
+  val emptyDomain = Theorem(
     dom(∅) === ∅
   ) {
-    have(x ∈ dom(∅) <=> (x ∈ ⋃(⋃(∅))) /\ (∃(y, (x, y) ∈ ∅))) by Congruence.from(
-      dom.definition of (R := ∅),
-      Comprehension.membership of (y := ⋃(⋃(∅)), φ := λ(x, ∃(y, (x, y) ∈ ∅)))
+    have(z ∈ { fst(z) | z ∈ ∅ } <=> ∃(x ∈ ∅, fst(x) === z)) by Replacement.apply
+    thenHave(z ∈ dom(∅) <=> ∃(x ∈ ∅, fst(x) === z)) by Substitute(dom.definition of (R := ∅))
+    thenHave(z ∈ dom(∅) <=> z ∈ ∅) by Tautology.fromLastStep(
+      EmptySet.existentialQuantifier of (P := λ(x, fst(x) === z)),
+      EmptySet.definition of (x := z),
     )
-    thenHave(x ∈ dom(∅) <=> (x ∈ ⋃(∅) /\ (∃(y, (x, y) ∈ ∅)))) by Substitute(Union.empty)
-    thenHave(x ∈ dom(∅) <=> (x ∈ ∅ /\ (∃(y, (x, y) ∈ ∅)))) by Substitute(Union.empty)
-    thenHave(x ∈ dom(∅) <=> x ∈ ∅) by Tautology.fromLastStep(EmptySet.definition)
     thenHave(thesis) by Extensionality
   }
 
   /**
    * Theorem --- The empty relation has an empty range.
    */
-  val emptyRelationRange = Theorem(
+  val emptyRange = Theorem(
     range(∅) === ∅
   ) {
-    have(y ∈ { y ∈ ⋃(⋃(∅)) | ∃(x, (x, y) ∈ ∅) } <=> (y ∈ ⋃(⋃(∅))) /\ (∃(x, (x, y) ∈ ∅))) by Comprehension.apply
-    thenHave(y ∈ range(∅) <=> (y ∈ ⋃(⋃(∅))) /\ (∃(x, (x, y) ∈ ∅))) by Substitute(range.definition of (R := ∅))
-    thenHave(y ∈ range(∅) <=> (y ∈ ⋃(∅) /\ (∃(x, (x, y) ∈ ∅)))) by Substitute(Union.empty)
-    thenHave(y ∈ range(∅) <=> (y ∈ ∅ /\ (∃(x, (x, y) ∈ ∅)))) by Substitute(Union.empty)
-    thenHave(y ∈ range(∅) <=> y ∈ ∅) by Tautology.fromLastStep(EmptySet.definition of (x := y))
+    have(z ∈ { snd(z) | z ∈ ∅ } <=> ∃(x ∈ ∅, snd(x) === z)) by Replacement.apply
+    thenHave(z ∈ range(∅) <=> ∃(x ∈ ∅, snd(x) === z)) by Substitute(range.definition of (R := ∅))
+    thenHave(z ∈ range(∅) <=> z ∈ ∅) by Tautology.fromLastStep(
+      EmptySet.existentialQuantifier of (P := λ(x, snd(x) === z)),
+      EmptySet.definition of (x := z),
+    )
     thenHave(thesis) by Extensionality
   }
 
@@ -65,58 +66,45 @@ object EmptyRelation extends lisa.Main {
   ) {
     have(x ∈ ∅ ==> (x, x) ∈ ∅) by Tautology.from(EmptySet.definition)
     thenHave(∀(x, x ∈ ∅ ==> (x, x) ∈ ∅)) by RightForall
-    thenHave(thesis) by Tautology.fromLastStep(
-      reflexive.definition of (R := ∅, X := ∅),
-      emptyRelation of (X := ∅)
-    )
+    thenHave(thesis) by Substitute(reflexive.definition of (R := ∅, X := ∅))
   }
 
   /**
    * Theorem --- The empty relation is symmetric.
    */
   val emptyRelationSymmetric = Theorem(
-    symmetric(∅)
+    symmetric(∅)(X)
   ) {
-    have((x, y) ∈ ∅ <=> (y, x) ∈ ∅) by Tautology.from(
+    have((x ∈ X) /\ (y ∈ X) ==> ((x, y) ∈ ∅ <=> (y, x) ∈ ∅)) by Tautology.from(
       EmptySet.definition of (x := (x, y)),
       EmptySet.definition of (x := (y, x))
     )
-    thenHave(∀(x, ∀(y, (x, y) ∈ ∅ <=> (y, x) ∈ ∅))) by Generalize
-    thenHave(thesis) by Tautology.fromLastStep(
-      symmetric.definition of (R := ∅),
-      emptyRelation,
-      Properties.relationOnIsRelation of (R := ∅)
-    )
+    thenHave(∀(x, ∀(y, (x ∈ X) /\ (y ∈ X) ==> ((x, y) ∈ ∅ <=> (y, x) ∈ ∅)))) by Generalize
+    thenHave(∀(x ∈ X, ∀(y ∈ X, ((x, y) ∈ ∅ <=> (y, x) ∈ ∅)))) by Tableau
+    thenHave(thesis) by Substitute(symmetric.definition of (R := ∅))
   }
 
   /**
    * Theorem --- The empty relation is irreflexive.
    */
   val emptyRelationIrreflexive = Theorem(
-    irreflexive(∅)
+    irreflexive(∅)(X)
   ) {
-    have((x, x) ∉ ∅) by Tautology.from(EmptySet.definition of (x := (x, x)))
-    thenHave(∀(x, (x, x) ∉ ∅)) by RightForall
-    thenHave(thesis) by Tautology.fromLastStep(
-      irreflexive.definition of (R := ∅),
-      emptyRelation,
-      Properties.relationOnIsRelation of (R := ∅)
-    )
+    have(x ∈ X ==> (x, x) ∉ ∅) by Tautology.from(EmptySet.definition of (x := (x, x)))
+    thenHave(∀(x, x ∈ X ==> (x, x) ∉ ∅)) by RightForall
+    thenHave(thesis) by Substitute(irreflexive.definition of (R := ∅))
   }
 
   /**
    * Theorem --- The empty relation is transitive.
    */
   val emptyRelationTransitive = Theorem(
-    transitive(∅)
+    transitive(∅)(X)
   ) {
-    have(((x, y) ∈ ∅) /\ ((y, z) ∈ ∅) ==> (x, z) ∈ ∅) by Tautology.from(EmptySet.definition of (x := (x, y)))
-    thenHave(∀(x, ∀(y, ∀(z, ((x, y) ∈ ∅) /\ ((y, z) ∈ ∅) ==> (x, z) ∈ ∅)))) by Generalize
-    thenHave(thesis) by Tautology.fromLastStep(
-      transitive.definition of (R := ∅),
-      emptyRelation,
-      Properties.relationOnIsRelation of (R := ∅)
-    )
+    have((x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ ((x, y) ∈ ∅) /\ ((y, z) ∈ ∅) ==> (x, z) ∈ ∅) by Tautology.from(EmptySet.definition of (x := (x, y)))
+    thenHave(∀(x, ∀(y, ∀(z, (x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ ((x, y) ∈ ∅) /\ ((y, z) ∈ ∅) ==> (x, z) ∈ ∅)))) by Generalize
+    thenHave(∀(x ∈ X, ∀(y ∈ X, ∀(z ∈ X, ((x, y) ∈ ∅) /\ ((y, z) ∈ ∅) ==> (x, z) ∈ ∅)))) by Tableau
+    thenHave(thesis) by Substitute(transitive.definition of (R := ∅))
   }
 
   /**
@@ -126,10 +114,11 @@ object EmptyRelation extends lisa.Main {
     equivalence(∅)(∅)
   ) {
     have(thesis) by Tautology.from(
-      equivalence.definition of (R := ∅, X := ∅),
+      equivalence.definition of (`~` := ∅, X := ∅),
+      emptyRelation of (X := ∅),
       emptyRelationReflexive,
-      emptyRelationSymmetric,
-      emptyRelationTransitive
+      emptyRelationSymmetric of (X := ∅),
+      emptyRelationTransitive of (X := ∅)
     )
   }
 
@@ -137,14 +126,14 @@ object EmptyRelation extends lisa.Main {
    * Theorem --- The empty relation is anti-symmetric.
    */
   val emptyRelationAntisymmetric = Theorem(
-    antisymmetric(∅)
+    antisymmetric(∅)(X)
   ) {
     have(((x, y) ∈ ∅) /\ ((y, x) ∈ ∅) ==> (x === y)) by Tautology.from(EmptySet.definition of (x := (x, y)))
     thenHave(∀(x, ∀(y, ((x, y) ∈ ∅) /\ ((y, x) ∈ ∅) ==> (x === y)))) by Generalize
     thenHave(thesis) by Tautology.fromLastStep(
       antisymmetric.definition of (R := ∅),
       emptyRelation,
-      Properties.relationOnIsRelation of (R := ∅)
+      BasicTheorems.relationOnIsRelation of (R := ∅)
     )
   }
 
@@ -152,14 +141,14 @@ object EmptyRelation extends lisa.Main {
    * Theorem --- The empty relation is asymmetric.
    */
   val emptyRelationAsymmetric = Theorem(
-    asymmetric(∅)
+    asymmetric(∅)(X)
   ) {
     have((x, y) ∈ ∅ ==> (y, x) ∉ ∅) by Tautology.from(EmptySet.definition of (x := (x, y)))
     thenHave(∀(x, ∀(y, (x, y) ∈ ∅ ==> (y, x) ∉ ∅))) by Generalize
     thenHave(thesis) by Tautology.fromLastStep(
       asymmetric.definition of (R := ∅),
       emptyRelation,
-      Properties.relationOnIsRelation of (R := ∅)
+      BasicTheorems.relationOnIsRelation of (R := ∅)
     )
   }
 
@@ -171,9 +160,7 @@ object EmptyRelation extends lisa.Main {
   ) {
     have((x ∈ ∅) /\ (y ∈ ∅) ==> ((x, y) ∈ ∅) \/ ((y, x) ∈ ∅) \/ (x === y)) by Tautology.from(EmptySet.definition)
     thenHave(∀(x, ∀(y, (x ∈ ∅) /\ (y ∈ ∅) ==> ((x, y) ∈ ∅) \/ ((y, x) ∈ ∅) \/ (x === y)))) by Generalize
-    thenHave(thesis) by Tautology.fromLastStep(
-      total.definition of (R := ∅, X := ∅),
-      emptyRelation of (X := ∅)
-    )
+    thenHave(∀(x ∈ ∅, ∀(y ∈ ∅, ((x, y) ∈ ∅) \/ ((y, x) ∈ ∅) \/ (x === y)))) by Tableau
+    thenHave(thesis) by Substitute(total.definition of (R := ∅, X := ∅))
   }
 }

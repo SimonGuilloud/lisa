@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 /**
  * The empty set, denoted `∅`, is the set that contains no elements.
  *
@@ -9,8 +11,6 @@ package lisa.maths.SetTheory.Base
  * To simplify matters, we assume its existence through the [[emptySetAxiom]].
  */
 object EmptySet extends lisa.Main {
-
-  private val x, y = variable[Ind]
 
   /**
    * Definition of the empty set:
@@ -59,4 +59,24 @@ object EmptySet extends lisa.Main {
     have(thesis) by Restate.from(setWithNoElementsIsEmpty)
   }
 
+  /**
+    * Universal quantifier elimination --- For any predicate `P`, we have
+    * `∀x ∈ ∅. P(x)`, i.e. `P` is vacuously true on the empty set.
+    */
+  val universalQuantifier = Theorem(
+    ∀(x ∈ ∅, P(x))
+  ) {
+    have(x ∈ ∅ ==> P(x)) by Tautology.from(EmptySet.definition)
+    thenHave(thesis) by RightForall
+  }
+
+  /**
+    * Existential quantifier elimination --- For any predicate `P`,
+    * `∃x ∈ ∅. P(x)` does not hold, since `∅` is empty.
+    */
+  val existentialQuantifier = Theorem(
+    ¬(∃(x ∈ ∅, P(x)))
+  ) {
+    have(thesis) by Restate.from(universalQuantifier of (P := λ(x, ¬(P(x)))))
+  }
 }

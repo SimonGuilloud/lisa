@@ -8,6 +8,7 @@ package lisa.maths.SetTheory.Base
  * only fundamental theorems should be exported.
  */
 object Predef {
+  export lisa.maths.SetTheory.Base.Symbols.*
   export lisa.maths.SetTheory.Base.Extensionality
   export lisa.maths.SetTheory.Base.EmptySet
   export lisa.maths.SetTheory.Base.UnorderedPair
@@ -18,7 +19,7 @@ object Predef {
   export lisa.maths.SetTheory.Base.Singleton
   export lisa.maths.SetTheory.Base.Singleton.{singleton}
   export lisa.maths.SetTheory.Base.Class
-  export lisa.maths.SetTheory.Base.Class.{Class, ClassFunction, V, proper}
+  export lisa.maths.SetTheory.Base.Class.{V, proper}
   export lisa.maths.SetTheory.Base.Subset
   export lisa.maths.SetTheory.Base.Subset.{⊂, doubleInclusion}
   export lisa.maths.SetTheory.Base.PowerSet
@@ -32,5 +33,5 @@ object Predef {
   export lisa.maths.SetTheory.Base.Pair.{pair, fst, snd, given}
   export lisa.maths.SetTheory.Base.CartesianProduct
   export lisa.maths.SetTheory.Base.CartesianProduct.{×}
-  export lisa.maths.SetTheory.Base.WellFounded
+  export lisa.maths.SetTheory.Base.FoundationAxiom
 }

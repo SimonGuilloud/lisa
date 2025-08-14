@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 /**
  * This file defines the set-builder notation by using the (restricted) comprehension
  * schema.
@@ -10,8 +12,6 @@ package lisa.maths.SetTheory.Base
  * }}}
  */
 object Comprehension extends lisa.Main {
-
-  private val x, y, z = variable[Ind]
 
   /**
    * Restricted Set comprehension --- Given any set `y` and predicate `φ`,
@@ -24,7 +24,7 @@ object Comprehension extends lisa.Main {
    */
   private val setComprehension = DEF(λ(y, λ(φ, ε(z, ∀(x, x ∈ z <=> x ∈ y /\ φ(x)))))).printAs(args => {
     val y = args(0)
-    val λ(x, φ) = (args(1).asInstanceOf[Expr[Ind >>: Prop]]: @unchecked) // φ is always of this form when using the notation
+    val λ(x, φ) = (args(1).asInstanceOf[Expr[Set >>: Prop]]: @unchecked) // φ is always of this form when using the notation
     s"{$x ∈ $y | $φ}"
   })
 
@@ -37,15 +37,15 @@ object Comprehension extends lisa.Main {
      *
      * @param φ Expression that may contain `x` as a free variable.
      */
-    infix def |(φ: Expr[Prop]): Expr[Ind] =
+    infix def |(φ: Expr[Prop]): Expr[Set] =
       e match {
-        case (x: Variable[Ind]) ∈ y =>
+        case (x: Variable[Set]) ∈ y =>
           /**
            * {x ∈ y | φ(x)}
            */
           setComprehension(y)(λ(x, φ))
 
-        case (x: Variable[Ind]) ⊆ y =>
+        case (x: Variable[Set]) ⊆ y =>
           /**
            * {x ⊆ y | φ(x)}
            */

@@ -1,7 +1,8 @@
-package lisa.maths.SetTheory.Relations.Operations
+package lisa.maths.SetTheory.Relations
+package Operations
 
 import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Definitions.*
+import lisa.maths.SetTheory.Relations.Predef.*
 
 /**
  * Given a set `S` of relations, the union `⋃S` is a relation

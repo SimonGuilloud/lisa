@@ -10,13 +10,10 @@ import lisa.maths.SetTheory.Functions.Predef.*
  */
 object OrderIsomorphism extends lisa.Main {
 
-  private val x, y = variable[Ind]
-  private val f = variable[Ind]
-  private val A, B = variable[Ind]
   private val `<A`, `<B` = variable[Ind]
 
-  extension (f: set) {
-    private def apply(x: set): set = app(f)(x)
+  extension (f: Expr[Set]) {
+    private def apply(x: Expr[Set]): Expr[Set] = app(f)(x)
   }
 
   /**
@@ -41,12 +38,12 @@ object OrderIsomorphism extends lisa.Main {
     s"($A, ${`<A`}) ≈ ($B, ${`<B`})"
   })
 
-  extension (orderA: (set, set)) {
+  extension (orderA: (Expr[Set], Expr[Set])) {
 
     /**
      * Notation `(A, <A) ≈ (B, <B)`.
      */
-    infix def ≈(orderB: (set, set)): Expr[Prop] =
+    inline infix def ≈(orderB: (Expr[Set], Expr[Set])): Expr[Prop] =
       isomorphic(orderA._1)(orderA._2)(orderB._1)(orderB._2)
   }
 }

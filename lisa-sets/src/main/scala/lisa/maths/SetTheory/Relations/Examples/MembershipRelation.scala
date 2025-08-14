@@ -57,19 +57,15 @@ object MembershipRelation extends lisa.Main {
   /**
    * Theorem --- The membership relation on `A` is irreflexive.
    *
-   * Follows from [[WellFounded.selfNonInclusion]].
+   * Follows from [[FoundationAxiom.selfNonInclusion]].
    */
   val irreflexivity = Theorem(
-    irreflexive(membershipRelation(A))
+    irreflexive(membershipRelation(A))(A)
   ) {
     have((x, x) ∈ membershipRelation(A) |- x ∈ x) by Tautology.from(membership of (x := x, y := x))
-    thenHave(¬((x, x) ∈ membershipRelation(A))) by Tautology.fromLastStep(WellFounded.selfNonInclusion)
-    thenHave(∀(x, ¬((x, x) ∈ membershipRelation(A)))) by RightForall
-    thenHave(thesis) by Tautology.fromLastStep(
-      isRelation,
-      Properties.relationOnIsRelation of (R := membershipRelation(A), X := A),
-      irreflexive.definition of (R := membershipRelation(A))
-    )
+    thenHave(x ∈ A ==> ¬((x, x) ∈ membershipRelation(A))) by Tautology.fromLastStep(FoundationAxiom.selfNonInclusion)
+    thenHave(∀(x ∈ A, ¬((x, x) ∈ membershipRelation(A)))) by RightForall
+    thenHave(thesis) by Substitute(irreflexive.definition of (R := membershipRelation(A), X := A))
   }
 
   /**

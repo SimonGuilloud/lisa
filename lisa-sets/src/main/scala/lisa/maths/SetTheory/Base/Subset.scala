@@ -1,6 +1,7 @@
 package lisa.maths.SetTheory.Base
 
 import Singleton.singleton
+import Symbols.*
 
 import lisa.maths.Quantifiers
 
@@ -11,10 +12,6 @@ import lisa.maths.Quantifiers
  * @see [[PowerSet]]
  */
 object Subset extends lisa.Main {
-
-  private val x, y, z = variable[Ind]
-  private val a, b = variable[Ind]
-  private val P = variable[Ind >>: Prop]
 
   /**
    * Definition --- `x` is a subset of `y`, denoted `x ⊆ y`, if every element of `x` is an element of `y`.
@@ -48,8 +45,8 @@ object Subset extends lisa.Main {
   val ⊂ = DEF(λ(x, λ(y, x ⊆ y /\ x ≠ y))).printInfix()
   val properSubset = ⊂
 
-  extension (x: set) {
-    inline infix def ⊂(y: set): Expr[Prop] = properSubset(x)(y)
+  extension (x: Expr[Set]) {
+    inline infix def ⊂(y: Expr[Set]): Expr[Prop] = properSubset(x)(y)
   }
 
   /**

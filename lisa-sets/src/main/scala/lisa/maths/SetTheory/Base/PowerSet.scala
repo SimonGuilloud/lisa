@@ -2,6 +2,7 @@ package lisa.maths.SetTheory.Base
 
 import Singleton.singleton
 import Subset.⊂
+import Symbols.*
 
 /**
  * The power set of a set `x` is the set `𝒫(x)` that contains all subsets of
@@ -12,8 +13,6 @@ import Subset.⊂
  * @see [[Subset]]
  */
 object PowerSet extends lisa.Main {
-
-  private val x, y, z = variable[Ind]
 
   /**
    * Definition --- The power set of `x` is the set `𝒫(x)` containing all subsets of `x`.
@@ -67,14 +66,14 @@ object PowerSet extends lisa.Main {
    *
    *    `𝒫(x) ⊆ x ⊢ ⊥`
    *
-   * @see [[WellFounded.selfNonInclusion]]
+   * @see [[FoundationAxiom.selfNonInclusion]]
    */
   val nonInclusion = Theorem(
     𝒫(x) ⊆ x |- ()
   ) {
     have(thesis) by Tautology.from(
       membership of (x := 𝒫(x), y := x),
-      WellFounded.selfNonInclusion of (x := 𝒫(x))
+      FoundationAxiom.selfNonInclusion of (x := 𝒫(x))
     )
   }
 

@@ -1,9 +1,11 @@
 package lisa.maths.SetTheory.Ordinals
 
+import lisa.maths.Quantifiers
 import lisa.maths.SetTheory.Base.Predef.{*, given}
 import lisa.maths.SetTheory.Relations
 import lisa.maths.SetTheory.Relations.Predef.*
 import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
+import lisa.maths.SetTheory.Order
 import lisa.maths.SetTheory.Order.Predef.*
 import lisa.maths.SetTheory.Order.WellOrders.*
 
@@ -15,46 +17,47 @@ import MembershipRelation.*
 /**
  * An ordinal is a set that is transitive and well-ordered by the membership relation:
  *
- *   `ordinal(α) <=> transitiveSet(α) /\ wellOrdering(α, ∈_α)`
+ *   `ordinal(α) <=> transitiveSet(α) /\ wellOrder(α, ∈_α)`
  *
  * @see [[TransitiveSet]]
- * @see [[WellOrder.wellOrdering]]
+ * @see [[WellOrder.wellOrder]]
  * @see [[MembershipRelation]]
  */
 object Ordinal extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
-  private val <, R = variable[Ind]
+  private val x, y, z, a = variable[Ind]
+  private val <, R, Q = variable[Ind]
   private val A, B, X = variable[Ind]
   private val α, β, γ, δ = variable[Ind]
   private val P = variable[Ind >>: Prop]
+  private val C = variable[Class]
 
-  extension (α: set) {
+  extension (α: Expr[Set]) {
 
     /**
      * Local notations for ordinal ordering.
      */
-    infix def <(β: set): Expr[Prop] = α ∈ β
-    infix def <=(β: set): Expr[Prop] = (α < β) \/ (α === β)
+    inline infix def <(β: Expr[Set]): Expr[Prop] = α ∈ β
+    inline infix def <=(β: Expr[Set]): Expr[Prop] = (α < β) \/ (α === β)
   }
 
   /**
-   * Ordinal --- A set `α` is an ordinal if it is transitive and `∈_α` is a
-   * well-ordering on `α`.
+   * Ordinal --- A set `α` is an ordinal if it is a transitive set that is
+   * well-ordered by the membership relation `∈_α`.
    *
-   *   `ordinal(α) <=> transitiveSet(α) /\ wellOrdering(α, ∈_α)`
+   *   `ordinal(α) <=> transitiveSet(α) /\ wellOrder(α, ∈_α)`
    *
    * @see [[transitiveSet]], [[membershipRelation]]
    */
-  val ordinal = DEF(λ(α, transitiveSet(α) /\ wellOrdering(α)(membershipRelation(α))))
+  val ordinal = DEF(λ(α, transitiveSet(α) /\ wellOrder(α)(membershipRelation(α))))
 
   /**
    * Theorem --- The empty set is an ordinal.
    */
-  val emptySet = Theorem(
+  val zeroOrdinal = Theorem(
     ordinal(∅)
   ) {
-    have(wellOrdering(∅)(membershipRelation(∅))) by Substitute(MembershipRelation.emptySet)(WellOrder.emptySet)
+    have(wellOrder(∅)(membershipRelation(∅))) by Substitute(MembershipRelation.emptySet)(WellOrder.emptySet)
     thenHave(thesis) by Tautology.fromLastStep(
       TransitiveSet.emptySet,
       ordinal.definition of (α := ∅)
@@ -87,7 +90,7 @@ object Ordinal extends lisa.Main {
    * Theorem --- If `α` is an ordinal then the membership relation on `α` is transitive.
    */
   val transitiveMembershipRelation = Theorem(
-    ordinal(α) |- transitive(membershipRelation(α))
+    ordinal(α) |- transitive(membershipRelation(α))(α)
   ) {
     assume(ordinal(α))
     have(thesis) by Tautology.from(
@@ -124,9 +127,11 @@ object Ordinal extends lisa.Main {
       // Since `(α, ∈_α)` is transitive, we get `x ∈_α β` and thus `x ∈ β` as desired
       have((x, β) ∈ membershipRelation(α)) by Tautology.from(
         transitiveMembershipRelation,
-        Relations.Properties.appliedTransitivity of (R := membershipRelation(α), x := x, y := y, z := β),
+        Relations.BasicTheorems.appliedTransitivity of (R := membershipRelation(α), x := x, y := y, z := β, X := α),
+        `x ∈ α`,
+        `y ∈ α`,
         `x ∈_α y`,
-        `y ∈_α β`
+        `y ∈_α β`,
       )
       thenHave(x ∈ β) by Tautology.fromLastStep(MembershipRelation.membership of (y := β, A := α))
     }
@@ -136,20 +141,20 @@ object Ordinal extends lisa.Main {
   }
 
   /**
-   * Theorem --- If `α` is an ordinal and `β ∈ α` then `(β, ∈_β)` is a well-ordering.
+   * Theorem --- If `α` is an ordinal and `β ∈ α` then `(β, ∈_β)` is a well-order.
    */
   val hereditarilyWellOrdered = Theorem(
-    (ordinal(α), β ∈ α) |- wellOrdering(β)(membershipRelation(β))
+    (ordinal(α), β ∈ α) |- wellOrder(β)(membershipRelation(β))
   ) {
     assume(ordinal(α))
     assume(β ∈ α)
 
     // Irreflexivity: follows from the irreflexivity of any membership relation.
-    val irreflexivity = have(irreflexive(membershipRelation(β))) by Tautology.from(MembershipRelation.irreflexivity of (A := β))
+    val irreflexivity = have(irreflexive(membershipRelation(β))(β)) by Tautology.from(MembershipRelation.irreflexivity of (A := β))
 
-    // Transitivity: Given `x ∈ y ∈ z ∈ β ∈ α`, then `x, y, z ∈ α` and since `(α, ∈_α)` is a well-ordering,
+    // Transitivity: Given `x ∈ y ∈ z ∈ β ∈ α`, then `x, y, z ∈ α` and since `(α, ∈_α)` is a well-order,
     // it follows that `x ∈ z` by transitivity.
-    val transitivity = have(transitive(membershipRelation(β))) subproof {
+    val transitivity = have(transitive(membershipRelation(β))(β)) subproof {
       have((x ∈ y, y ∈ z, z ∈ β) |- x ∈ z) subproof {
         assume(x ∈ y)
         assume(y ∈ z)
@@ -167,9 +172,12 @@ object Ordinal extends lisa.Main {
         // Hence we can apply transitivity
         have((x, z) ∈ membershipRelation(α)) by Tautology.from(
           transitiveMembershipRelation,
-          Relations.Properties.appliedTransitivity of (R := membershipRelation(α)),
+          Relations.BasicTheorems.appliedTransitivity of (R := membershipRelation(α), X := α),
+          `x ∈ α`,
+          `y ∈ α`,
+          `z ∈ α`,
           `x ∈_α y`,
-          `y ∈_α z`
+          `y ∈_α z`,
         )
         thenHave(x ∈ z) by Tautology.fromLastStep(MembershipRelation.membership of (x := x, y := z, A := α))
       }
@@ -181,10 +189,8 @@ object Ordinal extends lisa.Main {
       )
       thenHave((x ∈ β) /\ (y ∈ β) /\ (z ∈ β) /\ (x, y) ∈ membershipRelation(β) /\ ((y, z) ∈ membershipRelation(β)) ==> (x, z) ∈ membershipRelation(β)) by Tautology
       thenHave(∀(x, ∀(y, ∀(z, (x ∈ β) /\ (y ∈ β) /\ (z ∈ β) /\ (x, y) ∈ membershipRelation(β) /\ ((y, z) ∈ membershipRelation(β)) ==> (x, z) ∈ membershipRelation(β))))) by Generalize
-      thenHave(thesis) by Tautology.fromLastStep(
-        Relations.Properties.restrictedTransitivity of (R := membershipRelation(β), X := β),
-        MembershipRelation.isRelation of (A := β)
-      )
+      thenHave(∀(x ∈ β, ∀(y ∈ β, ∀(z ∈ β, (x, y) ∈ membershipRelation(β) /\ ((y, z) ∈ membershipRelation(β)) ==> (x, z) ∈ membershipRelation(β))))) by Tableau
+      thenHave(thesis) by Substitute(transitive.definition of (R := membershipRelation(β), X := β))
     }
 
     // Totality: Given `x, y ∈ β`, since `β ∈ α` we have `x, y ∈ α`, and thus we can conclude by totality of `∈_α`.
@@ -196,7 +202,7 @@ object Ordinal extends lisa.Main {
       thenHave((x ∈ β, y ∈ β) |- ((x, y) ∈ membershipRelation(α)) \/ ((y, x) ∈ membershipRelation(α)) \/ (x === y)) by Tautology.fromLastStep(
         ordinal.definition,
         WellOrder.totality of (< := membershipRelation(α), A := α),
-        Relations.Properties.appliedTotality of (R := membershipRelation(α), X := α)
+        Relations.BasicTheorems.appliedTotality of (R := membershipRelation(α), X := α)
       )
       thenHave((x ∈ β) /\ (y ∈ β) ==> (x ∈ y) \/ (y ∈ x) \/ (x === y)) by Tautology.fromLastStep(
         MembershipRelation.membership of (x := x, y := y, A := α),
@@ -207,16 +213,68 @@ object Ordinal extends lisa.Main {
         MembershipRelation.membership of (x := y, y := x, A := β)
       )
       thenHave(∀(x, ∀(y, (x ∈ β) /\ (y ∈ β) ==> (((x, y) ∈ membershipRelation(β)) \/ ((y, x) ∈ membershipRelation(β)) \/ (x === y))))) by Generalize
-      thenHave(thesis) by Tautology.fromLastStep(
-        MembershipRelation.isRelation of (A := β),
-        total.definition of (R := membershipRelation(β), X := β)
-      )
+      thenHave(∀(x ∈ β, ∀(y ∈ β, ((x, y) ∈ membershipRelation(β)) \/ ((y, x) ∈ membershipRelation(β)) \/ (x === y)))) by Tableau
+      thenHave(thesis) by Substitute(total.definition of (R := membershipRelation(β), X := β))
     }
 
     // Well-foundedness: Given any non-empty `B ⊆ β`, by transitivity of `α`, `B ⊆ α` and therefore
-    // `B` has a `∈_α`-minimal element `b ∈ B`. Since `∈_β ⊆ ∈_α`, `b` is also `∈_β`-minimal.
+    // `B` has a `∈_α`-minimal element `x ∈ B`. Since `∈_β ⊆ ∈_α`, `b` is also `∈_β`-minimal.
+    val wellFoundedness = {
+      have((B ⊆ β) /\ (B ≠ ∅) ==> ∃(x, minimal(x)(B)(membershipRelation(β)))) subproof {
+        assume(B ⊆ β)
+        assume(B ≠ ∅)
 
-    sorry
+        // Since `β ⊆ α` one has `B ⊆ α` and therefore there exists `x ∈ B` which is
+        // `∈_α`-minimal.
+        val `β ⊆ α` = have(β ⊆ α) by Tautology.from(
+          ordinal.definition,
+          TransitiveSet.elementIsSubset of (x := β, A := α)
+        )
+        thenHave(B ⊆ α) by Tautology.fromLastStep(
+          Subset.transitivity of (x := B, y := β, z := α),
+        )
+        val `x is ∈_α-minimal` = thenHave(∃(x, minimal(x)(B)(membershipRelation(α)))) by Tautology.fromLastStep(
+          ordinal.definition,
+          WellOrder.minimalElement of (A := α, < := membershipRelation(α))
+        )
+
+        // Since `∈_β ⊆ ∈_α`, x is also `∈_β`-minimal
+        have(minimal(x)(B)(membershipRelation(α)) ==> minimal(x)(B)(membershipRelation(β))) by Tautology.from(
+          Order.Theorems.minimalElementSubset of (a := x, R := membershipRelation(α), Q := membershipRelation(β), A := B),
+          MembershipRelation.monotonic of (A := β, B := α),
+          `β ⊆ α`
+        )
+        val `x is ∈_α-minimal implies x is ∈_β-minimal` =
+          thenHave(∀(x, minimal(x)(B)(membershipRelation(α)) ==> minimal(x)(B)(membershipRelation(β)))) by RightForall
+
+        have(
+          (
+            ∀(x, minimal(x)(B)(membershipRelation(α)) ==> minimal(x)(B)(membershipRelation(β))),
+            ∃(x, minimal(x)(B)(membershipRelation(α)))
+          ) |-
+            ∃(x, minimal(x)(B)(membershipRelation(β)))
+        ) by Tableau
+        thenHave(thesis) by Tautology.fromLastStep(
+          `x is ∈_α-minimal`,
+          `x is ∈_α-minimal implies x is ∈_β-minimal`,
+        )
+      }
+      thenHave(∀(B, (B ⊆ β) /\ (B ≠ ∅) ==> ∃(x, minimal(x)(B)(membershipRelation(β))))) by RightForall
+      thenHave(wellFounded(membershipRelation(β))(β)) by Substitute(wellFounded.definition of (R := membershipRelation(β), X := β))
+    }
+
+    // Conclude
+    have(thesis) by Tautology.from(
+      MembershipRelation.isRelation of (A := β),
+      Relations.BasicTheorems.relationOnIsRelation of (R := membershipRelation(β), X := β),
+      transitivity,
+      irreflexivity,
+      totality,
+      wellFoundedness,
+      strictPartialOrder.definition of (A := β, < := membershipRelation(β)),
+      strictTotalOrder.definition of (A := β, < := membershipRelation(β)),
+      wellOrder.definition of (A := β, < := membershipRelation(β))
+    )
   }
 
   /**
@@ -233,12 +291,24 @@ object Ordinal extends lisa.Main {
   }
 
   /**
-   * Theorem --- If `β ∈ α` and `α` is an ordinal then `predecessors(β)(α)(membershipRelation(α)) = β`.
+   * Theorem --- If `β ∈ α` and `α` is an ordinal then `initialSegment(β)(α)(membershipRelation(α)) = β`.
    */
   val ordinalInitialSegment = Theorem(
-    (ordinal(α), β ∈ α) |- predecessors(β)(α)(membershipRelation(α)) === β
+    (ordinal(α), β ∈ α) |- initialSegment(β)(α)(membershipRelation(α)) === β
   ) {
-    sorry
+    assume(ordinal(α))
+    assume(β ∈ α)
+
+    have(x ∈ initialSegment(β)(α)(membershipRelation(α)) <=> (x ∈ α) /\ ((x, β) ∈ membershipRelation(α))) by Tautology.from(
+      InitialSegment.membership of (y := x, x := β, A := α, < := membershipRelation(α))
+    )
+    thenHave(x ∈ initialSegment(β)(α)(membershipRelation(α)) <=> (x ∈ α) /\ ((x ∈ α) /\ (β ∈ α) /\ (x ∈ β))) by Substitute(
+      MembershipRelation.membership of (x := x, y := β, A := α)
+    )
+    thenHave(x ∈ initialSegment(β)(α)(membershipRelation(α)) <=> (x ∈ β)) by Tautology.fromLastStep(
+      transitivity of (α := x, β := β, γ := α)
+    )
+    thenHave(thesis) by Extensionality
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -255,9 +325,23 @@ object Ordinal extends lisa.Main {
 
   /**
    * Theorem --- Any two ordinals `α` and `β` are comparable.
+   *
+   * Also known as the law of trichotomy.
    */
   val comparability = Theorem(
     (ordinal(α), ordinal(β)) |- (α === β) \/ (α < β) \/ (β < α)
+  ) {
+    assume(ordinal(α))
+    assume(ordinal(β))
+
+    sorry
+  }
+
+  /**
+    * Theorem --- If `α < β` then `¬(β <= α)`.
+    */
+  val asymmetry = Theorem(
+    (ordinal(α), ordinal(β)) |- α < β <=> ¬(β <= α)
   ) {
     sorry
   }
@@ -265,190 +349,143 @@ object Ordinal extends lisa.Main {
   ////////////////////////////////////////////////////////////////////////////////
   section("Minimality")
 
-  /**
-   * Theorem --- If `A` is a non-empty set of ordinals, then it admits a ∈-minimal element.
-   *
-   *   `∀α ∈ A. ordinal(α) /\ A ≠ ∅ ==> ∃α ∈ A. ∀β ∈ A. α <= β.
-   */
-  val setOfOrdinalsMinimalElement = Theorem(
-    (∀(α, α ∈ A ==> ordinal(α)), A ≠ ∅) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))
-  ) {
-    assume(A ≠ ∅)
 
-    // Since A ≠ ∅, take any α ∈ A.
-    assume(∀(α, α ∈ A ==> ordinal(α)))
-    val `α ordinal` = thenHave(α ∈ A ==> ordinal(α)) by InstantiateForall(α)
-
-    // If ∀β ∈ A, α <= β, we are done.
-    val case1 =
-      have((α ∈ A, ∀(β, β ∈ A ==> (α <= β))) |- α ∈ A /\ ∀(β, β ∈ A ==> (α <= β))) by Restate
-      thenHave((α ∈ A, ∀(β, β ∈ A ==> (α <= β))) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))) by RightExists
-
-    // If ∃β ∈ A, ¬(α <= β), then it means that β < α by [[comparability]]
-    val case2 = have((α ∈ A, β ∈ A, ¬(α <= β)) |- ∃(α, α ∈ A /\ ∀(β, β ∈ A ==> (α <= β)))) subproof {
-      assume(α ∈ A)
-      assume(β ∈ A)
-      assume(¬(α <= β))
-
-      have(β < α) by Tautology.from(
-        comparability,
-        `α ordinal`,
-        `α ordinal` of (α := β)
-      )
-
-      // Therefore A ∩ α ≠ ∅.
-      val `A ∩ α ≠ ∅` = have((α ∈ A, β ∈ A, ¬(α <= β)) |- A ∩ α ≠ ∅) by Tautology.from(
-        EmptySet.setWithElementNonEmpty of (x := β, y := (A ∩ α)),
-        Intersection.membership of (z := β, x := A, y := α),
-        lastStep
-      )
-
-      // Since α is well-ordered, we can take the ∈-minimal element of A ∩ α, call it δ.
-      // It satisfies ∀β ∈ A. δ <= β
-      have((δ ∈ (A ∩ α), minimal(δ)(A ∩ α)(membershipRelation(α))) |- ∀(β, β ∈ A ==> δ <= β)) subproof {
-        assume(δ ∈ (A ∩ α))
-        assume(minimal(δ)(A ∩ α)(membershipRelation(α)))
-
-        /*
-        val `δ is ordinal` = have(ordinal(δ)) by Tautology.from(
-          Intersection.membership of (z := δ, x := A, y := α),
-          Ordinal.elementOfOrdinal of (β := δ)
-        )
-
-        thenHave(∀(β, β ∈ (A ∩ α) ==> (β, δ) ∉ membershipRelation(α))) by Substitute(minimal.definition)
-        thenHave(β ∈ (A ∩ α) ==> (β, δ) ∉ membershipRelation(α)) by InstantiateForall(β)
-        thenHave(β ∈ (A ∩ α) ==> ¬((β ∈ α) /\ (δ ∈ α) /\ (β ∈ δ))) by Tautology.fromLastStep(MembershipRelation.membership of (x := β, y := δ, A := α))
-        thenHave(β ∈ (A ∩ α) ==> ¬(β ∈ δ)) by Tautology.fromLastStep(
-          Intersection.membership of (z := β, x := A, y := α),
-          Intersection.membership of (z := δ, x := A, y := α)
-        )
-        thenHave(β ∈ (A ∩ α) ==> δ <= β) by Tautology.fromLastStep(
-          Ordinal.comparability of (α := β, β := δ),
-          Intersection.membership of (z := β, x := A, y := α),
-          Ordinal.elementOfOrdinal of (β := δ)
-        )
-         */
-
-        sorry
-      }
-      sorry
-    }
-
-    sorry
-  }
-
-  /**
-   * Theorem --- If `P` is a non-empty class of ordinals, then it admits a ∈-minimal element.
-   *
-   *   `∃α ∈ On. P(α) ==> ∃α ∈ On. P(α) /\ ∀β < α. ¬P(β)`
-   */
-  val classOfOrdinalsMinimalElement = Theorem(
-    (ordinal(α), P(α)) |- ∃(α, ordinal(α) /\ P(α) /\ ∀(β, β ∈ α ==> ¬(P(β))))
-  ) {
-    assume(ordinal(α))
-    assume(P(α))
-
-    // Consider the set `Q = {β ∈ α | P(β)}`
-    val Q = { β ∈ α | P(β) }
-    val `β ∈ Q` = have(β ∈ Q <=> (β ∈ α) /\ P(β)) by Comprehension.apply
-    val `β is an ordinal` = thenHave(β ∈ Q |- ordinal(β)) by Tautology.fromLastStep(elementOfOrdinal)
-
-    // If Q is empty, `α` is minimal since there is no `β ∈ α` such that `P(β)` holds.
-    val `case Q = ∅` = have(Q === ∅ |- ∃(α, ordinal(α) /\ P(α) /\ ∀(β, β ∈ α ==> ¬(P(β))))) subproof {
-      assume(Q === ∅)
-
-      have(¬(β ∈ ∅)) by Tautology.from(EmptySet.definition of (x := β))
-      thenHave(¬(β ∈ Q)) by Substitute(Q === ∅)
-      thenHave(¬(β ∈ α /\ P(β))) by Substitute(`β ∈ Q`)
-      thenHave(β ∈ α ==> ¬(P(β))) by Tautology
-      thenHave(∀(β, β ∈ α ==> ¬(P(β)))) by RightForall
-      thenHave(ordinal(α) /\ P(α) /\ ∀(β, β ∈ α ==> ¬(P(β)))) by Tautology
-      thenHave(thesis) by RightExists
-    }
-
-    // If Q is not empty, since `Q` is a set of ordinals it has a minimal element `β` that satisfies `P`.
-    val `case Q ≠ ∅` = have(Q ≠ ∅ |- ∃(β, ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x))))) subproof {
-      assume(Q ≠ ∅)
-
-      // If `β ∈ S` is minimal, no element below it satisfy `P`.
-      have((β ∈ Q, ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x))) |- ∀(x, x ∈ β ==> ¬(P(x)))) subproof {
-        assume(β ∈ Q)
-
-        val minimality = assume(∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x)))
-
-        val `x is an ordinal` = have(x ∈ β |- ordinal(x)) by Tautology.from(
-          `β is an ordinal`,
-          elementOfOrdinal of (α := β, β := x)
-        )
-        thenHave(x ∈ β ==> x ∈ α) by Tautology.fromLastStep(
-          `β ∈ Q`,
-          transitivity of (α := x, β := β, γ := α)
-        )
-
-        // Let x ∈ β. If x ∉ Q then ¬P(x) by comprehension.
-        val `x ∉ Q` = have((x ∈ β, x ∉ Q) |- ¬(P(x))) by Tautology.from(`β ∈ Q` of (β := x), lastStep)
-
-        // If x ∈ Q then by minimality either β ∈ x or β === x, and both cases lead to self-inclusion
-        val `x ∈ Q` = have((x ∈ β, x ∈ Q) |- ¬(P(x))) subproof {
-          have(x ∈ Q ==> (β ∈ x) \/ (β === x)) by InstantiateForall(x)(minimality)
-          val cases = thenHave(x ∈ Q |- (β ∈ x) \/ (β === x)) by Restate
-
-          assume(x ∈ β)
-          assume(x ∈ Q)
-
-          val case1 = have(β ∈ x |- ()) by Tautology.from(
-            `x is an ordinal`,
-            `β is an ordinal`,
-            transitivity of (α := β, β := x, γ := β),
-            WellFounded.selfNonInclusion of (x := β)
-          )
-
-          val case2 = {
-            have(β === x |- β ∈ β) by Congruence
-            thenHave(β === x |- ()) by Tautology.fromLastStep(WellFounded.selfNonInclusion of (x := β))
-          }
-
-          have(thesis) by Tautology.from(cases, case1, case2)
-        }
-
-        have(x ∈ β ==> ¬(P(x))) by Tautology.from(`x ∉ Q`, `x ∈ Q`)
-        thenHave(thesis) by RightForall
-      }
-      thenHave((β ∈ Q) /\ ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x)) |- ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x)))) by Tautology.fromLastStep(`β ∈ Q`, `β is an ordinal`)
-      thenHave((β ∈ Q) /\ ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x)) |- ∃(β, ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x))))) by RightExists
-      val conclusion = thenHave(∃(β, (β ∈ Q) /\ ∀(x, x ∈ Q ==> (β ∈ x) \/ (β === x))) |- ∃(β, ordinal(β) /\ P(β) /\ ∀(x, x ∈ β ==> ¬(P(x))))) by LeftExists
-
-      // We show that `Q` is a non-empty set of ordinals to satisfy the assumptions of [[setOfOrdinalsMinimalElement]]
-      have(β ∈ Q ==> β ∈ α) by Tautology.from(`β ∈ Q`)
-      thenHave(β ∈ Q ==> ordinal(β)) by Tautology.fromLastStep(elementOfOrdinal)
-      thenHave(∀(β, β ∈ Q ==> ordinal(β))) by RightForall
-
-      have(thesis) by Tautology.from(
-        lastStep,
-        setOfOrdinalsMinimalElement of (A := Q),
-        conclusion
-      )
-    }
-
-    have(thesis) by Tautology.from(`case Q = ∅`, `case Q ≠ ∅`)
-  }
 
   ////////////////////////////////////////////////////////////////////////////////
-  section("Class of ordinal")
+  section("Class of ordinals")
 
   /**
-   * Definition --- `On` stands for the class of all ordinals.
+   * Definition --- `Ord` stands for the class of all ordinals.
    */
-  val On: Expr[Class] = DEF(λ(α, ordinal(α)))
+  val Ord: Constant[Class] = DEF(λ(α, ordinal(α)))
 
   /**
-   * Theorem --- `On` is a proper class.
+   * Theorem --- `Ord` is a proper class.
+   *
+   * Also known as the Burali-Forti paradox.
    */
-  val `On is a proper class` = Theorem(
-    proper(On)
+  val `Ord is a proper class` = Theorem(
+    proper(Ord)
   ) {
-    sorry
+    have(A === Ord |- ()) subproof {
+      // Towards a contradiction, assume that `A` is the set of all ordinals.
+      assume(A === Ord)
+      thenHave(α ∈ A <=> (α ∈ Ord)) by InstantiateForall(α)
+      val `α ∈ A` = thenHave(α ∈ A <=> ordinal(α)) by Substitute(Ord.definition)
+
+      // Notice that:
+      // 1. A is transitive
+      val `A is transitive` = have(transitiveSet(A)) subproof {
+        have(α ∈ A ==> ordinal(α)) by Tautology.from(`α ∈ A`)
+        thenHave((α ∈ A, β ∈ α) |- ordinal(β)) by Tautology.fromLastStep(elementOfOrdinal)
+        thenHave((β ∈ α /\ (α ∈ A) ==> β ∈ A)) by Tautology.fromLastStep(`α ∈ A` of (α := β))
+        thenHave(∀(β, ∀(α, (β ∈ α /\ (α ∈ A) ==> β ∈ A)))) by Generalize
+        thenHave(thesis) by Substitute(transitiveSet.definition)
+      }
+
+      // 2. (A, ∈_A) is a well-order:
+      val `(A, ∈_A) is a well-order` = have(wellOrder(A)(membershipRelation(A))) subproof {
+        // a. ∈_A is irreflexive
+        val irreflexivity = have(irreflexive(membershipRelation(A))(A)) by Tautology.from(MembershipRelation.irreflexivity)
+
+        // b. ∈_A is transitive
+        val transitivity = have(transitive(membershipRelation(A))(A)) subproof {
+          have((ordinal(α), ordinal(β), ordinal(γ)) |- (α ∈ β) /\ (β ∈ γ) ==> (α ∈ γ)) by Weakening(Ordinal.transitivity)
+          thenHave((α ∈ A) /\ (β ∈ A) /\ (γ ∈ A) /\ ((α, β) ∈ membershipRelation(A)) /\ ((β, γ) ∈ membershipRelation(A)) ==> ((α, γ) ∈ membershipRelation(A))) by Tautology.fromLastStep(
+            `α ∈ A`,
+            `α ∈ A` of (α := β),
+            `α ∈ A` of (α := γ),
+            MembershipRelation.membership of (x := α, y := β),
+            MembershipRelation.membership of (x := β, y := γ),
+            MembershipRelation.membership of (x := α, y := γ),
+          )
+          thenHave(∀(α, ∀(β, ∀(γ, (α ∈ A) /\ (β ∈ A) /\ (γ ∈ A) /\ ((α, β) ∈ membershipRelation(A)) /\ ((β, γ) ∈ membershipRelation(A)) ==> ((α, γ) ∈ membershipRelation(A)))))) by Generalize
+          thenHave(∀(α ∈ A, ∀(β ∈ A, ∀(γ ∈ A, ((α, β) ∈ membershipRelation(A)) /\ ((β, γ) ∈ membershipRelation(A)) ==> ((α, γ) ∈ membershipRelation(A)))))) by Tableau
+          thenHave(thesis) by Substitute(transitive.definition of (R := membershipRelation(A), X := A))
+        }
+
+        // c. ∈_A is total
+        val totality = have(total(membershipRelation(A))(A)) subproof {
+          have((ordinal(α) /\ ordinal(β)) ==> (α < β) \/ (β < α) \/ (α === β)) by Tautology.from(comparability)
+          thenHave((α ∈ A) /\ (β ∈ A) ==> (((α, β) ∈ membershipRelation(A)) \/ ((β, α) ∈ membershipRelation(A)) \/ (α === β))) by Tautology.fromLastStep(
+            `α ∈ A`,
+            `α ∈ A` of (α := β),
+            MembershipRelation.membership of (x := α, y := β),
+            MembershipRelation.membership of (x := β, y := α),
+          )
+          thenHave(∀(α, ∀(β, (α ∈ A) /\ (β ∈ A) ==> (((α, β) ∈ membershipRelation(A)) \/ ((β, α) ∈ membershipRelation(A)) \/ (α === β))))) by Generalize
+          thenHave(∀(α ∈ A, ∀(β ∈ A, ((α, β) ∈ membershipRelation(A)) \/ ((β, α) ∈ membershipRelation(A)) \/ (α === β)))) by Tableau
+          thenHave(thesis) by Substitute(total.definition of (R := membershipRelation(A), X := A))
+        }
+
+        // d. ∈_A is well-founded
+        val wellFoundedness = {
+          /*
+          have((B ⊆ A, B ≠ ∅) |- ∃(a, minimal(a)(B)(membershipRelation(A)))) subproof {
+            assume(B ⊆ A)
+            assume(B ≠ ∅)
+
+            // We have that `B` is a non-∅ set of ordinals
+            val `α ∈ B` = have(α ∈ B ==> ordinal(α)) by Tautology.from(
+              `α ∈ A`,
+              Subset.membership of (x := B, y := A, z := α)
+            )
+            thenHave(∀(α, α ∈ B ==> ordinal(α))) by RightForall
+
+            // Thus we can apply [[setOfOrdinalsMinimalElement]]
+            val minimalElement = have(∃(α, α ∈ B /\ ∀(β, β ∈ B ==> (α <= β)))) by Tautology.from(
+              setOfOrdinalsMinimalElement of (A := B),
+              lastStep
+            )
+
+            // We now replace `α <= β` by `(β, α) ∉ membershipRelation(A)`
+            have((α ∈ B, β ∈ B, α <= β) |- (β, α) ∉ membershipRelation(A)) by Tautology.from(
+              MembershipRelation.membership of (x := β, y := α),
+              asymmetry of (α := β, β := α),
+              `α ∈ B`, `α ∈ B` of (α := β)
+            )
+            thenHave((α ∈ B, β ∈ B ==> α <= β) |- β ∈ B ==> (β, α) ∉ membershipRelation(A)) by Tautology
+            thenHave((α ∈ B, ∀(β, β ∈ B ==> α <= β)) |- β ∈ B ==> (β, α) ∉ membershipRelation(A)) by LeftForall
+            thenHave((α ∈ B, ∀(β, β ∈ B ==> α <= β)) |- ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A))) by RightForall
+            thenHave((α ∈ B /\ ∀(β, β ∈ B ==> α <= β)) |- α ∈ B /\ ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A))) by Tautology
+            thenHave((α ∈ B /\ ∀(β, β ∈ B ==> α <= β)) |- ∃(α, α ∈ B /\ ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A)))) by RightExists
+            thenHave(∃(α, α ∈ B /\ ∀(β, β ∈ B ==> α <= β)) |- ∃(α, α ∈ B /\ ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A)))) by LeftExists
+
+            have(thesis) by Tautology.from(lastStep, minimalElement)
+          }
+          thenHave((B ⊆ A) /\ (B ≠ ∅) ==> ∃(α, α ∈ B /\ ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A)))) by Restate
+          thenHave(∀(B, (B ⊆ A) /\ (B ≠ ∅) ==> ∃(α, α ∈ B /\ ∀(β, β ∈ B ==> (β, α) ∉ membershipRelation(A))))) by Generalize
+           */
+          sorry
+        }
+
+        have(thesis) by Tautology.from(
+          wellOrder.definition of (< := membershipRelation(A)),
+          strictTotalOrder.definition of (< := membershipRelation(A)),
+          strictPartialOrder.definition of (< := membershipRelation(A)),
+          MembershipRelation.isRelation,
+          transitivity,
+          irreflexivity,
+          totality,
+          wellFoundedness,
+        )
+      }
+
+      // Therefore A is an ordinal, which leads to A ∈ A.
+      // A contradiction with [[FoundationAxiom.selfNonInclusion]].
+      have(ordinal(A)) by Tautology.from(
+        ordinal.definition of (α := A),
+        `A is transitive`,
+        `(A, ∈_A) is a well-order`
+      )
+      thenHave(A ∈ A) by Tautology.fromLastStep(`α ∈ A` of (α := A))
+      thenHave(thesis) by Tautology.fromLastStep(FoundationAxiom.selfNonInclusion of (x := A))
+    }
+    thenHave(∃(A, ∀(α, α ∈ A <=> Ord(α))) |- ()) by LeftExists
+    thenHave(¬(∃(A, ∀(α, α ∈ A <=> Ord(α))))) by Restate
+    thenHave(thesis) by Substitute(proper.definition of (C := Ord))
   }
+  val `Burali-Forti paradox` = `Ord is a proper class`
 
   ////////////////////////////////////////////////////////////////////////////////
   section("Successor ordinal")
@@ -511,8 +548,4 @@ object Ordinal extends lisa.Main {
     have(thesis) by Tautology.from(limitOrdinal.definition)
   }
 
-  /**
-   * Definition --- An ordinal `α` is an integer if and only if all its predecessors are zero or successors.
-   */
-  val integer = DEF(λ(α, ∀(β, β <= α ==> (β === ∅) \/ successorOrdinal(β))))
 }

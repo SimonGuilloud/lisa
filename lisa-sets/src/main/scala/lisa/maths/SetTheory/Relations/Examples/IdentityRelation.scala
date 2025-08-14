@@ -23,8 +23,8 @@ object IdentityRelation extends lisa.Main {
   /**
    * Theorem --- A relation `R` is reflexive on `X` <=> `Δ(X) ⊆ R`.
    */
-  val identityRelationSubset = Theorem(
-    reflexive(R)(X) <=> Δ(X) ⊆ R
+  val subset = Theorem(
+     Δ(X) ⊆ R <=> reflexive(R)(X)
   ) {
     sorry
   }

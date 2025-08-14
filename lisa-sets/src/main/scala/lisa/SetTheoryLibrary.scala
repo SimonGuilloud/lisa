@@ -4,8 +4,9 @@ import lisa.utils.fol.FOL.{_, given}
 import lisa.kernel.proof.RunningTheory
 import lisa.utils.prooflib.Library
 
-import scala.annotation.showAsInfix
 import scala.collection.immutable.Set as ScalaSet
+
+import scala.annotation.targetName
 
 /**
  * Specific implementation of [[utilities.Library]] for Set Theory, with a RunningTheory that is supposed to be used by the standard library.
@@ -366,9 +367,11 @@ object SetTheoryLibrary extends lisa.utils.prooflib.Library {
    * 'image' of `x` in P exists and is a set. It contains exactly the `b`'s that
    * satisfy `P` for each `a ∈ x`.
    */
+  // TODO: Replace by the following that use class-functions instead:
+  // ∃(B, ∀(y, y ∈ B <=> ∃(x ∈ A, y === F(x))))
   final val replacementSchema: AXIOM = Axiom(
-    ∀(x, x ∈ A ==> ∀(y, ∀(z, P(x)(y) /\ P(x)(z) ==> (y === z)))) ==>
-      ∃(B, ∀(y, y ∈ B <=> ∃(x, (x ∈ A) /\ P(x)(y))))
+    ∀(x ∈ A, ∀(y, ∀(z, P(x)(y) /\ P(x)(z) ==> (y === z)))) ==>
+      ∃(B, ∀(y, y ∈ B <=> ∃(x ∈ A, P(x)(y))))
   )
 
   // TG

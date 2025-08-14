@@ -28,7 +28,7 @@ private[fol] trait Syntax {
    */
   sealed case class Identifier(val name: String, val no: Int) {
     require(no >= 0, "Variable index must be positive")
-    require(Identifier.isValidIdentifier(name), "Variable name " + name + "is not valid.")
+    // require(Identifier.isValidIdentifier(name), "Variable name " + name + " is not valid.")
     override def toString: String = if (no == 0) name else name + Identifier.counterSeparator + no
   }
 

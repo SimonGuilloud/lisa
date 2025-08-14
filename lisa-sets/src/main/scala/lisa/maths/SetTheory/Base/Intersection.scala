@@ -2,6 +2,7 @@ package lisa.maths.SetTheory.Base
 
 import Comprehension.|
 import Union.∪
+import Symbols.*
 
 /**
  * The intersection of two sets `x` and `y` is the `x ∩ y` that contains
@@ -14,10 +15,7 @@ import Union.∪
  */
 object Intersection extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
-  private val a, b = variable[Ind]
   private val S = variable[Ind]
-  private val P = variable[Ind >>: Prop]
 
   /**
    * Binary Set Intersection --- Intersection of two sets.
@@ -30,13 +28,19 @@ object Intersection extends lisa.Main {
   val ∩ = DEF(λ(x, λ(y, { z ∈ x | z ∈ y }))).printInfix()
   val intersection = ∩
 
-  extension (x: set) {
+  extension (x: Expr[Set]) {
 
     /**
      * Infix notation for set intersection.
      */
-    inline infix def ∩(y: set): set = intersection(x)(y)
+    inline infix def ∩(y: Expr[Set]): Expr[Set] = intersection(x)(y)
   }
+
+  /**
+    * Definition --- Two sets `x` and `y` are said to be disjoint
+    * if `x ∩ y = ∅`.
+    */
+  val disjoint = DEF(λ(x, λ(y, x ∩ y === ∅)))
 
   /**
    * Theorem --- An set is a member of the intersection if and only if it is a
@@ -66,6 +70,38 @@ object Intersection extends lisa.Main {
       membership of (x := y, y := x)
     )
     thenHave(thesis) by Extensionality
+  }
+
+  /**
+    * Theorem --- Set intersection is idempotent: `x ∩ x = x`.
+    */
+  val idempotence = Theorem(
+    x ∩ x === x
+  ) {
+    have(z ∈ (x ∩ x) <=> z ∈ x) by Tautology.from(membership of (y := x))
+    thenHave(thesis) by Extensionality
+  }
+
+  /**
+    * Theorem --- For any `x, y` we have `x ∩ y ⊆ x`.
+    */
+  val subsetLeft = Theorem(
+    (x ∩ y) ⊆ x
+  ) {
+    have(z ∈ (x ∩ y) ==> z ∈ x) by Tautology.from(membership)
+    thenHave(∀(z, z ∈ (x ∩ y) ==> z ∈ x)) by RightForall
+    thenHave(thesis) by Substitute(⊆.definition)
+  }
+
+  /**
+    * Theorem --- For any `x, y` we have `x ∩ y ⊆ y`.
+    */
+  val subsetRight = Theorem(
+    (x ∩ y) ⊆ y
+  ) {
+    have(z ∈ (x ∩ y) ==> z ∈ y) by Tautology.from(membership)
+    thenHave(∀(z, z ∈ (x ∩ y) ==> z ∈ y)) by RightForall
+    thenHave(thesis) by Substitute(⊆.definition)
   }
 
   /**

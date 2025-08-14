@@ -57,6 +57,21 @@ object TransitiveSet extends lisa.Main {
   }
 
   /**
+   * Theorem --- For any `x ∈ A` we have `x ⊆ A`.
+   *
+   *   `transitiveSet(A), x ∈ A |- x ⊆ A`
+   *
+   * Reformulation of the alternative definition.
+   */
+  val elementIsSubset = Theorem(
+    (transitiveSet(A), x ∈ A) |- x ⊆ A
+  ) {
+    assume(transitiveSet(A))
+    have(∀(x, x ∈ A ==> x ⊆ A)) by Tautology.from(alternativeDefinition)
+    thenHave(thesis) by InstantiateForall(x)
+  }
+
+  /**
    * Theorem --- A transitive set `A` is indeed transitive.
    *
    *   `transitiveSet(A), x ∈ y, y ∈ A |- x ∈ A`
@@ -71,6 +86,7 @@ object TransitiveSet extends lisa.Main {
     thenHave(x ∈ y /\ (y ∈ A) ==> x ∈ A) by InstantiateForall(x, y)
     thenHave(thesis) by Restate
   }
+
 
   /**
    * Theorem --- The empty set is transitive.

@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 /**
  * `{x, y}` is the unordered pair of `x` and `y`. It is written in LISA as
  * `unorderedPair(x, y)`.
@@ -10,10 +12,6 @@ package lisa.maths.SetTheory.Base
  * The existence of unordered pairs is guaranteed by the [[pairAxiom]].
  */
 object UnorderedPair extends lisa.Main {
-
-  private val a, b, c, d = variable[Ind]
-  private val x, y, z = variable[Ind]
-  private val P = variable[Ind >>: Prop]
 
   /**
    * Theorem --- Unordered pair membership
@@ -116,16 +114,16 @@ object UnorderedPair extends lisa.Main {
    *   `∀z ∈ {x, y} P(z)` is equivalent to `P(x) /\ P(y)`.
    */
   val universalQuantifier = Theorem(
-    ∀(z, z ∈ unorderedPair(x, y) ==> P(z)) <=> P(x) /\ P(y)
+    ∀(z ∈ unorderedPair(x, y), P(z)) <=> P(x) /\ P(y)
   ) {
-    val `==>` = have(∀(z, z ∈ unorderedPair(x, y) ==> P(z)) |- P(x) /\ P(y)) subproof {
-      assume(∀(z, z ∈ unorderedPair(x, y) ==> P(z)))
+    val `==>` = have(∀(z ∈ unorderedPair(x, y), P(z)) |- P(x) /\ P(y)) subproof {
+      assume(∀(z ∈ unorderedPair(x, y), P(z)))
       thenHave(z ∈ unorderedPair(x, y) ==> P(z)) by InstantiateForall(z)
       thenHave((z === x) \/ (z === y) ==> P(z)) by Substitute(membership)
       have(thesis) by Tautology.from(lastStep of (z := x), lastStep of (z := y))
     }
 
-    val `<==` = have((P(x), P(y)) |- ∀(z, z ∈ unorderedPair(x, y) ==> P(z))) subproof {
+    val `<==` = have((P(x), P(y)) |- ∀(z ∈ unorderedPair(x, y), P(z))) subproof {
       assume(P(x))
       assume(P(y))
 
@@ -147,9 +145,9 @@ object UnorderedPair extends lisa.Main {
    *   `∃z ∈ {x, y} P(z)` is equivalent to `P(x) \/ P(y)`.
    */
   val existentialQuantifier = Theorem(
-    ∃(z, z ∈ unorderedPair(x, y) /\ P(z)) <=> P(x) \/ P(y)
+    ∃(z ∈ unorderedPair(x, y), P(z)) <=> P(x) \/ P(y)
   ) {
-    val `==>` = have(∃(z, z ∈ unorderedPair(x, y) /\ P(z)) |- P(x) \/ P(y)) subproof {
+    val `==>` = have(∃(z ∈ unorderedPair(x, y), P(z)) |- P(x) \/ P(y)) subproof {
       val xCase = have((P(z), z === x) |- P(x)) by Congruence
       val yCase = have((P(z), z === y) |- P(y)) by Congruence
 
@@ -161,14 +159,14 @@ object UnorderedPair extends lisa.Main {
       thenHave(thesis) by LeftExists
     }
 
-    val `<==` = have(P(x) \/ P(y) |- ∃(z, z ∈ unorderedPair(x, y) /\ P(z))) subproof {
+    val `<==` = have(P(x) \/ P(y) |- ∃(z ∈ unorderedPair(x, y), P(z))) subproof {
       val xCase =
         have(P(x) |- x ∈ unorderedPair(x, y) /\ P(x)) by Tautology.from(leftInPair)
-        thenHave(P(x) |- ∃(z, z ∈ unorderedPair(x, y) /\ P(z))) by RightExists
+        thenHave(P(x) |- ∃(z ∈ unorderedPair(x, y), P(z))) by RightExists
 
       val yCase =
         have(P(y) |- y ∈ unorderedPair(x, y) /\ P(y)) by Tautology.from(rightInPair)
-        thenHave(P(y) |- ∃(z, z ∈ unorderedPair(x, y) /\ P(z))) by RightExists
+        thenHave(P(y) |- ∃(z ∈ unorderedPair(x, y), P(z))) by RightExists
 
       have(thesis) by LeftOr(xCase, yCase)
     }

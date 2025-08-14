@@ -1,41 +1,43 @@
 package lisa.maths.SetTheory.Order
 package Examples
 
+import lisa.maths.SetTheory.Base.Predef.*
+import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.Predef.*
 import lisa.maths.SetTheory.Relations.Examples.EmptyRelation
-import Definitions.*
+
+import PartialOrder.*
+import TotalOrder.*
 
 /**
  * The empty order is the order on the empty set.
  */
 object EmptyOrder extends lisa.Main {
 
-  private val A = variable[Ind]
-  private val < = variable[Ind]
-  private val X = variable[Ind]
-
   /**
    * Theorem --- The empty set is a partial order on the empty-set.
    */
-  val emptyOrderStrictPartialOrder = Theorem(
+  val isStrictPartialOrder = Theorem(
     strictPartialOrder(∅)(∅)
   ) {
     have(thesis) by Tautology.from(
       strictPartialOrder.definition of (A := ∅, < := ∅),
       EmptyRelation.emptyRelation of (X := ∅),
-      EmptyRelation.emptyRelationTransitive,
-      EmptyRelation.emptyRelationIrreflexive
+      Relations.BasicTheorems.relationOnIsRelation of (R := ∅, X := ∅),
+      EmptyRelation.emptyRelationTransitive of (X := ∅),
+      EmptyRelation.emptyRelationIrreflexive of (X := ∅)
     )
   }
 
   /**
    * Theorem --- The empty set is a total order on the empty-set.
    */
-  val emptyOrderTotalOrder = Theorem(
+  val isStrictTotalOrder = Theorem(
     strictTotalOrder(∅)(∅)
   ) {
     have(thesis) by Tautology.from(
       strictTotalOrder.definition of (A := ∅, < := ∅),
-      emptyOrderStrictPartialOrder,
+      isStrictPartialOrder,
       EmptyRelation.emptyRelationTotal
     )
   }

@@ -1,7 +1,7 @@
 package lisa.maths.SetTheory.Functions
 
 import lisa.maths.SetTheory.Base.Predef.{*, given}
-import Definitions.*
+import Function.*
 
 /**
  * Given a set `A` and a function `B`, the dependent sum `Σ(A, B)` is the set
@@ -11,10 +11,11 @@ object Sigma extends lisa.Main {
 
   private val x = variable[Ind]
   private val a, b = variable[Ind]
-  private val A, B = variable[Ind]
+  private val A = variable[Ind]
+  private val B = variable[Ind]
 
-  extension (f: set) {
-    def apply(x: set) = app(f)(x)
+  extension (f: Expr[Set]) {
+    def apply(x: Expr[Set]) = app(f)(x)
   }
 
   /**

@@ -1,13 +1,12 @@
 package lisa.maths.SetTheory.Base
 
 import Comprehension.|
+import Symbols.*
 
 /**
  * The difference of two sets `x` and `y` is the set `x ∖ y = {z ∈ x | z ∉ y}`.
  */
 object Difference extends lisa.Main {
-
-  private val x, y, z = variable[Ind]
 
   /**
    * Set Difference --- Given two sets, produces the set that contains
@@ -21,7 +20,7 @@ object Difference extends lisa.Main {
   val ∖ = DEF(λ(x, λ(y, { z ∈ x | z ∉ y }))).printInfix()
   val diff = ∖
 
-  extension (x: set) {
-    infix def ∖(y: set): set = diff(x)(y)
+  extension (x: Expr[Set]) {
+    infix def ∖(y: Expr[Set]): Expr[Set] = diff(x)(y)
   }
 }

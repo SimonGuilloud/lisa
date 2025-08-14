@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 /**
  * The union of two sets `x` and `y` is the set `x ∪ y` that contains all
  * elements of `x`, and all elements of `y`.
@@ -11,9 +13,6 @@ package lisa.maths.SetTheory.Base
  */
 object Union extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
-  private val a, b = variable[Ind]
-
   /**
    * Binary Set ⋃ --- `x ∪ y = ⋃{x, y}`
    *
@@ -23,12 +22,12 @@ object Union extends lisa.Main {
   val ∪ = DEF(λ(x, λ(y, ⋃(unorderedPair(x, y))))).printInfix()
   val setUnion = ∪
 
-  extension (x: set) {
+  extension (x: Expr[Set]) {
 
     /**
      * Infix notation for `x ∪ y`.
      */
-    inline infix def ∪(y: set): set = setUnion(x)(y)
+    inline infix def ∪(y: Expr[Set]): Expr[Set] = setUnion(x)(y)
   }
 
   /**
@@ -113,6 +112,21 @@ object Union extends lisa.Main {
   }
 
   /**
+    * Theorem --- If `y ∈ x` then `y ⊆ ⋃x`.
+    */
+  val subset = Theorem(
+    y ∈ x |- y ⊆ ⋃(x)
+  ) {
+    assume(y ∈ x)
+    have(z ∈ y |- (y ∈ x) /\ (z ∈ y)) by Tautology
+    thenHave(z ∈ y |- ∃(y ∈ x, z ∈ y)) by RightExists
+    thenHave(z ∈ y |- z ∈ ⋃(x)) by Substitute(⋃.definition)
+    thenHave(z ∈ y ==> (z ∈ ⋃(x))) by Restate
+    thenHave(∀(z, z ∈ y ==> (z ∈ ⋃(x)))) by RightForall
+    thenHave(thesis) by Substitute(⊆.definition of (x := y, y := ⋃(x)))
+  }
+
+  /**
    * Theorem --- If `x ⊆ y` then `(x ∪ z) ⊆ (y ∪ z)`, i.e., the function `_ ∪ z` is monotonic.
    *
    *   `x ⊆ y ==> (x ∪ z) ⊆ (y ∪ z)
@@ -161,6 +175,24 @@ object Union extends lisa.Main {
   }
 
   /**
+    * Theorem --- If `y ⊆ A` for all `y ∈ x` then `⋃x ⊆ A`.
+    *
+    * Generalization of [[monotonic]].
+    */
+  val unaryMonotonic = Theorem(
+    ∀(y ∈ x, y ⊆ A) |- ⋃(x) ⊆ A
+  ) {
+    assume(∀(y ∈ x, y ⊆ A))
+    thenHave(y ∈ x |- y ⊆ A) by InstantiateForall(y)
+    thenHave((y ∈ x) /\ (z ∈ y) |- z ∈ A) by Tautology.fromLastStep(Subset.membership of (x := y, y := A))
+    thenHave(∃(y ∈ x, z ∈ y) |- z ∈ A) by LeftExists
+    thenHave(z ∈ ⋃(x) |- z ∈ A) by Substitute(⋃.definition)
+    thenHave(z ∈ ⋃(x) ==> (z ∈ A)) by Restate
+    thenHave(∀(z, z ∈ ⋃(x) ==> (z ∈ A))) by RightForall
+    thenHave(thesis) by Substitute(⊆.definition of (x := ⋃(x), y := A))
+  }
+
+  /**
    * Theorem --- The union preserves the subset relation on the left.
    *
    *   `x ⊆ z /\ y ⊆ z ==> x ∪ y ⊆ z`
@@ -176,6 +208,27 @@ object Union extends lisa.Main {
       Subset.membership of (x := y, y := z, z := a)
     )
     thenHave(∀(a, a ∈ (x ∪ y) ==> (a ∈ z))) by RightForall
+    thenHave(thesis) by Substitute(⊆.definition)
+  }
+
+  /**
+   * Theorem --- The unary union preserves the subset relation on the left.
+   *
+   *   `∀y ∈ x. y ⊆ z |- ⋃x ⊆ z`
+    *
+    * Generalization of [[leftUnionSubset]].
+   */
+  val leftUnaryUnionSubset = Theorem(
+    ∀(y ∈ x, y ⊆ z) |- ⋃(x) ⊆ z
+  ) {
+    assume(∀(y ∈ x, y ⊆ z))
+    thenHave(y ∈ x |- y ⊆ z) by InstantiateForall(y)
+    thenHave(y ∈ x |- ∀(a, a ∈ y ==> a ∈ z)) by Substitute(⊆.definition of (x := y, y := z))
+    thenHave((y ∈ x, a ∈ y) |- a ∈ z) by InstantiateForall(a)
+    thenHave((a ∈ y) /\ (y ∈ x) |- a ∈ z) by Restate
+    thenHave(∃(y, (a ∈ y) /\ (y ∈ x)) |- a ∈ z) by LeftExists
+    thenHave(a ∈ ⋃(x) ==> a ∈ z) by Tautology.fromLastStep(⋃.definition of (z := a))
+    thenHave(∀(a ∈ ⋃(x), a ∈ z)) by RightForall
     thenHave(thesis) by Substitute(⊆.definition)
   }
 

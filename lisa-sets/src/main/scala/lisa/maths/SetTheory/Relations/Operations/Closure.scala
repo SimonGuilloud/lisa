@@ -1,9 +1,11 @@
-package lisa.maths.SetTheory.Relations.Operations
+package lisa.maths.SetTheory.Relations
+package Operations
 
 import lisa.maths.SetTheory.Base.Predef.*
-import lisa.maths.SetTheory.Relations.Definitions.*
-import lisa.maths.SetTheory.Relations.Examples.IdentityRelation
-import lisa.maths.SetTheory.Relations.Examples.IdentityRelation.Δ
+import lisa.maths.SetTheory.Relations.Predef.*
+
+import Examples.IdentityRelation
+import Examples.IdentityRelation.Δ
 
 /**
  * The closure of a relation `R` with regards to a property `P` is the smallest
@@ -40,7 +42,7 @@ object Closure extends lisa.Main {
   ) {
     have(Δ(X) ⊆ (R ∪ Δ(X))) by Tautology.from(Union.rightSubset of (x := R, y := Δ(X)))
     thenHave(Δ(X) ⊆ reflexiveClosure(R)(X)) by Substitute(reflexiveClosure.definition)
-    thenHave(thesis) by Tautology.fromLastStep(IdentityRelation.identityRelationSubset of (R := reflexiveClosure(R)(X)))
+    thenHave(thesis) by Tautology.fromLastStep(IdentityRelation.subset of (R := reflexiveClosure(R)(X)))
   }
 
   /**

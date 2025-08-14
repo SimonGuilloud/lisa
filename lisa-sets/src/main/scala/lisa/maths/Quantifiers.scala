@@ -66,19 +66,6 @@ object Quantifiers extends lisa.Main {
   }
 
   /**
-   * Theorem --- If there exists a unique element satisfying a predicate `P`,
-   * then `εx. P` is that element.
-   */
-  val existsOneEpsilon = Theorem(
-    ∃!(x, P(x)) |- P(ε(x, P(x)))
-  ) {
-    have(P(x) /\ ∀(y, P(y) ==> (y === x)) |- P(x)) by Tautology
-    thenHave(P(x) /\ ∀(y, P(y) ==> (y === x)) |- P(ε(x, P(x)))) by RightEpsilon
-    thenHave(∃(x, P(x) /\ ∀(y, P(y) ==> (y === x))) |- P(ε(x, P(x)))) by LeftExists
-    thenHave(thesis) by Substitution.Apply(∃!.definition)
-  }
-
-  /**
    * Theorem --- If there exists a unique element satisfying `P`, then whenever
    * both `P(x)` and `P(y)` hold we have `x === y`.
    */
@@ -98,6 +85,35 @@ object Quantifiers extends lisa.Main {
     thenHave(∃(x, P(x) /\ ∀(y, P(y) ==> (y === x))) |- ∀(a, ∀(b, P(a) /\ P(b) ==> (a === b)))) by LeftExists
     thenHave(thesis) by Substitution.Apply(∃!.definition)
   }
+
+  /**
+   * Theorem --- If there exists a unique element satisfying a predicate `P`,
+   * then `εx. P` is that element.
+   */
+  val existsOneEpsilon = Theorem(
+    ∃!(x, P(x)) |- P(ε(x, P(x)))
+  ) {
+    have(P(x) /\ ∀(y, P(y) ==> (y === x)) |- P(x)) by Tautology
+    thenHave(P(x) /\ ∀(y, P(y) ==> (y === x)) |- P(ε(x, P(x)))) by RightEpsilon
+    thenHave(∃(x, P(x) /\ ∀(y, P(y) ==> (y === x))) |- P(ε(x, P(x)))) by LeftExists
+    thenHave(thesis) by Substitution.Apply(∃!.definition)
+  }
+
+  /**
+    * Theorem --- If there exists a unique element satisfying `P`, then `εx. P(x)`
+    * is that element.
+    */
+  val existsOneEpsilonUniqueness = Theorem(
+    ∃!(x, P(x)) |- P(y) <=> (y === ε(x, P(x)))
+  ) {
+    assume(∃!(x, P(x)))
+    have(P(y) /\ P(ε(x, P(x))) ==> (y === ε(x, P(x)))) by InstantiateForall(y, ε(x, P(x)))(existsOneUniqueness)
+    val `==>` = thenHave(P(y) ==> (y === ε(x, P(x)))) by Tautology.fromLastStep(existsOneEpsilon)
+    val `<==` = have(y === ε(x, P(x)) |- P(y)) by Congruence.from(existsOneEpsilon)
+
+    have(thesis) by Tautology.from(`==>`, `<==`)
+  }
+
 
   /**
    * Theorem --- There exists a unique `x` such that `P(x)` if and only if:
@@ -193,6 +209,7 @@ object Quantifiers extends lisa.Main {
     have(thesis) by Tableau
   }
 
+  ///////////////////////////////////////////////////////////////////////////
   section("Distribution")
 
   /**

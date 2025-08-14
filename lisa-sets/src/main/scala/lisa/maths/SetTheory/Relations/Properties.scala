@@ -1,202 +1,91 @@
 package lisa.maths.SetTheory.Relations
 
 import lisa.maths.SetTheory.Base.Predef.{*, given}
-import Definitions.*
+import Relation.*
 
 /**
- * This file proves basic properties about definitions given in [[Definitions]].
- */
+  * This file define important properties about relations:
+  * - Reflexivity
+  * - Symmetry
+  * - Anti-symmetry
+  * - Totality
+  */
 object Properties extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
-  private val a, b = variable[Ind]
-  private val R = variable[Ind]
-  private val X, Y = variable[Ind]
-  private val A, B = variable[Ind]
-
-  extension (x: set) {
-    private infix def R(y: set): Expr[Prop] = (x, y) ∈ Properties.R
-  }
-
-  //////////////////////////////////////////////////////////////////////////
-  section("Basic theorems")
-
   /**
-   * Theorem --- If `R` is a relation on `X` then `R` is a relation.
+   * Reflexive Relation --- Every element relates to itself:
    *
-   *   `relationOn(R, X) |- relation(R)`
+   *   `∀ x ∈ X. x R x`
    */
-  val relationOnIsRelation = Theorem(
-    relationOn(R)(X) |- relation(R)
-  ) {
-    assume(relationOn(R)(X))
-    thenHave(R ⊆ (X × X)) by Substitute(relationOn.definition)
-    thenHave(∃(Y, R ⊆ (X × Y))) by RightExists
-    thenHave(∃(X, ∃(Y, R ⊆ (X × Y)))) by RightExists
-    thenHave(thesis) by Substitute(relation.definition)
-  }
+  val reflexive = DEF(λ(R, λ(X, ∀(x ∈ X, x R x))))
 
   /**
-   * Theorem --- If `R` only contains pairs, then it is a relation.
-   */
-  val setOfPairsIsRelation = Theorem(
-    ∀(z, z ∈ R ==> ∃(x, ∃(y, z === (x, y)))) |- relation(R)
-  ) {
-    sorry
-  }
-
-  /**
-   * Theorem --- If `R` is a relation between `X` and `Y` then `dom(R) ⊆ X`.
-   */
-  val relationDomainSubset = Theorem(
-    relationBetween(R)(X)(Y) |- dom(R) ⊆ X
-  ) {
-    sorry
-  }
-
-  /**
-   * Theorem --- If `R` is a relation between `X` and `Y` then `range(R) ⊆ Y`.
-   */
-  val relationRangeSubset = Theorem(
-    relationBetween(R)(X)(Y) |- range(R) ⊆ Y
-  ) {
-    sorry
-  }
-
-  /**
-   * Theorem --- If `x R y` then `x ∈ dom(R)`.
-   */
-  val domainMembership = Theorem(
-    (x R y) |- x ∈ dom(R)
-  ) {
-    sorry
-  }
-
-  /**
-   * Theorem --- If `x R y` then `y ∈ dom(R)`.
-   */
-  val rangeMembership = Theorem(
-    (x R y) |- y ∈ range(R)
-  ) {
-    sorry
-  }
-
-  /**
-   * Theorem --- If `R` is a relation, then `R ⊆ dom(R) × range(R)`.
+   * Irreflexive Relation --- No element is related to itself:
    *
-   *   `relation(R) |- R ⊆ dom(R) × range(R)`
+   *   `∀ x ∈ X. ¬(x R x)`
    */
-  val relationDomainRange = Theorem(
-    relation(R) |- R ⊆ (dom(R) × range(R))
-  ) {
-    sorry
-  }
+  val irreflexive = DEF(λ(R, λ(X, ∀(x ∈ X, ¬(x R x)))))
 
   /**
-   * Theorem --- If `R` is a relation on `X` and `x ∉ X` or `y ∉ X`
-   * then `¬(x R y)`.
-   */
-  val relationOutsideDomain = Theorem(
-    (relationOn(R)(X), (x ∉ X) \/ (y ∉ X)) |- ¬(x R y)
-  ) {
-    assume(relationOn(R)(X))
-    thenHave(R ⊆ (X × X)) by Substitute(relationOn.definition)
-    thenHave((x, y) ∈ R ==> (x ∈ X) /\ (y ∈ X)) by Tautology.fromLastStep(
-      Subset.membership of (x := R, y := (X × X), z := (x, y)),
-      CartesianProduct.pairMembership of (A := X, B := X)
-    )
-    thenHave(thesis) by Tautology
-  }
-
-  //////////////////////////////////////////////////////////////////////////
-  section("Reformulations")
-
-  /**
-   * Theorem --- If `R` is transitive, then `x R y` and `y R z` implies `x R z`.
+   * Symmetric Relation --- If `x` is related to `y` then `y` is related to
+   * `x`.
    *
-   * Reformulation of the definition.
+   *   `∀ x, y ∈ X. x R y ⇔ y R x`
    */
-  val appliedTransitivity = Theorem(
-    (transitive(R), x R y, y R z) |- (x R z)
-  ) {
-    assume(transitive(R))
-    have(∀(x, ∀(y, ∀(z, (x R y) /\ (y R z) ==> (x R z))))) by Tautology.from(transitive.definition)
-    thenHave((x R y) /\ (y R z) ==> (x R z)) by InstantiateForall(x, y, z)
-    thenHave(thesis) by Restate
-  }
+  val symmetric = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) <=> (y R x))))))
 
   /**
-   * Theorem --- If `R` is a relation on `X`, it suffices to show transitivity on `X`
-   * to get full transitivity.
-   */
-  val restrictedTransitivity = Theorem(
-    (relationOn(R)(X), ∀(x, ∀(y, ∀(z, (x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ (x R y) /\ (y R z) ==> (x R z))))) |- transitive(R)
-  ) {
-    assume(relationOn(R)(X))
-    assume(∀(x, ∀(y, ∀(z, (x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ (x R y) /\ (y R z) ==> (x R z)))))
-    val assumption = thenHave((x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ (x R y) /\ (y R z) ==> (x R z)) by InstantiateForall(x, y, z)
-
-    // Since `R` is a relation on `X`, it cannot be the case that `x R y` if `x ∉ X` or `y ∉ X`.
-    have((x ∉ X) \/ (y ∉ X) \/ (z ∉ X) |- ¬(x R y) \/ ¬(y R z)) by Tautology.from(
-      relationOutsideDomain of (x := x, y := y),
-      relationOutsideDomain of (x := y, y := z)
-    )
-    thenHave((x R y) /\ (y R z) ==> (x R z)) by Tautology.fromLastStep(assumption)
-    thenHave(∀(x, ∀(y, ∀(z, (x R y) /\ (y R z) ==> (x R z))))) by Generalize
-    thenHave(relation(R) /\ ∀(x, ∀(y, ∀(z, (x R y) /\ (y R z) ==> (x R z))))) by Tautology.fromLastStep(relationOnIsRelation)
-    thenHave(thesis) by Substitute(transitive.definition)
-  }
-
-  /**
-   * Theorem --- If `R` is total on `X`, then for `x, y ∈ X`, either `x R y`,
-   * `y R x` or `x = y`.
+   * Asymmetric Relation --- If `x` is related to `y` then `y` is not related
+   * to `x`.
    *
-   * Reformulation of the definition.
+   *   `∀ x, y ∈ X. x R y ==> ¬(y R x)`
    */
-  val appliedTotality = Theorem(
-    (total(R)(X), x ∈ X, y ∈ X) |- (x R y) \/ (y R x) \/ (x === y)
-  ) {
-    assume(total(R)(X))
-
-    have(∀(x, ∀(y, (x ∈ X) /\ (y ∈ X) ==> (x R y) \/ (y R x) \/ (x === y)))) by Tautology.from(total.definition)
-    thenHave((x ∈ X) /\ (y ∈ X) ==> (x R y) \/ (y R x) \/ (x === y)) by InstantiateForall(x, y)
-    thenHave(thesis) by Restate
-  }
-
-  //////////////////////////////////////////////////////////////////////////
-  section("Properties")
+  val asymmetric = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) ==> ¬(y R x))))))
 
   /**
-   * Theorem --- Any irreflexive relation is not reflexive on a non-empty set.
+   * Antisymmetric Relation --- If `x` is related to `y` and vice-versa, then
+   * `x = y`.
+   *
+   *   `∀ x, y ∈ X. x R y ∧ y R x ⇒ y = x`
    */
-  val irreflexiveNotReflexive = Theorem(
-    (irreflexive(R), X ≠ ∅) |- ¬(reflexive(R)(X))
-  ) {
-    assume(irreflexive(R))
-    assume(X ≠ ∅)
-
-    have(∀(x, ¬(x R x))) by Tautology.from(irreflexive.definition)
-    thenHave(¬(x R x)) by InstantiateForall(x)
-    thenHave(x ∈ X |- x ∈ X /\ ¬(x R x)) by Tautology
-    thenHave(x ∈ X |- ∃(x, x ∈ X /\ ¬(x R x))) by RightExists
-    thenHave(∃(x, x ∈ X) |- ∃(x, x ∈ X /\ ¬(x R x))) by LeftExists
-
-    have(∃(x, x ∈ X /\ ¬(x R x))) by Cut(EmptySet.nonEmptyHasElement of (x := X), lastStep)
-    thenHave(thesis) by Tautology.fromLastStep(reflexive.definition)
-  }
+  val antisymmetric = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) /\ (y R x) ==> (x === y))))))
 
   /**
-   * Theorem --- Any asymmetric relation is irreflexive.
+   * Transitive Relation --- If `x` is related to `y` and `y` is related to `z`, then `x`
+   * is related to `z`.
+   *
+   *   `∀ x, y, z ∈ X. x R y ∧ y R z ⇒ x R z`
    */
-  val asymmetricIrreflexive = Theorem(
-    asymmetric(R) |- irreflexive(R)
-  ) {
-    assume(asymmetric(R))
-    have(∀(x, ∀(y, (x R y) ==> ¬(y R x)))) by Tautology.from(asymmetric.definition)
-    thenHave((x R x) ==> ¬(x R x)) by InstantiateForall(x, x)
-    thenHave(¬(x R x)) by Tautology
-    thenHave(∀(x, ¬(x R x))) by RightForall
-    thenHave(thesis) by Tautology.fromLastStep(asymmetric.definition, irreflexive.definition)
-  }
+  val transitive = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, ∀(z ∈ X, (x R y) /\ (y R z) ==> (x R z)))))))
+
+  /**
+   * Connected Relation --- For every pair of elements `x, y ∈ X`, either `x` is related to `y`,
+   * `y` is related to `x`, or `x = y`.
+   *
+   *   `∀ x ∈ X, y ∈ X. (x R y) ∨ (y R x) ∨ (x = y)`
+   */
+  val connected = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) \/ (y R x) \/ (x === y))))))
+
+  /**
+   * Total Relation --- Alias for [[connected]].
+   */
+  val total = connected
+
+  /**
+   * Strongly Connected Relation --- For every pair of elements `x, y ∈ X`,
+   * either `x` is related to `y` or `y` is related to `x`.
+   *
+   * `∀ x ∈ X, y ∈ X. (x R y) \/ (y R x)`
+   *
+   * @see [[connected]]
+   */
+  val stronglyConnected = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) \/ (y R x))))))
+
+  /**
+    * Functional --- `R` is said to be functional on `X` if for all `x ∈ X`,
+    * whenever `x R y` and `x R z` hold, we must have `y = z`.
+    */
+  val functional = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y, ∀(z, (x R y) /\ (x R z) ==> (y === z)))))))
 
 }
+

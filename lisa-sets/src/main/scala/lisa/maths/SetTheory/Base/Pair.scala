@@ -4,6 +4,7 @@ import Singleton.singleton
 import Union.∪
 import Intersection.{⋂, ∩}
 import Comprehension.|
+import Symbols.*
 
 import lisa.maths.Quantifiers
 
@@ -17,10 +18,8 @@ import lisa.maths.Quantifiers
  */
 object Pair extends lisa.Main {
 
-  private val a, b, c, d = variable[Ind]
-  private val x, y, z = variable[Ind]
   private val p = variable[Ind]
-  private val P, Q = variable[Ind >>: Prop]
+  private val Q = variable[Ind >>: Prop]
 
   /**
    * Ordered Pair --- `(x, y)`. Shorthand for `{{x}, {x, y}}` (Kuratowski's definition).
@@ -206,7 +205,7 @@ object Pair extends lisa.Main {
    *
    *    `x = (fst(x), snd(x))`
    */
-  val pairReconstruction = Theorem(
+  val inversion = Theorem(
     x === (a, b) |- (x === (fst(x), snd(x)))
   ) {
     have(thesis) by Congruence.from(

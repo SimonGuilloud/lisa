@@ -1,5 +1,7 @@
 package lisa.maths.SetTheory.Base
 
+import Symbols.*
+
 import lisa.maths.Quantifiers.∃!
 
 /**
@@ -7,11 +9,11 @@ import lisa.maths.Quantifiers.∃!
  *
  * Not all classes represent sets: for example, the class of all sets (`V`) is
  * not a set (see [[WellFounded.noUniversalSet]]), as well as the class of all
- * ordinals (`On`). Such classes are called proper classes.
+ * ordinals (`Ord`, see [[lisa.maths.SetTheory.Ordinals.Ordinal]]). Such classes
+ * are called [[Class.proper]] classes.
  */
 object Class extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
   private val C = variable[Class]
 
   /**
@@ -29,12 +31,12 @@ object Class extends lisa.Main {
   /**
    * Theorem --- `V` is a proper class: there is no set that contains all sets.
    *
-   * Reformulation of [[WellFounded.noUniversalSet]].
+   * Reformulation of [[FoundationAxiom.noUniversalSet]].
    */
   val `V is a proper class` = Theorem(
     proper(V)
   ) {
-    have(¬(y ∈ y <=> ⊤)) by Restate.from(WellFounded.selfNonInclusion of (x := y))
+    have(¬(y ∈ y <=> ⊤)) by Restate.from(FoundationAxiom.selfNonInclusion of (x := y))
     thenHave(¬(y ∈ y <=> V(y))) by Substitute(V.definition)
     thenHave((y ∈ y <=> V(y)) |- ()) by Restate
     thenHave(∀(x, x ∈ y <=> V(x)) |- ()) by LeftForall

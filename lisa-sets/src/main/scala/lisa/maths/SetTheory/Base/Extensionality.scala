@@ -41,7 +41,7 @@ def Extensionality(using proof: SetTheoryLibrary.Proof)(premise: proof.Fact)(con
         val eq = x_ === y_
         val baseSequent = premiseSeq ->> equiv
 
-        have(baseSequent +>> ∀(z, equiv)) by RightForall.withParameters(equiv, z)(premise)
+        have(baseSequent +>> forall(z, equiv)) by RightForall.withParameters(equiv, z)(premise)
         thenHave(baseSequent +>> eq) by Tautology.fromLastStep(extensionalityAxiom of (x := x_, y := y_))
       }
   }

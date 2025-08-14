@@ -2,7 +2,8 @@ package lisa.maths.SetTheory.Base
 
 import Replacement.|
 import Union.∪
-import Pair.{pair, given}
+import Pair.{*, given}
+import Symbols.*
 
 /**
  * The Cartesian product of two sets `A` and `B` is the set `A × B` containing
@@ -10,11 +11,7 @@ import Pair.{pair, given}
  */
 object CartesianProduct extends lisa.Main {
 
-  private val x, y, z = variable[Ind]
-  private val a, b, c, d = variable[Ind]
-  private val A, B, C, D = variable[Ind]
   private val S = variable[Ind]
-  private val f = variable[Ind >>: Ind]
 
   /**
    * Cartesian Product --- Given two sets `A` and `B`, their Cartesian product
@@ -43,8 +40,8 @@ object CartesianProduct extends lisa.Main {
   ).printInfix()
   val cartesianProduct = ×
 
-  extension (x: set) {
-    inline infix def ×(y: set): set = cartesianProduct(x)(y)
+  extension (x: Expr[Set]) {
+    inline infix def ×(y: Expr[Set]): Expr[Set] = cartesianProduct(x)(y)
   }
 
   /**
@@ -65,7 +62,7 @@ object CartesianProduct extends lisa.Main {
 
     have((b ∈ B, `A × {b}` === y, z ∈ y) |- z ∈ `A × {b}`) by Congruence
     val secondReplacement = thenHave((b ∈ B, `A × {b}` === y, z ∈ y) |- ∃(a, a ∈ A /\ ((a, b) === z))) by Tautology.fromLastStep(
-      Replacement.membership of (S := A, y := z, f := λ(a, (a, b)))
+      Replacement.membership of (S := A, y := z, F := λ(a, (a, b)))
     )
 
     have((b ∈ B, a ∈ A, (a, b) === z) |- (a ∈ A) /\ (b ∈ B) /\ ((a, b) === z)) by Restate
@@ -106,13 +103,13 @@ object CartesianProduct extends lisa.Main {
     have(x ∈ A /\ ((x, y) === (x, y))) by Tautology
     thenHave(∃(a, a ∈ A /\ ((a, y) === (x, y)))) by RightExists
     val firstReplacement = thenHave((x, y) ∈ `A × {y}`) by Tautology.fromLastStep(
-      Replacement.membership of (S := A, y := (x, y), f := λ(x, (x, y)))
+      Replacement.membership of (A := A, y := (x, y), F := λ(x, (x, y)))
     )
 
     thenHave(y ∈ B /\ (`A × {y}` === `A × {y}`)) by Tautology
     thenHave(∃(b, b ∈ B /\ ({ (x, b) | x ∈ A } === `A × {y}`))) by RightExists
     val secondReplacement = thenHave(`A × {y}` ∈ { `A × {y}` | y ∈ B }) by Tautology.fromLastStep(
-      Replacement.membership of (S := B, f := λ(y, `A × {y}`), y := `A × {y}`)
+      Replacement.membership of (A := B, F := λ(y, `A × {y}`), y := `A × {y}`)
     )
 
     have(`A × {y}` ∈ { `A × {y}` | y ∈ B } /\ ((x, y) ∈ `A × {y}`)) by RightAnd(secondReplacement, firstReplacement)
@@ -167,6 +164,41 @@ object CartesianProduct extends lisa.Main {
     }
 
     have(thesis) by Tautology.from(`==>`, `<==`, membership of (z := (x, y)))
+  }
+
+  /**
+    * Inversion theorem --- If `z ∈ A × B` then `z` is a pair.
+    *
+    * Important theorem, since it allows us to work on pairs only.
+    */
+  val inversion = Theorem(
+    z ∈ (A × B) |- z === (fst(z), snd(z))
+  ) {
+    have(z === (x, y) |- z === (fst(z), snd(z))) by Restate.from(Pair.inversion of (a := x, b := y, x := z))
+    thenHave((x ∈ A) /\ (y ∈ B) /\ (z === (x, y)) |- z === (fst(z), snd(z))) by Tautology
+    thenHave(∃(y, (x ∈ A) /\ (y ∈ B) /\ (z === (x, y))) |- z === (fst(z), snd(z))) by LeftExists
+    thenHave(∃(x, ∃(y, (x ∈ A) /\ (y ∈ B) /\ (z === (x, y)))) |- z === (fst(z), snd(z))) by LeftExists
+    thenHave(thesis) by Substitute(membership)
+  }
+
+  /**
+    * Theorem --- If `z ∈ A × B` then `fst(z) ∈ A`.
+    */
+  val fstMembership = Theorem(
+    z ∈ (A × B) |- fst(z) ∈ A
+  ) {
+    have(z ∈ (A × B) |- (fst(z), snd(z)) ∈ (A × B)) by Congruence.from(inversion)
+    thenHave(thesis) by Tautology.fromLastStep(pairMembership of (x := fst(z), y := snd(z)))
+  }
+
+  /**
+    * Theorem --- If `z ∈ A × B` then `snd(z) ∈ B`.
+    */
+  val sndMembership = Theorem(
+    z ∈ (A × B) |- snd(z) ∈ B
+  ) {
+    have(z ∈ (A × B) |- (fst(z), snd(z)) ∈ (A × B)) by Congruence.from(inversion)
+    thenHave(thesis) by Tautology.fromLastStep(pairMembership of (x := fst(z), y := snd(z)))
   }
 
   /**
@@ -291,5 +323,4 @@ object CartesianProduct extends lisa.Main {
       right
     )
   }
-
 }
