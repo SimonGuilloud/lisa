@@ -170,7 +170,7 @@ object Lattices extends lisa.Main {
               }
             }
 
-            case ===(left: Expr[Ind], right: Expr[Ind]) =>
+            case equality(left: Expr[Ind], right: Expr[Ind]) =>
               val s1 = solve(left <= right)
               val s2 = solve(right <= left)
               if !(s1.isValid && s2.isValid) then return proof.InvalidProofTactic("The equality is not true in general")
