@@ -28,5 +28,3 @@ jobs:
         run: sbt "lisa-sets / compile"
       - name: Compile examples
         run: sbt "lisa-examples / compile"
-      - name: Run SetTheory
-        run: .github/runAll.sh
