@@ -535,7 +535,7 @@ trait Syntax {
 
     /**
      * Constructs an application of `f` to `arg`.
-     *
+     * scalafixAll
      * @throws IllegalArgumentException if the sorts don't match.
      */
     def unsafe(f: Expr[?], arg: Expr[?]): Expr[?] =
