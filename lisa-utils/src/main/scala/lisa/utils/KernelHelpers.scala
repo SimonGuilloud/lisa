@@ -2,6 +2,7 @@ package lisa.utils
 
 import lisa.kernel.fol.FOL._
 import lisa.kernel.proof.RunningTheoryJudgement.InvalidJustification
+import lisa.kernel.proof.RunningTheoryJudgement.ValidJustification
 import lisa.kernel.proof.SCProofCheckerJudgement.SCInvalidProof
 import lisa.kernel.proof.SCProofCheckerJudgement.SCValidProof
 import lisa.kernel.proof.SequentCalculus._
@@ -500,9 +501,10 @@ object KernelHelpers {
      * If the Judgement is valid, show the inner justification and returns it.
      * Otherwise, om.output the error leading to the invalid justification and throw an error.
      */
+    @annotation.nowarn("msg=Unreachable case")
     def repr: String = {
       theoryJudgement match {
-        case RunningTheoryJudgement.ValidJustification(just) =>
+        case ValidJustification(just) =>
           just.repr
         case InvalidJustification(message, error) =>
           s"$message\n${error match {
@@ -629,7 +631,6 @@ object KernelHelpers {
               case LeftImplies(_, t1, t2, _, _) => pretty("Left ⇒", t1, t2)
               case LeftIff(_, t1, _, _) => pretty("Left ⇔", t1)
               case Weakening(_, t1) => pretty("Weakening", t1)
-              case Beta(_, t1) => pretty("Beta", t1)
               case LeftRefl(_, t1, _) => pretty("L. Refl", t1)
               case RightRefl(_, _) => pretty("R. Refl")
               case LeftSubstEq(_, t1, _, _) => pretty("L. SubstEq", t1)
@@ -662,7 +663,6 @@ object KernelHelpers {
   def prettySCProof(proof: SCProof): String = prettySCProof(SCValidProof(proof), false)
 
   def mapStepPremises(step: SCProofStep, mapping: Int => Int): SCProofStep = step match
-    case Beta(bot, t1) => Beta(bot, mapping(t1))
     case Cut(bot, t1, t2, phi) => Cut(bot, mapping(t1), mapping(t2), phi)
     case Hypothesis(bot, phi) => Hypothesis(bot, phi)
     case InstSchema(bot, t1, subst) => InstSchema(bot, mapping(t1), subst)

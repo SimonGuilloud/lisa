@@ -1,9 +1,9 @@
 package lisa.maths.SetTheory.Relations
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 
-import Relation.*
-import Properties.*
+import Relation._
+import Properties._
 
 /**
  * This file proves basic theorems about definitions given in [[Relation]] and
@@ -17,8 +17,8 @@ object BasicTheorems extends lisa.Main {
   section("Membership")
 
   /**
-    * Theorem --- If `R` is a relation and `z ∈ R` then `z` is a pair.
-    */
+   * Theorem --- If `R` is a relation and `z ∈ R` then `z` is a pair.
+   */
   val inversion = Theorem(
     (relation(R), z ∈ R) |- z === (fst(z), snd(z))
   ) {
@@ -64,8 +64,8 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `R` is a relation then `R ⊆ (dom(R) × range(R))`.
-    */
+   * Theorem --- If `R` is a relation then `R ⊆ (dom(R) × range(R))`.
+   */
   val relationBetweenDomainRange = Theorem(
     relation(R) |- relationBetween(R)(dom(R))(range(R))
   ) {
@@ -75,7 +75,7 @@ object BasicTheorems extends lisa.Main {
     thenHave(z ∈ R |- (fst(z), snd(z)) ∈ R) by Congruence
     thenHave(z ∈ R |- fst(z) ∈ dom(R) /\ (snd(z) ∈ range(R))) by Tautology.fromLastStep(
       domainMembership of (x := fst(z), y := snd(z)),
-      rangeMembership of (x := fst(z), y := snd(z)),
+      rangeMembership of (x := fst(z), y := snd(z))
     )
     thenHave(z ∈ R |- (fst(z), snd(z)) ∈ (dom(R) × range(R))) by Tautology.fromLastStep(
       CartesianProduct.pairMembership of (x := fst(z), y := snd(z), A := dom(R), B := range(R))
@@ -91,8 +91,8 @@ object BasicTheorems extends lisa.Main {
   section("Relations between X and Y")
 
   /**
-    * Theorem --- If `R` is a relation between `X` and `Y` then `R` is a relation.
-    */
+   * Theorem --- If `R` is a relation between `X` and `Y` then `R` is a relation.
+   */
   val relationBetweenIsRelation = Theorem(
     relationBetween(R)(X)(Y) |- relation(R)
   ) {
@@ -104,9 +104,9 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `R` is a relation between `X` and `Y` and `S ⊆ R`, then
-    * `S` is also a relation between `X` and `Y`.
-    */
+   * Theorem --- If `R` is a relation between `X` and `Y` and `S ⊆ R`, then
+   * `S` is also a relation between `X` and `Y`.
+   */
   val subsetIsRelationBetween = Theorem(
     (relationBetween(R)(X)(Y), S ⊆ R) |- relationBetween(S)(X)(Y)
   ) {
@@ -126,7 +126,7 @@ object BasicTheorems extends lisa.Main {
   ) {
     assume(relationBetween(R)(X)(Y))
 
-    have(x ∈ { fst(z) | z ∈ R} <=> ∃(z ∈ R, fst(z) === x)) by Replacement.apply
+    have(x ∈ { fst(z) | z ∈ R } <=> ∃(z ∈ R, fst(z) === x)) by Replacement.apply
     val `x ∈ dom(R)` = thenHave(x ∈ dom(R) <=> ∃(z ∈ R, fst(z) === x)) by Substitute(dom.definition)
 
     // We show that for any `z ∈ R` we have `fst(z) ∈ X`
@@ -151,7 +151,7 @@ object BasicTheorems extends lisa.Main {
   ) {
     assume(relationBetween(R)(X)(Y))
 
-    have(y ∈ { snd(z) | z ∈ R} <=> ∃(z ∈ R, snd(z) === y)) by Replacement.apply
+    have(y ∈ { snd(z) | z ∈ R } <=> ∃(z ∈ R, snd(z) === y)) by Replacement.apply
     val `y ∈ range(R)` = thenHave(y ∈ range(R) <=> ∃(z ∈ R, snd(z) === y)) by Substitute(range.definition)
 
     // We show that for any `z ∈ R` we have `snd(z) ∈ Y`
@@ -168,14 +168,13 @@ object BasicTheorems extends lisa.Main {
     thenHave(thesis) by Substitute(⊆.definition of (x := range(R), y := Y))
   }
 
-
   /////////////////////////////////////////////////////////////////////////////
   section("Relations on X")
 
   /**
-    * Theorem --- `R` is a relation on `X` if and only if `R` is a relation between
-    * `X` and itself.
-    */
+   * Theorem --- `R` is a relation on `X` if and only if `R` is a relation between
+   * `X` and itself.
+   */
   val relationOnIsRelationBetween = Theorem(
     relationOn(R)(X) <=> relationBetween(R)(X)(X)
   ) {
@@ -299,10 +298,10 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- Any transitive irreflexive relation `R` is asymmetric.
-    *
-    * @see [[`asymmetric ==> irreflexive`]]
-    */
+   * Theorem --- Any transitive irreflexive relation `R` is asymmetric.
+   *
+   * @see [[`asymmetric ==> irreflexive`]]
+   */
   val `transitive + irreflexive ==> asymmetric` = Theorem(
     (transitive(R)(X), irreflexive(R)(X)) |- asymmetric(R)(X)
   ) {

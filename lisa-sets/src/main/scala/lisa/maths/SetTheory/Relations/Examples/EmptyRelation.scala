@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Relations
 package Examples
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
 
 /**
  * The empty relation is the relation that relates no elements together, i.e.,
@@ -38,7 +38,7 @@ object EmptyRelation extends lisa.Main {
     thenHave(z ∈ dom(∅) <=> ∃(x ∈ ∅, fst(x) === z)) by Substitute(dom.definition of (R := ∅))
     thenHave(z ∈ dom(∅) <=> z ∈ ∅) by Tautology.fromLastStep(
       EmptySet.existentialQuantifier of (P := λ(x, fst(x) === z)),
-      EmptySet.definition of (x := z),
+      EmptySet.definition of (x := z)
     )
     thenHave(thesis) by Extensionality
   }
@@ -53,7 +53,7 @@ object EmptyRelation extends lisa.Main {
     thenHave(z ∈ range(∅) <=> ∃(x ∈ ∅, snd(x) === z)) by Substitute(range.definition of (R := ∅))
     thenHave(z ∈ range(∅) <=> z ∈ ∅) by Tautology.fromLastStep(
       EmptySet.existentialQuantifier of (P := λ(x, snd(x) === z)),
-      EmptySet.definition of (x := z),
+      EmptySet.definition of (x := z)
     )
     thenHave(thesis) by Extensionality
   }

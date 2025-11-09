@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Relations
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 
 /**
  * A relation between `X` and `Y` is a subset `R` of the [[CartesianProduct]]
@@ -12,7 +12,9 @@ import lisa.maths.SetTheory.Base.Predef.{*, given}
  */
 object Relation extends lisa.Main {
 
-  /** Relation symbol. */
+  /**
+   * Relation symbol.
+   */
   val R = variable[Ind]
 
   /**
@@ -40,7 +42,10 @@ object Relation extends lisa.Main {
   val relation = DEF(λ(R, ∃(X, ∃(Y, R ⊆ (X × Y)))))
 
   extension (x: Expr[Ind]) {
-    /** We write `x R y` instead of `(x, y) ∈ R`. */
+
+    /**
+     * We write `x R y` instead of `(x, y) ∈ R`.
+     */
     private[Relations] infix def R(y: Expr[Ind]): Expr[Prop] = (x, y) ∈ Relation.R
   }
 

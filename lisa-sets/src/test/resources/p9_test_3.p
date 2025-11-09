@@ -1,4 +1,3 @@
-
 fof(conj, conjecture, [] --> [? [X]: ! [Y]: (p(Y) | ~p(X))]).
 fof(neg_conjecture, assumption, [~? [X]: ! [Y]: (p(Y) | ~p(X))] --> [~? [X]: ! [Y]: (p(Y) | ~p(X))], inference(hyp, [status(thm), 0], [])).
 fof(r1, let, ~? [X]: ! [Y]: (p(Y) | ~p(X))).

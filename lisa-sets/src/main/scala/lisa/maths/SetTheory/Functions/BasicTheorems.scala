@@ -1,13 +1,12 @@
 package lisa.maths.SetTheory.Functions
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.Predef.*
-
-import Function.*
-
 import lisa.maths.Quantifiers
 import lisa.maths.Quantifiers.∃!
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.Predef._
+
+import Function._
 
 /**
  * This file contains proofs of basic properties about functions.
@@ -21,7 +20,10 @@ object BasicTheorems extends lisa.Main {
   private val P, Q = variable[Ind >>: Prop]
 
   extension (f: Expr[Ind]) {
-    /** Syntax for `f(x)`. */
+
+    /**
+     * Syntax for `f(x)`.
+     */
     def apply(x: Expr[Ind]): Expr[Ind] = app(f)(x)
   }
 
@@ -29,8 +31,8 @@ object BasicTheorems extends lisa.Main {
   section("Membership")
 
   /**
-    * Theorem --- If `f` is a function and `z ∈ f` then `z` is a pair.
-    */
+   * Theorem --- If `f` is a function and `z ∈ f` then `z` is a pair.
+   */
   val inversion = Theorem(
     (function(f), z ∈ f) |- (z === (fst(z), snd(z)))
   ) {
@@ -46,10 +48,10 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `(x, y) ∈ f` then `x ∈ dom(f)`.
-    *
-    * Equivalent to [[Relations.BasicTheorems.domainMembership]].
-    */
+   * Theorem --- If `(x, y) ∈ f` then `x ∈ dom(f)`.
+   *
+   * Equivalent to [[Relations.BasicTheorems.domainMembership]].
+   */
   val domainMembership = Theorem(
     (x, y) ∈ f |- x ∈ dom(f)
   ) {
@@ -57,8 +59,8 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `g ⊆ f` then `dom(g) ⊆ dom(f)`.
-    */
+   * Theorem --- If `g ⊆ f` then `dom(g) ⊆ dom(f)`.
+   */
   val domainMonotonic = Theorem(
     g ⊆ f |- dom(g) ⊆ dom(f)
   ) {
@@ -75,10 +77,10 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `(x, y) ∈ f` then `y ∈ range(f)`.
-    *
-    * Equivalent to [[Relations.BasicTheorems.rangeMembership]].
-    */
+   * Theorem --- If `(x, y) ∈ f` then `y ∈ range(f)`.
+   *
+   * Equivalent to [[Relations.BasicTheorems.rangeMembership]].
+   */
   val rangeMembership = Theorem(
     (x, y) ∈ f |- y ∈ range(f)
   ) {
@@ -86,8 +88,8 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `g ⊆ f` then `range(g) ⊆ range(f)`.
-    */
+   * Theorem --- If `g ⊆ f` then `range(g) ⊆ range(f)`.
+   */
   val rangeMonotonic = Theorem(
     g ⊆ f |- range(g) ⊆ range(f)
   ) {
@@ -184,8 +186,8 @@ object BasicTheorems extends lisa.Main {
   section("Function application")
 
   /**
-    * Theorem --- If `f` is a function then `f(x) = y` if and only if `(x, y) ∈ f`.
-    */
+   * Theorem --- If `f` is a function then `f(x) = y` if and only if `(x, y) ∈ f`.
+   */
   val appDefinition = Theorem(
     (function(f), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f
   ) {
@@ -239,13 +241,12 @@ object BasicTheorems extends lisa.Main {
     )
   }
 
-
   ////////////////////////////////////////////////////////////////////////
   section("Functions on A")
 
   /**
-    * Lemma --- If `f` is a function on `A` then `f` is a function.
-    */
+   * Lemma --- If `f` is a function on `A` then `f` is a function.
+   */
   val functionOnIsFunction = Theorem(
     functionOn(f)(A) |- function(f)
   ) {
@@ -256,10 +257,10 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `f` is a function on `A` then `dom(f) = A`.
-    *
-    * Consequence of [[functionBetweenDomain]].
-    */
+   * Theorem --- If `f` is a function on `A` then `dom(f) = A`.
+   *
+   * Consequence of [[functionBetweenDomain]].
+   */
   val functionOnDomain = Theorem(
     functionOn(f)(A) |- dom(f) === A
   ) {
@@ -268,8 +269,8 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- `f` is a function on `A` <=> `f` is a function with `dom(f) = A`.
-    */
+   * Theorem --- `f` is a function on `A` <=> `f` is a function with `dom(f) = A`.
+   */
   val functionOnIffFunctionWithDomain = Theorem(
     functionOn(f)(A) <=> function(f) /\ (dom(f) === A)
   ) {
@@ -323,13 +324,13 @@ object BasicTheorems extends lisa.Main {
         appDefinition of (x := fst(z), y := snd(z)),
         functionOnIsFunction,
         step3,
-        step2,
+        step2
       )
 
       // 5. f(fst(z)) = g(fst(z))
       val step5 = have(f(fst(z)) === g(fst(z))) by Tautology.from(
         `f(x)` of (x := fst(z)),
-        step3,
+        step3
       )
 
       // 6. g(fst(z)) = snd(z)
@@ -357,7 +358,9 @@ object BasicTheorems extends lisa.Main {
       thenHave(thesis) by Substitute(step1)
     }
 
-    /** The reverse implication is obtained by symmetry. */
+    /**
+     * The reverse implication is obtained by symmetry.
+     */
     val `<==` = have(z ∈ g |- z ∈ f) by Tautology.from(`==>` of (f := g, g := f))
 
     have(z ∈ f <=> z ∈ g) by Tautology.from(`==>`, `<==`)
@@ -368,8 +371,8 @@ object BasicTheorems extends lisa.Main {
   section("Subsets, extensions")
 
   /**
-    * Theorem --- If `f` is a function and `g ⊆ f` then `g` is also a function.
-    */
+   * Theorem --- If `f` is a function and `g ⊆ f` then `g` is also a function.
+   */
   val subset = Theorem(
     (function(f), g ⊆ f) |- function(g)
   ) {
@@ -457,9 +460,9 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `f, g` are functions such that `g ⊆ f`, then
-    * `g(x) = y` implies that `f(x) = y`.
-    */
+   * Theorem --- If `f, g` are functions such that `g ⊆ f`, then
+   * `g(x) = y` implies that `f(x) = y`.
+   */
   val extensionApp = Theorem(
     (function(f), function(g), g ⊆ f, x ∈ dom(g)) |- (g(x) === y) ==> (f(x) === y)
   ) {
@@ -480,9 +483,9 @@ object BasicTheorems extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `f` is a function and `x ∉ dom(f)` then `f ∪ {(x, y)}` is a function
-    * on `dom(f) ∪ {x}`.
-    */
+   * Theorem --- If `f` is a function and `x ∉ dom(f)` then `f ∪ {(x, y)}` is a function
+   * on `dom(f) ∪ {x}`.
+   */
   val pointExtension = Theorem(
     (function(f), x ∉ dom(f)) |- functionOn(f ∪ singleton((x, y)))(dom(f) ∪ singleton(x))
   ) {

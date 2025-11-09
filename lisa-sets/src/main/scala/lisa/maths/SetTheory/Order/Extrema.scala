@@ -1,7 +1,8 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import PartialOrder.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+
+import PartialOrder._
 
 /**
  * This file defines extremal elements of an order:

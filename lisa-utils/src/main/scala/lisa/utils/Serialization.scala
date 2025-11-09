@@ -265,10 +265,6 @@ object Serialization {
           proofDOS.writeByte(weakening)
           sequentToProofDOS(bot)
           proofDOS.writeInt(t1)
-        case Beta(bot, t1) =>
-          proofDOS.writeByte(beta)
-          sequentToProofDOS(bot)
-          proofDOS.writeInt(t1)
         case LeftRefl(bot, t1, fa) =>
           proofDOS.writeByte(leftRefl)
           sequentToProofDOS(bot)
@@ -440,8 +436,6 @@ object Serialization {
           exprMap(proofDIS.readInt())
         )
       else if (psType == weakening) Weakening(sequentFromProofDIS(), proofDIS.readInt())
-      else if (psType == beta)
-        Beta(sequentFromProofDIS(), proofDIS.readInt())
       else if (psType == leftRefl) LeftRefl(sequentFromProofDIS(), proofDIS.readInt(), exprMap(proofDIS.readInt()))
       else if (psType == rightRefl) RightRefl(sequentFromProofDIS(), exprMap(proofDIS.readInt()))
       else if (psType == leftSubstEq)

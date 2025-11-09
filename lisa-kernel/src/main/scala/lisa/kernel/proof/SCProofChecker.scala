@@ -380,18 +380,6 @@ object SCProofChecker {
               SCValidProof(SCProof(step))
             else SCInvalidProof(SCProof(step), Nil, "Conclusion cannot be trivially derived from premise.")
 
-          /**
-           * <pre>
-           *    Γ, φ[(λy. e)t/x] |- Δ
-           * ---------------------------
-           *     Γ, φ[e[t/y]/x] |- Δ
-           * </pre>
-           */
-          case Beta(b, t1) =>
-            if (isSame(sequentToFormula(b).betaNormalForm, sequentToFormula(ref(t1)).betaNormalForm)) {
-              SCValidProof(SCProof(step))
-            } else SCInvalidProof(SCProof(step), Nil, "The conclusion is not beta-OL-equivalent to the premise.")
-
           // Equality Rules
           /*
            *  Γ, s=s |- Δ

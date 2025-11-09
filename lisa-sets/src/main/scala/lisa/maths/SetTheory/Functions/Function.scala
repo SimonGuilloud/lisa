@@ -1,10 +1,9 @@
 package lisa.maths.SetTheory.Functions
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Relation
-import lisa.maths.SetTheory.Relations.Predef.*
-
 import lisa.maths.Quantifiers.∃!
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
+import lisa.maths.SetTheory.Relations.Relation
 
 import scala.annotation.targetName
 
@@ -68,7 +67,10 @@ object Function extends lisa.Main {
   })
 
   extension (f: Expr[Ind]) {
-    /** Syntax for `f(x)`. */
+
+    /**
+     * Syntax for `f(x)`.
+     */
     def apply(x: Expr[Ind]): Expr[Ind] = app(f)(x)
   }
 

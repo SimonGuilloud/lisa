@@ -1,11 +1,11 @@
 package lisa.maths.SetTheory.Order
 package WellOrders
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
 
-import PartialOrder.*
-import WellOrder.*
+import PartialOrder._
+import WellOrder._
 
 /**
  * Given a well-ordered set `(A, <)`, one can that a property `P` holds on `A`

@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Order.WellOrders
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 
 /**
  * This file is dedicated to proving the well-ordered and transfinite recursion
@@ -1063,7 +1063,7 @@ object OldRecursion extends lisa.Main {
                   thenHave(∈((t1, a), g) ==> ∈((t1, a), f)) by InstantiateForall((t1, a))
                   val t1aInF = thenHave(∈((t1, a), f)) by Tautology
 
-                  // t must be a 
+                  // t must be a
                   val tIsPair = have(∃(a, ∃(b, (a, b) === t))) subproof {
                     have(∀(t, ∈(t, uw) ==> ∃(a, ∃(b, ((a, b) === t) /\ ∈(a, relationDomain(uw)))))) by Tautology.from(uwfunctional, functionalMembership of (f -> uw))
                     val exIn = thenHave(∃(a, ∃(b, ((a, b) === t) /\ ∈(a, relationDomain(uw))))) by InstantiateForall(t)
@@ -1888,4 +1888,3 @@ object OldRecursion extends lisa.Main {
    */
 
 }
-

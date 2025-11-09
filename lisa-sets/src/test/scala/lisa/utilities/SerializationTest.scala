@@ -5,7 +5,7 @@ import lisa.test.automation.TableauTest
 import lisa.utils.K
 import lisa.utils.K.getJustification
 import lisa.utils.K.|-
-import lisa.utils.Serialization.*
+import lisa.utils.Serialization._
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io._

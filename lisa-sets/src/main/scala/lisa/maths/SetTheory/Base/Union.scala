@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Base
 
-import Symbols.*
+import Symbols._
 
 /**
  * The union of two sets `x` and `y` is the set `x ∪ y` that contains all
@@ -112,8 +112,8 @@ object Union extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `y ∈ x` then `y ⊆ ⋃x`.
-    */
+   * Theorem --- If `y ∈ x` then `y ⊆ ⋃x`.
+   */
   val subset = Theorem(
     y ∈ x |- y ⊆ ⋃(x)
   ) {
@@ -197,8 +197,8 @@ object Union extends lisa.Main {
    * Theorem --- The unary union preserves the subset relation on the left.
    *
    *   `∀y ∈ x. y ⊆ z |- ⋃x ⊆ z`
-    *
-    * Generalization of [[leftUnionSubset]].
+   *
+   * Generalization of [[leftUnionSubset]].
    */
   val leftUnaryUnionSubset = Theorem(
     ∀(y ∈ x, y ⊆ z) |- ⋃(x) ⊆ z

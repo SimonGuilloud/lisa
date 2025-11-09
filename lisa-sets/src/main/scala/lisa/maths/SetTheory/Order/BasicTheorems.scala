@@ -1,12 +1,12 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Relations.Predef._
 
-import PartialOrder.*
-import TotalOrder.*
-import Extrema.*
+import PartialOrder._
+import TotalOrder._
+import Extrema._
 
 /**
  * Properties and theorems about orders.
@@ -16,8 +16,8 @@ object BasicTheorems extends lisa.Main {
   private val Q = variable[Ind]
 
   /**
-    * Theorem --- A `R`-minimal element `a` is also `Q`-minimal for any `Q ⊆ R`.
-    */
+   * Theorem --- A `R`-minimal element `a` is also `Q`-minimal for any `Q ⊆ R`.
+   */
   val minimalElementSubset = Theorem(
     (minimal(a)(A)(R), Q ⊆ R) |- minimal(a)(A)(Q)
   ) {

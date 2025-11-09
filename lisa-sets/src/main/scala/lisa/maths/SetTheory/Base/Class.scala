@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Base
 
-import Symbols.*
-
 import lisa.maths.Quantifiers.∃!
+
+import Symbols._
 
 /**
  * A class is a collection that is characterized by a first-order formula.

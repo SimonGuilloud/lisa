@@ -1,12 +1,12 @@
 package lisa.maths.SetTheory.Base
 
+import lisa.maths.Quantifiers
+
 import Singleton.singleton
 import Union.∪
 import Intersection.{⋂, ∩}
 import Comprehension.|
-import Symbols.*
-
-import lisa.maths.Quantifiers
+import Symbols._
 
 /**
  * The ordered pair `(x, y)` is a pair of elements where order matters:

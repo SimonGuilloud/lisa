@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Relations
 package Operations
 
-import lisa.maths.SetTheory.Base.Predef.*
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef._
+import lisa.maths.SetTheory.Relations.Predef._
 
 import Examples.IdentityRelation
 import Examples.IdentityRelation.Δ

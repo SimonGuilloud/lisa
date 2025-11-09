@@ -1,28 +1,27 @@
 package lisa.maths.SetTheory.Relations
 
+import lisa.maths.Quantifiers.∃!
 import lisa.maths.SetTheory.Base
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
 import lisa.maths.SetTheory.Order.Extrema.minimal
-import lisa.maths.SetTheory.Functions.Predef.*
 
 import Relation.R
 
-import lisa.maths.Quantifiers.∃!
-
 /**
-  * A relation `R` on a set `X` is called well-founded if every non-empty
-  * subset `S ⊆ X` admits a `R`-minimal element.
-  *
-  * Well-founded relations allow one to perform (transfinite) induction on `X`:
-  * to show that `P(x)` holds for all `x ∈ X`, it is sufficient to show that
-  * `P(x)` follows from `P(y)` for all `y ∈ X` such that `y R x`.
-  *
-  * Similarly, we can construct functions by transfinite recursion over `X`, by using
-  * values of the predecessors of `x` to define the function at `x`. More
-  * precisely, there exists a function `G` such that for all `x ∈ X`,
-  * `G(x) = F(x, G ↾ cl(x, R))` where `cl(x, R)` is the transitive closure of the
-  * predecessor relation at `x`.
-  */
+ * A relation `R` on a set `X` is called well-founded if every non-empty
+ * subset `S ⊆ X` admits a `R`-minimal element.
+ *
+ * Well-founded relations allow one to perform (transfinite) induction on `X`:
+ * to show that `P(x)` holds for all `x ∈ X`, it is sufficient to show that
+ * `P(x)` follows from `P(y)` for all `y ∈ X` such that `y R x`.
+ *
+ * Similarly, we can construct functions by transfinite recursion over `X`, by using
+ * values of the predecessors of `x` to define the function at `x`. More
+ * precisely, there exists a function `G` such that for all `x ∈ X`,
+ * `G(x) = F(x, G ↾ cl(x, R))` where `cl(x, R)` is the transitive closure of the
+ * predecessor relation at `x`.
+ */
 object WellFoundedRelation extends lisa.Main {
 
   private val m = variable[Ind]
@@ -37,14 +36,14 @@ object WellFoundedRelation extends lisa.Main {
   }
 
   /**
-    * Well-founded Relation --- A relation `R` on `X` is said to be well-founded if
-    * every non-empty subset of `X` admits a `R`-minimal element.
-    */
+   * Well-founded Relation --- A relation `R` on `X` is said to be well-founded if
+   * every non-empty subset of `X` admits a `R`-minimal element.
+   */
   val wellFounded = DEF(λ(R, λ(X, ∀(S, (S ⊆ X) /\ (S ≠ ∅) ==> ∃(m, minimal(m)(S)(R))))))
 
   /**
-    * Theorem --- Quantifier-free reformulation of the well-foundedness property.
-    */
+   * Theorem --- Quantifier-free reformulation of the well-foundedness property.
+   */
   val minimalElement = Theorem(
     (wellFounded(R)(X), S ⊆ X, S ≠ ∅) |- ∃(m, minimal(m)(S)(R))
   ) {
@@ -55,9 +54,9 @@ object WellFoundedRelation extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `R` is well-founded on `X` and `S ⊆ X` then `R` is well-founded
-    * on `S`.
-    */
+   * Theorem --- If `R` is well-founded on `X` and `S ⊆ X` then `R` is well-founded
+   * on `S`.
+   */
   val subset = Theorem(
     (wellFounded(R)(X), S ⊆ X) |- wellFounded(R)(S)
   ) {
@@ -73,21 +72,19 @@ object WellFoundedRelation extends lisa.Main {
     thenHave(thesis) by Substitute(wellFounded.definition of (X := S))
   }
 
-
   //////////////////////////////////////////////////////////////////////////////////
   section("Well-founded induction")
 
-
   /**
-    * Theorem --- If `R` is well-founded, one can show that `P(x)` holds for all `x ∈ X`
-    * by induction: it is sufficient to show that for all `x ∈ X`, if `P(y)`
-    * holds for all `y R x`, then `P(x)` holds.
-    *
-    * This proof goes by *minimal counterexample*: assuming by contradiction that `¬P(x)`
-    * holds for some `x`, there exists a minimal such counterexample by
-    * well-foundedness, such that `P(y)` holds for all `y R x`. But by assumption this implies
-    * `P(x)`, hence the contradiction.
-    */
+   * Theorem --- If `R` is well-founded, one can show that `P(x)` holds for all `x ∈ X`
+   * by induction: it is sufficient to show that for all `x ∈ X`, if `P(y)`
+   * holds for all `y R x`, then `P(x)` holds.
+   *
+   * This proof goes by *minimal counterexample*: assuming by contradiction that `¬P(x)`
+   * holds for some `x`, there exists a minimal such counterexample by
+   * well-foundedness, such that `P(y)` holds for all `y R x`. But by assumption this implies
+   * `P(x)`, hence the contradiction.
+   */
   val induction = Theorem(
     (wellFounded(R)(X), ∀(x ∈ X, (∀(y ∈ X, (y R x) ==> P(y))) ==> P(x))) |- ∀(x ∈ X, P(x))
   ) {
@@ -136,4 +133,3 @@ object WellFoundedRelation extends lisa.Main {
   }
 
 }
-

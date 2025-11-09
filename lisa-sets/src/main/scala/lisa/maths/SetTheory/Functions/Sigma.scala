@@ -1,7 +1,8 @@
 package lisa.maths.SetTheory.Functions
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import Function.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+
+import Function._
 
 /**
  * Given a set `A` and a function `B`, the dependent sum `Σ(A, B)` is the set

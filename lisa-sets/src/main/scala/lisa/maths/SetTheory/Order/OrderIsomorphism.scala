@@ -1,7 +1,7 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Functions.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
 
 /**
  * Two orders `(A, <A)` and `(B, <B)` are isomorphic if there exists a bijection

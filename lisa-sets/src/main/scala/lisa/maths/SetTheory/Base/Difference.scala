@@ -1,7 +1,7 @@
 package lisa.maths.SetTheory.Base
 
 import Comprehension.|
-import Symbols.*
+import Symbols._
 
 /**
  * The difference of two sets `x` and `y` is the set `x ∖ y = {z ∈ x | z ∉ y}`.

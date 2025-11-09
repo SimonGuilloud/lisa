@@ -1,17 +1,17 @@
 package lisa.maths.SetTheory.Functions
 package Operations
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
 
-import Function.*
+import Function._
 
 /**
-  * The restriction of a function `f` to a domain `A` is the function `f↾A` that
-  * agrees with `f` such that `dom(f ↾ A) = dom(f) ∩ A`.
-  *
-  * TODO: Finish the proofs.
-  */
+ * The restriction of a function `f` to a domain `A` is the function `f↾A` that
+ * agrees with `f` such that `dom(f ↾ A) = dom(f) ∩ A`.
+ *
+ * TODO: Finish the proofs.
+ */
 object Restriction extends lisa.Main {
 
   extension (f: Expr[Ind]) {
@@ -32,13 +32,16 @@ object Restriction extends lisa.Main {
   })
 
   extension (f: Expr[Ind]) {
-    /** Notation `f ↾ A`. */
+
+    /**
+     * Notation `f ↾ A`.
+     */
     infix def ↾(A: Expr[Ind]): Expr[Ind] = restriction(f)(A)
   }
 
   /**
-    * Theorem --- We have `z ∈ (f ↾ A)` if and only `z ∈ f` and `fst(z) ∈ A`.
-    */
+   * Theorem --- We have `z ∈ (f ↾ A)` if and only `z ∈ f` and `fst(z) ∈ A`.
+   */
   val membership = Theorem(
     z ∈ (f ↾ A) <=> (z ∈ f) /\ (fst(z) ∈ A)
   ) {
@@ -47,8 +50,8 @@ object Restriction extends lisa.Main {
   }
 
   /**
-    * Theorem --- We have `(x, y) ∈ (f ↾ A)` if and only `(x, y) ∈ f` and `x ∈ A`.
-    */
+   * Theorem --- We have `(x, y) ∈ (f ↾ A)` if and only `(x, y) ∈ f` and `x ∈ A`.
+   */
   val pairMembership = Theorem(
     (x, y) ∈ (f ↾ A) <=> ((x, y) ∈ f) /\ (x ∈ A)
   ) {
@@ -56,8 +59,8 @@ object Restriction extends lisa.Main {
   }
 
   /**
-    * Theorem --- `f ↾ A ⊆ f`.
-    */
+   * Theorem --- `f ↾ A ⊆ f`.
+   */
   val isSubset = Theorem(
     (f ↾ A) ⊆ f
   ) {
@@ -74,8 +77,8 @@ object Restriction extends lisa.Main {
   }
 
   /**
-    * Theorem --- The domain of `f ↾ A` is `dom(f) ∩ A`.
-    */
+   * Theorem --- The domain of `f ↾ A` is `dom(f) ∩ A`.
+   */
   val domain = Theorem(
     dom(f ↾ A) === (dom(f) ∩ A)
   ) {
@@ -120,7 +123,7 @@ object Restriction extends lisa.Main {
     have(z ∈ (f ↾ ∅) <=> z ∈ f /\ (fst(z) ∈ ∅)) by Restate.from(membership of (A := ∅))
     thenHave(z ∈ (f ↾ ∅) <=> z ∈ ∅) by Tautology.fromLastStep(
       EmptySet.definition of (x := fst(z)),
-      EmptySet.definition of (x := z),
+      EmptySet.definition of (x := z)
     )
     thenHave(thesis) by Extensionality
   }
@@ -138,8 +141,8 @@ object Restriction extends lisa.Main {
   }
 
   /**
-    * Theorem --- We have that `(f ↾ A) ↾ B = f ↾ (A ∩ B)`.
-    */
+   * Theorem --- We have that `(f ↾ A) ↾ B = f ↾ (A ∩ B)`.
+   */
   val doubleRestriction = Theorem(
     (f ↾ A) ↾ B === (f ↾ (A ∩ B))
   ) {
@@ -153,8 +156,8 @@ object Restriction extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `f` is a function and `g ⊆ f` then `g = f↾dom(g)`.
-    */
+   * Theorem --- If `f` is a function and `g ⊆ f` then `g = f↾dom(g)`.
+   */
   val subsetIsRestriction = Theorem(
     (function(f), g ⊆ f) |- (g === f ↾ dom(g))
   ) {

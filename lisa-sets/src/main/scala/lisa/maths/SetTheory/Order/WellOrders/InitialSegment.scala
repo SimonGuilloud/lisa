@@ -1,17 +1,17 @@
 package lisa.maths.SetTheory.Order
 package WellOrders
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.Predef._
 
-import PartialOrder.*
-import LowerSet.*
-import WellOrder.*
+import PartialOrder._
+import LowerSet._
+import WellOrder._
 
 /**
-  * Given a well-order `(A, <)`, the set of all `y ∈ A` such that `y < x`
-  * is called the initial segment of `A` induced by `x`, and is denoted `A_<x`.
+ * Given a well-order `(A, <)`, the set of all `y ∈ A` such that `y < x`
+ * is called the initial segment of `A` induced by `x`, and is denoted `A_<x`.
  *
  * `initialSegment(x, A, <)` is a [[lowerSet]] of `A`. In fact, for a well-order
  * `(A, <)`, all lower sets are of the form `initialSegment(x, A, <)` for
@@ -46,8 +46,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Lemma --- `A_<x ⊆ A`.
-    */
+   * Lemma --- `A_<x ⊆ A`.
+   */
   val subset = Theorem(
     initialSegment(x)(A)(<) ⊆ A
   ) {
@@ -57,10 +57,10 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- `A_<x` is a lower set of `(A, <)`.
-    *
-    * Follows by transitivity of `<`.
-    */
+   * Theorem --- `A_<x` is a lower set of `(A, <)`.
+   *
+   * Follows by transitivity of `<`.
+   */
   val isLowerSet = Theorem(
     (wellOrder(A)(<), x ∈ A) |- lowerSet(initialSegment(x)(A)(<))(A)(<)
   ) {
@@ -83,8 +83,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `x < y` then `A_<x ∩ A_<y = A_<x`.
-    */
+   * Theorem --- If `x < y` then `A_<x ∩ A_<y = A_<x`.
+   */
   val intersection = Theorem(
     (wellOrder(A)(<), x < y, x ∈ A, y ∈ A) |-
       (initialSegment(x)(A)(<) ∩ initialSegment(y)(A)(<)) === initialSegment(x)(A)(<)
@@ -99,7 +99,7 @@ object InitialSegment extends lisa.Main {
     have(z ∈ I <=> (z ∈ A) /\ ((z < x) /\ (z < y))) by Tautology.from(
       Intersection.membership of (x := initialSegment(x)(A)(<), y := initialSegment(y)(A)(<)),
       membership of (y := z, x := x),
-      membership of (y := z, x := y),
+      membership of (y := z, x := y)
     )
     thenHave(z ∈ I <=> (z ∈ A) /\ (z < x)) by Tautology.fromLastStep(
       WellOrder.transitivity,
@@ -112,23 +112,23 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- The intersection of two initial segments is an initial segment.
-    *
-    * Consequence of [[intersection]] and the trichotomy law on total orders.
-    */
+   * Theorem --- The intersection of two initial segments is an initial segment.
+   *
+   * Consequence of [[intersection]] and the trichotomy law on total orders.
+   */
   val intersectionIsInitialSegment = Theorem(
-    (wellOrder(A)(<), x ∈ A, y ∈ A) |- ∃(z ∈ A,
-      (initialSegment(x)(A)(<) ∩ initialSegment(y)(A)(<)) === initialSegment(z)(A)(<))
+    (wellOrder(A)(<), x ∈ A, y ∈ A) |- ∃(z ∈ A, (initialSegment(x)(A)(<) ∩ initialSegment(y)(A)(<)) === initialSegment(z)(A)(<))
   ) {
     assume(wellOrder(A)(<))
     assume(x ∈ A)
     assume(y ∈ A)
 
-    /** There are 3 cases to consider:
-      * - `x < y`
-      * - `y < x`
-      * - `x = y`
-      */
+    /**
+     * There are 3 cases to consider:
+     * - `x < y`
+     * - `y < x`
+     * - `x = y`
+     */
     val `x < y` =
       have(x < y |- (initialSegment(x)(A)(<) ∩ initialSegment(y)(A)(<)) === initialSegment(x)(A)(<)) by Tautology.from(intersection)
       thenHave(x < y |- x ∈ A /\ ((initialSegment(x)(A)(<) ∩ initialSegment(y)(A)(<)) === initialSegment(x)(A)(<))) by Tautology
@@ -159,8 +159,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `x < y` then `A_<x ∪ A_<y = A_<y`.
-    */
+   * Theorem --- If `x < y` then `A_<x ∪ A_<y = A_<y`.
+   */
   val union = Theorem(
     (wellOrder(A)(<), x < y, x ∈ A, y ∈ A) |-
       (initialSegment(x)(A)(<) ∪ initialSegment(y)(A)(<)) === initialSegment(y)(A)(<)
@@ -175,7 +175,7 @@ object InitialSegment extends lisa.Main {
     have(z ∈ U <=> (z ∈ A) /\ ((z < x) \/ (z < y))) by Tautology.from(
       Union.membership of (x := initialSegment(x)(A)(<), y := initialSegment(y)(A)(<)),
       membership of (y := z, x := x),
-      membership of (y := z, x := y),
+      membership of (y := z, x := y)
     )
     thenHave(z ∈ U <=> (z ∈ A) /\ (z < y)) by Tautology.fromLastStep(
       WellOrder.transitivity,
@@ -188,23 +188,23 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- The union of two initial segments is an initial segment.
-    *
-    * Consequence of [[union]] and the trichotomy law on total orders.
-    */
+   * Theorem --- The union of two initial segments is an initial segment.
+   *
+   * Consequence of [[union]] and the trichotomy law on total orders.
+   */
   val unionIsInitialSegment = Theorem(
-    (wellOrder(A)(<), x ∈ A, y ∈ A) |- ∃(z ∈ A,
-      (initialSegment(x)(A)(<) ∪ initialSegment(y)(A)(<)) === initialSegment(z)(A)(<))
+    (wellOrder(A)(<), x ∈ A, y ∈ A) |- ∃(z ∈ A, (initialSegment(x)(A)(<) ∪ initialSegment(y)(A)(<)) === initialSegment(z)(A)(<))
   ) {
     assume(wellOrder(A)(<))
     assume(x ∈ A)
     assume(y ∈ A)
 
-    /** There are 3 cases to consider:
-      * - `x < y`
-      * - `y < x`
-      * - `x = y`
-      */
+    /**
+     * There are 3 cases to consider:
+     * - `x < y`
+     * - `y < x`
+     * - `x = y`
+     */
     val `x < y` =
       have(x < y |- (initialSegment(x)(A)(<) ∪ initialSegment(y)(A)(<)) === initialSegment(y)(A)(<)) by Tautology.from(union)
       thenHave(x < y |- y ∈ A /\ ((initialSegment(x)(A)(<) ∪ initialSegment(y)(A)(<)) === initialSegment(y)(A)(<))) by Tautology
@@ -235,8 +235,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `x < y` then `A_<x ⊆ A_<y`.
-    */
+   * Theorem --- If `x < y` then `A_<x ⊆ A_<y`.
+   */
   val monotonic = Theorem(
     (wellOrder(A)(<), x ∈ A, y ∈ A, x < y) |- initialSegment(x)(A)(<) ⊆ initialSegment(y)(A)(<)
   ) {
@@ -256,8 +256,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- `(A_<x)_<x = A_<x`
-    */
+   * Theorem --- `(A_<x)_<x = A_<x`
+   */
   val idempotence = Theorem(
     initialSegment(x)(initialSegment(x)(A)(<))(<) === initialSegment(x)(A)(<)
   ) {
@@ -266,8 +266,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- For any `y < x` we have `(A_<x)_<y = A_<y`.
-    */
+   * Theorem --- For any `y < x` we have `(A_<x)_<y = A_<y`.
+   */
   val absorption = Theorem(
     (wellOrder(A)(<), x ∈ A, y ∈ initialSegment(x)(A)(<)) |- initialSegment(y)(initialSegment(x)(A)(<))(<) === initialSegment(y)(A)(<)
   ) {
@@ -287,8 +287,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `x = p + 1` (`p` is the predecessor of `x`) then `A_<x = A_<p ∪ {p}`.
-    */
+   * Theorem --- If `x = p + 1` (`p` is the predecessor of `x`) then `A_<x = A_<p ∪ {p}`.
+   */
   val successor = Theorem(
     (wellOrder(A)(<), x ∈ A, p ∈ A, p < x, ¬(∃(y ∈ A, (p < y) /\ (y < x)))) |- initialSegment(x)(A)(<) === (initialSegment(p)(A)(<) ∪ singleton(p))
   ) {
@@ -328,8 +328,8 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- For any `B ⊆ A` we have `initialSegment(x, B, <) = initialSegment(x, A, <) ∩ B`.
-    */
+   * Theorem --- For any `B ⊆ A` we have `initialSegment(x, B, <) = initialSegment(x, A, <) ∩ B`.
+   */
   val ofSubset = Theorem(
     (wellOrder(A)(<), B ⊆ A, x ∈ A) |- initialSegment(x)(B)(<) === (initialSegment(x)(A)(<) ∩ B)
   ) {
@@ -347,9 +347,9 @@ object InitialSegment extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `(A, <)` is a well-order, then `(initialSegment(x, A, <), <)`
-    * is also a well-order.
-    */
+   * Theorem --- If `(A, <)` is a well-order, then `(initialSegment(x, A, <), <)`
+   * is also a well-order.
+   */
   val ofWellOrder = Theorem(
     wellOrder(A)(<) |- wellOrder(initialSegment(x)(A)(<))(<)
   ) {

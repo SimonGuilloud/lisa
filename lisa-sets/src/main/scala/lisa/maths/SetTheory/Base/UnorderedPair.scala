@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Base
 
-import Symbols.*
+import Symbols._
 
 /**
  * `{x, y}` is the unordered pair of `x` and `y`. It is written in LISA as

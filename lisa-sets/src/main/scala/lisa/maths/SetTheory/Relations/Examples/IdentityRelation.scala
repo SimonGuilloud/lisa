@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Relations
 package Examples
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
 
 /**
  * The identity or diagonal relation `Δ(X)` on `X` is the set of pairs `(x, x)`
@@ -24,7 +24,7 @@ object IdentityRelation extends lisa.Main {
    * Theorem --- A relation `R` is reflexive on `X` <=> `Δ(X) ⊆ R`.
    */
   val subset = Theorem(
-     Δ(X) ⊆ R <=> reflexive(R)(X)
+    Δ(X) ⊆ R <=> reflexive(R)(X)
   ) {
     sorry
   }

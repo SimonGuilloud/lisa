@@ -262,16 +262,6 @@ object SequentCalculus {
    */
   case class Weakening(bot: Sequent, t1: Int) extends SCProofStep { val premises = Seq(t1) }
 
-  /**
-   * {{{
-   *    Γ |- φ[(λy. e)t/x], Δ
-   * ---------------------------
-   *     Γ |- φ[e[t/y]/x], Δ
-   * }}}
-   */
-  @deprecated
-  case class Beta(bot: Sequent, t1: Int) extends SCProofStep { val premises = Seq(t1) }
-
   // Equality Rules
   /**
    * {{{

@@ -1,18 +1,20 @@
 package lisa.maths.SetTheory.Order
 
 import lisa.maths.SetTheory.Base
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Relations.Predef._
 
 /**
-  * A partial order `(A, <=)` is a binary relation that is [[transitive]],
-  * [[reflexive]] and [[antisymmetric]]. A strict partial order `(A, <)` is
-  * [[transitive]] and [[irreflexive]].
-  */
+ * A partial order `(A, <=)` is a binary relation that is [[transitive]],
+ * [[reflexive]] and [[antisymmetric]]. A strict partial order `(A, <)` is
+ * [[transitive]] and [[irreflexive]].
+ */
 object PartialOrder extends lisa.Main {
 
-  /** Order symbols. */
+  /**
+   * Order symbols.
+   */
   val <, <= = variable[Ind]
 
   extension (x: Expr[Ind]) {
@@ -26,13 +28,11 @@ object PartialOrder extends lisa.Main {
    */
   val partialOrder = DEF(λ(A, λ(<=, relation(<=) /\ transitive(<=)(A) /\ reflexive(<=)(A) /\ antisymmetric(<=)(A))))
 
-
   /**
    * Strict partial order --- `(A, <)` is a strict partial order if `<` is a
    * binary relation that is [[transitive]] and [[irreflexive]].
    */
   val strictPartialOrder = DEF(λ(A, λ(<, relation(<) /\ transitive(<)(A) /\ irreflexive(<)(A))))
-
 
   /**
    * Theorem --- If `(A, <)` is a strict partial order, then `<` is antisymmetric.
@@ -45,7 +45,8 @@ object PartialOrder extends lisa.Main {
     assume(strictPartialOrder(A)(<))
 
     have(∀(x ∈ A, ¬(x < x))) by Tautology.from(
-      strictPartialOrder.definition, irreflexive.definition of (R := <, X := A)
+      strictPartialOrder.definition,
+      irreflexive.definition of (R := <, X := A)
     )
     val irreflexivity = thenHave(x ∈ A ==> ¬(x < x)) by InstantiateForall(x)
 
@@ -64,4 +65,3 @@ object PartialOrder extends lisa.Main {
     )
   }
 }
-

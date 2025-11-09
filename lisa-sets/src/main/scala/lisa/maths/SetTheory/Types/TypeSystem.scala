@@ -1,18 +1,17 @@
 package lisa.maths.SetTheory.Types
 
-import lisa.utils.prooflib.*
-import lisa.utils.prooflib.ProofTacticLib.*
-import lisa.utils.prooflib.BasicStepTactic.*
-import lisa.utils.prooflib.SimpleDeducedSteps.*
 import lisa.automation.Tautology
-
-import lisa.maths.SetTheory.Base.Predef.{given, *}
-import lisa.maths.SetTheory.Functions.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
+import lisa.utils.prooflib.BasicStepTactic._
+import lisa.utils.prooflib.ProofTacticLib._
+import lisa.utils.prooflib.SimpleDeducedSteps._
+import lisa.utils.prooflib._
 
 import annotation.nowarn
 
-/*
 object TypeLib extends lisa.Main {
+/*
   // import TypeSystem.*
 
   val f = variable[Ind]
@@ -509,6 +508,6 @@ object TypeSystem  {
         }
       }
   }
+ */
 }
 
- */

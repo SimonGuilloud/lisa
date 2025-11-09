@@ -1,9 +1,9 @@
 package lisa.maths.SetTheory.Base
 
-import Singleton.singleton
-import Symbols.*
-
 import lisa.maths.Quantifiers
+
+import Singleton.singleton
+import Symbols._
 
 /**
  * We say that `x` is a subset of `y`, denoted by `x ⊆ y`, if all elements of

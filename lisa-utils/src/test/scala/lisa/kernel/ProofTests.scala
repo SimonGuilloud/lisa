@@ -59,11 +59,7 @@ class ProofTests extends AnyFunSuite {
         Seq((f, lambda(x, g(x, x)))),
         (Seq(f2), exists(x, fp(f2(x))))
       )
-      val t2 = Beta(
-        Set(exists(x, fp(g(x, x))), forall(y, f(y) === g(y, y))) |- exists(x, fp(f(x))),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -74,11 +70,7 @@ class ProofTests extends AnyFunSuite {
         Seq((f, lambda(z, g(z, z)))),
         (Seq(f2), exists(x, fp(f2(x))))
       )
-      val t2 = Beta(
-        Set(exists(x, fp(g(x, x))), forall(y, f(y) === g(y, y))) |- exists(x, fp(f(x))),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -122,11 +114,7 @@ class ProofTests extends AnyFunSuite {
         Seq((P, lambda(x, Q(x, x)))),
         (Seq(P2), exists(x, P2(x)))
       )
-      val t2 = Beta(
-        Set(exists(x, Q(x, x)), forall(y, P(y) <=> Q(y, y))) |- exists(x, P(x)),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -137,11 +125,7 @@ class ProofTests extends AnyFunSuite {
         Seq((P, lambda(z, Q(z, z)))),
         (Seq(P2), exists(x, P2(x)))
       )
-      val t2 = Beta(
-        Set(exists(x, Q(x, x)), forall(y, P(y) <=> Q(y, y))) |- exists(x, P(x)),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -167,8 +151,7 @@ class ProofTests extends AnyFunSuite {
         List((g, lambda(Seq(y, z), g(z, y))), (f, lambda(Seq(z), g(z, z)))),
         (Seq(g2, f2), exists(x, forall(y, fp(g2(y, g2(x, f2(z)))))))
       )
-      val t2 = Beta(Set(exists(x, forall(y, fp(g(g(g(z, z), x), y)))), forall(y, f(y) === g(y, y)), forall(y, forall(z, g(y, z) === g(z, y)))) |- exists(x, forall(y, fp(g(y, g(x, f(z)))))), 1)
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
   }
@@ -188,11 +171,7 @@ class ProofTests extends AnyFunSuite {
         Seq((f, lambda(x, g(x, x)))),
         (Seq(f2), exists(x, fp(f2(x))))
       )
-      val t2 = Beta(
-        Set(exists(x, fp(f(x))), forall(y, f(y) === g(y, y))) |- exists(x, fp(g(x, x))),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -203,11 +182,7 @@ class ProofTests extends AnyFunSuite {
         Seq((f, lambda(z, g(z, z)))),
         (Seq(f2), exists(x, fp(f2(x))))
       )
-      val t2 = Beta(
-        Set(exists(x, fp(f(x))), forall(y, f(y) === g(y, y))) |- exists(x, fp(g(x, x))),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -252,11 +227,7 @@ class ProofTests extends AnyFunSuite {
         Seq((P, lambda(x, Q(x, x)))),
         (Seq(P2), exists(x, P2(x)))
       )
-      val t2 = Beta(
-        Set(exists(x, P(x)), forall(y, P(y) <=> Q(y, y))) |- exists(x, Q(x, x)),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -267,11 +238,7 @@ class ProofTests extends AnyFunSuite {
         Seq((P, lambda(z, Q(z, z)))),
         (Seq(P2), exists(x, P2(x)))
       )
-      val t2 = Beta(
-        Set(exists(x, P(x)), forall(y, P(y) <=> Q(y, y))) |- exists(x, Q(x, x)),
-        1
-      )
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
     {
@@ -296,8 +263,7 @@ class ProofTests extends AnyFunSuite {
         List((g, lambda(Seq(y, z), g(z, y))), (f, lambda(Seq(z), g(z, z)))),
         (Seq(g2, f2), exists(x, forall(y, fp(g2(y, g2(x, f2(z)))))))
       )
-      val t2 = Beta(Set(exists(x, forall(y, fp(g(y, g(x, f(z)))))), forall(y, f(y) === g(y, y)), forall(y, forall(z, g(y, z) === g(z, y)))) |- exists(x, forall(y, fp(g(g(g(z, z), x), y)))), 1)
-      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1, t2)))
+      val judg = checkSCProof(SCProof(IndexedSeq(t0, t1)))
       assert(judg.isValid, "\n" + judg.repr)
     }
   }

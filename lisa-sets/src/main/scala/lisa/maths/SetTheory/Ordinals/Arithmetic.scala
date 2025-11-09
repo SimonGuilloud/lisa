@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Ordinals
 
-import Ordinal.*
+import Ordinal._
 
 /**
  * Definitions of ordinal arithmetic: addition, multiplication and exponentiation.

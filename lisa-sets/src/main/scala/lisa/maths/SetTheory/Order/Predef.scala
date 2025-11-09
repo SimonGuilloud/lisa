@@ -1,13 +1,16 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.utils.fol.FOL.*
+import lisa.utils.fol.FOL._
 
 /**
  * Base exports for the `Order` package.
  */
 object Predef {
-  /** Order symbols. Since < and <= also refer to infix methods, we cannot simply export them.
-    * Instead, we use the type declaration to force only variables to be exported. */
+
+  /**
+   * Order symbols. Since < and <= also refer to infix methods, we cannot simply export them.
+   * Instead, we use the type declaration to force only variables to be exported.
+   */
   val < : Variable[Ind] = lisa.maths.SetTheory.Order.PartialOrder.<
   val <= : Variable[Ind] = lisa.maths.SetTheory.Order.PartialOrder.<=
 

@@ -1,7 +1,7 @@
 package lisa.maths.SetTheory.Base
 
 import Singleton.singleton
-import Symbols.*
+import Symbols._
 
 /**
  * The [[axiomOfFoundation]] states that the membership (∈) relation is well-founded,
@@ -53,10 +53,10 @@ object FoundationAxiom extends lisa.Main {
   }
 
   /**
-    * Theorem --- For any set `x` there exists another set `y` that is not in `x`.
-    *
-    * Follows from the fact that no set is universal ([[noUniversalSet]]).
-    */
+   * Theorem --- For any set `x` there exists another set `y` that is not in `x`.
+   *
+   * Follows from the fact that no set is universal ([[noUniversalSet]]).
+   */
   val freshElement = Theorem(
     ∃(y, y ∉ x)
   ) {

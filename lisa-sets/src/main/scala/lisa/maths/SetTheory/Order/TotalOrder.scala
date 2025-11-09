@@ -1,18 +1,18 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.maths.SetTheory.Base.Predef.*
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef._
+import lisa.maths.SetTheory.Relations.Predef._
 
-import PartialOrder.*
+import PartialOrder._
 
 /**
-  * A [[partialOrder]] `(A, <=)` is said to be total if `<=` is [[stronglyConnected]].
-  * Similarly, a [[strictPartialOrder]] is total if `<` is [[connected]].
-  *
-  * Total orders are also called *linear orders*, since their elements can be placed in
-  * a line such that `x < y` iff `x` comes before `y` in the line. In other words, their
-  * Hasse diagram is a line.
-  */
+ * A [[partialOrder]] `(A, <=)` is said to be total if `<=` is [[stronglyConnected]].
+ * Similarly, a [[strictPartialOrder]] is total if `<` is [[connected]].
+ *
+ * Total orders are also called *linear orders*, since their elements can be placed in
+ * a line such that `x < y` iff `x` comes before `y` in the line. In other words, their
+ * Hasse diagram is a line.
+ */
 object TotalOrder extends lisa.Main {
 
   /**
@@ -27,4 +27,3 @@ object TotalOrder extends lisa.Main {
    */
   val strictTotalOrder = DEF(λ(A, λ(<, strictPartialOrder(A)(<) /\ total(<)(A))))
 }
-

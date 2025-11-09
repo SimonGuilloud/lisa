@@ -2,7 +2,7 @@ package lisa.maths.SetTheory.Base
 
 import Singleton.singleton
 import Subset.⊂
-import Symbols.*
+import Symbols._
 
 /**
  * The power set of a set `x` is the set `𝒫(x)` that contains all subsets of

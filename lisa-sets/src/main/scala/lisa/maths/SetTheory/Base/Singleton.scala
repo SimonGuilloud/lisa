@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Base
 
-import Symbols.*
+import Symbols._
 
 /**
  * A singleton is a set of the form `{x}` for some set `x`. The sole element of

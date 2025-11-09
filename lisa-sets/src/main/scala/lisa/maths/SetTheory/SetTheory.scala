@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory
 
-import lisa.maths.SetTheory.Base.Predef.*
+import lisa.maths.SetTheory.Base.Predef._
 
 /**
  * Set Theory Library

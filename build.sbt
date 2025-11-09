@@ -30,7 +30,8 @@ val commonSettings3 = commonSettings ++ Seq(
   scalaVersion := scala3,
   scalacOptions ++= Seq(
     "-language:implicitConversions",
-    "-Wconf:msg=.*will never be selected.*:silent",
+    //"-Wconf:msg=.*will never be selected.*:silent",
+    "-Wconf:msg=.*trait or object is defined in the compilation unit.*:silent",
     "-language:experimental.modularity"
   ),
   javaOptions += "-Xmx10G",
@@ -45,7 +46,7 @@ def withTests(project: Project): ClasspathDependency =
 
 def githubProject(repo: String, commitHash: String) = RootProject(uri(s"$repo#$commitHash"))
 
-lazy val customTstpParser = githubProject("https://github.com/SC-TPTP/scala-tptp-parser.git", "851338c4175036279279835d9f58895aed2f37ba")
+lazy val customTstpParser = githubProject("https://github.com/SC-TPTP/scala-tptp-parser.git", "0b4ffa55c71415e925080608707c78ada1d750e5")
 
 lazy val root = Project(
   id = "lisa",

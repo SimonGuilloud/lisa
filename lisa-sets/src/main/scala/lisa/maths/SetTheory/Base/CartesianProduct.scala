@@ -2,8 +2,8 @@ package lisa.maths.SetTheory.Base
 
 import Replacement.|
 import Union.∪
-import Pair.{*, given}
-import Symbols.*
+import Pair.{_, given}
+import Symbols._
 
 /**
  * The Cartesian product of two sets `A` and `B` is the set `A × B` containing
@@ -167,10 +167,10 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Inversion theorem --- If `z ∈ A × B` then `z` is a pair.
-    *
-    * Important theorem, since it allows us to work on pairs only.
-    */
+   * Inversion theorem --- If `z ∈ A × B` then `z` is a pair.
+   *
+   * Important theorem, since it allows us to work on pairs only.
+   */
   val inversion = Theorem(
     z ∈ (A × B) |- z === (fst(z), snd(z))
   ) {
@@ -182,8 +182,8 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `z ∈ A × B` then `fst(z) ∈ A`.
-    */
+   * Theorem --- If `z ∈ A × B` then `fst(z) ∈ A`.
+   */
   val fstMembership = Theorem(
     z ∈ (A × B) |- fst(z) ∈ A
   ) {
@@ -192,8 +192,8 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `z ∈ A × B` then `snd(z) ∈ B`.
-    */
+   * Theorem --- If `z ∈ A × B` then `snd(z) ∈ B`.
+   */
   val sndMembership = Theorem(
     z ∈ (A × B) |- snd(z) ∈ B
   ) {
@@ -242,10 +242,10 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Theorem --- The Cartesian product is monotonic:
-    *
-    *   If `A ⊆ C` and `B ⊆ D` then `A × B ⊆ C × D`.
-    */
+   * Theorem --- The Cartesian product is monotonic:
+   *
+   *   If `A ⊆ C` and `B ⊆ D` then `A × B ⊆ C × D`.
+   */
   val monotonic = Theorem(
     (A ⊆ C, B ⊆ D) |- (A × B) ⊆ (C × D)
   ) {
@@ -269,10 +269,10 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Theorem --- The Cartesian product is left-monotonic:
-    *
-    *   If `A ⊆ C` then `A × B ⊆ C × B`.
-    */
+   * Theorem --- The Cartesian product is left-monotonic:
+   *
+   *   If `A ⊆ C` then `A × B ⊆ C × B`.
+   */
   val leftMonotonic = Theorem(
     (A ⊆ C) |- (A × B) ⊆ (C × B)
   ) {
@@ -283,10 +283,10 @@ object CartesianProduct extends lisa.Main {
   }
 
   /**
-    * Theorem --- The Cartesian product is right-monotonic:
-    *
-    *   If `B ⊆ D` then `A × B ⊆ A × D`.
-    */
+   * Theorem --- The Cartesian product is right-monotonic:
+   *
+   *   If `B ⊆ D` then `A × B ⊆ A × D`.
+   */
   val rightMonotonic = Theorem(
     (B ⊆ D) |- (A × B) ⊆ (A × D)
   ) {

@@ -1,30 +1,30 @@
 package lisa.maths.SetTheory.Order
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 
-import PartialOrder.*
+import PartialOrder._
 
 /**
-  * Given a partial order `(A, <)`, a set `S ⊆ A` is a lower set of `A` if
-  * whenever `x ∈ S` and `y < x` then necessarily `y ∈ S`. `S` is also said to
-  * be downward-closed.
-  *
-  * In the context of [[WellOrders]], `S ⊂ A` is downward-closed if and only if
-  * it is of the form `S = {y ∈ A | y < x}` for some `x ∈ A`.
-  */
+ * Given a partial order `(A, <)`, a set `S ⊆ A` is a lower set of `A` if
+ * whenever `x ∈ S` and `y < x` then necessarily `y ∈ S`. `S` is also said to
+ * be downward-closed.
+ *
+ * In the context of [[WellOrders]], `S ⊂ A` is downward-closed if and only if
+ * it is of the form `S = {y ∈ A | y < x}` for some `x ∈ A`.
+ */
 object LowerSet extends lisa.Main {
 
   private val S = variable[Ind]
 
   /**
-    * Definition --- `S ⊆ A` is downward-closed of `A` if `x ∈ S` and `y < x` implies
-    * `y ∈ S`.
-    */
+   * Definition --- `S ⊆ A` is downward-closed of `A` if `x ∈ S` and `y < x` implies
+   * `y ∈ S`.
+   */
   val lowerSet = DEF(λ(S, λ(A, λ(<, S ⊆ A /\ ∀(x ∈ S, ∀(y ∈ A, y < x ==> y ∈ S))))))
 
   /**
-    * Theorem --- Quantifier-free reformulation of the definition.
-    */
+   * Theorem --- Quantifier-free reformulation of the definition.
+   */
   val membership = Theorem(
     (lowerSet(S)(A)(<), x ∈ S, y ∈ A, y < x) |- y ∈ S
   ) {
@@ -35,8 +35,8 @@ object LowerSet extends lisa.Main {
   }
 
   /**
-    * Theorem --- The empty set is (vacuously) a lower set of `(A, <)`.
-    */
+   * Theorem --- The empty set is (vacuously) a lower set of `(A, <)`.
+   */
   val empty = Theorem(
     lowerSet(∅)(A)(<)
   ) {
@@ -47,8 +47,8 @@ object LowerSet extends lisa.Main {
   }
 
   /**
-    * Theorem --- The union of lower sets is also a lower set.
-    */
+   * Theorem --- The union of lower sets is also a lower set.
+   */
   val union = Theorem(
     ∀(X ∈ S, lowerSet(X)(A)(<)) |- lowerSet(⋃(S))(A)(<)
   ) {
@@ -83,4 +83,3 @@ object LowerSet extends lisa.Main {
   }
 
 }
-

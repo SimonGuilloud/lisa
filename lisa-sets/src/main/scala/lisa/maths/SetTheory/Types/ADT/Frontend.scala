@@ -1,13 +1,13 @@
 package lisa.maths.SetTheory.Types.ADT
 
-import lisa.utils.fol.FOL.*
+import lisa.utils.fol.FOL._
 
-/*
 
 /** This object provides a DSL for defining algebraic data types (ADTs) and functions over ADT in Lisa.
  * For usage examples, please refer to the documentation of the package or the reference manual.
  */
 object ADTSyntax {
+/*
 
   import ADTDefinitions.*
   import lisa.maths.settheory.SetTheory.{*, given}
@@ -500,6 +500,6 @@ object ADTSyntax {
       case Some(msg) => throw IllegalArgumentException(msg)
   }
 
+*/
 }
 
- */

@@ -1,13 +1,12 @@
 package lisa.maths.SetTheory.Ordinals
 
-import lisa.maths.SetTheory.Base.Predef.*
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation.*
-import lisa.maths.SetTheory.Order.Predef.*
-
 import lisa.maths.Quantifiers
+import lisa.maths.SetTheory.Base.Predef._
+import lisa.maths.SetTheory.Order.Predef._
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation._
 
-import Ordinal.*
+import Ordinal._
 
 /**
  * This file is dedicated to proving the transfinite induction theorem, which

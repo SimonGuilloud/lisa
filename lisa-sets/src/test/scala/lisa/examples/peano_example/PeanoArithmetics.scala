@@ -1,6 +1,6 @@
 package lisa.examples.peano_example
 
-import lisa.kernel.fol.FOL.*
+import lisa.kernel.fol.FOL._
 import lisa.kernel.proof.RunningTheory
 import lisa.utils.KernelHelpers.{_, given}
 

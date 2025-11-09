@@ -1,28 +1,28 @@
 package lisa.maths.SetTheory.Order
 package WellOrders
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.WellFoundedRelation.wellFounded
-import lisa.maths.SetTheory.Functions
-import lisa.maths.SetTheory.Functions.Predef.*
 import lisa.maths.Quantifiers
 import lisa.maths.Quantifiers.∃!
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions
+import lisa.maths.SetTheory.Functions.Predef._
+import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.WellFoundedRelation.wellFounded
 
-import Extrema.*
-import PartialOrder.*
-import WellOrder.*
-import InitialSegment.*
+import Extrema._
+import PartialOrder._
+import WellOrder._
+import InitialSegment._
 
 /**
-  * This file is dedicated to proving the well-ordered recursion theorem:
-  * Given a well-order `(A, <)`, one can build a function `G` by recursion over
-  * `A` that satisfies the following formula:
-  *
-  *   `G(x) = F(x, G↾initialSegment(x, A, <))` for all `x ∈ A`
-  *
-  * where `F : V × V -> V` is a class function, and `initialSegment(x, A, <) = {y ∈ A | y < x}`.
-  */
+ * This file is dedicated to proving the well-ordered recursion theorem:
+ * Given a well-order `(A, <)`, one can build a function `G` by recursion over
+ * `A` that satisfies the following formula:
+ *
+ *   `G(x) = F(x, G↾initialSegment(x, A, <))` for all `x ∈ A`
+ *
+ * where `F : V × V -> V` is a class function, and `initialSegment(x, A, <) = {y ∈ A | y < x}`.
+ */
 object WellOrderedRecursion extends lisa.Main {
 
   private val F = variable[Ind >>: Ind >>: Ind]
@@ -36,71 +36,69 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * The proof is divided into 2 parts: uniqueness and existence.
-    *
-    * Uniqueness ([[uniqueness]]): follows from well-foundedness of
-    * `(A, <)`, from a minimal counterexample to `G1(x) = G2(x)`.
-    *
-    * Existence ([[existence]]):
-    *
-    * 1. ([[recursion]])
-    *    We first construct a unique approximation `G_x` with domain `A_<x`
-    *    for all `x ∈ A`. Namely, we show that
-    *
-    *      `∀x ∈ A. ∃!G_x. ∀y < x. G_x(y) = F(y, G_x ↾ initialSegment(y, A, <))`
-    *
-    *    We show unique existence by well-ordered induction: given that there exists
-    *    unique approximations `G_y` for all `y < x`, we construct an approximation
-    *    `G_x` until `x`, and show that it is unique ([[recursionStep]]).
-    *
-    *    The approximation `G_x` is constructed as follows ([[recursionStepExistence]]):
-    *
-    *      Sucessor case ([[successorCase]]):
-    *       If `x` has a predecessor `p`, set `G_x = G_p ∪ {(p, F(p, G_p))}`.
-    *       Hence `G_x` is an extension of `G_p` with domain `dom(G_x) = A_<p ∪
-    *       {p} = A_<x`.
-    *
-    *      Limit case ([[limitCase]]):
-    *       If `x` has no predecessors (i.e. `x` is limit), set `G_x = ⋃{G_y | y
-    *       < x}`. `G_x` is a function by virtue of the fact that any two
-    *       approximations `G_y` and `G_z` are coherent on the intersection of
-    *       their domains ([[coherence]]).
-    *
-    *    The uniqueness proof for `G_x` is similar to the uniqueness proof above
-    *    ([[recursionStepUniqueness]]).
-    *
-    * 2. ([[existence]])
-    *    To define the function over `A`, we take `G = ⋃{G_x | x ∈ A}`, and we show
-    *    that it is a function, in a similar fashion as in 1.b (using [[coherence]]).
-    *    If there is a maximal element `m ∈ A`, we take `G' = G ∪ {(m, F(m, G))}` instead.
-    */
-
+   * The proof is divided into 2 parts: uniqueness and existence.
+   *
+   * Uniqueness ([[uniqueness]]): follows from well-foundedness of
+   * `(A, <)`, from a minimal counterexample to `G1(x) = G2(x)`.
+   *
+   * Existence ([[existence]]):
+   *
+   * 1. ([[recursion]])
+   *    We first construct a unique approximation `G_x` with domain `A_<x`
+   *    for all `x ∈ A`. Namely, we show that
+   *
+   *      `∀x ∈ A. ∃!G_x. ∀y < x. G_x(y) = F(y, G_x ↾ initialSegment(y, A, <))`
+   *
+   *    We show unique existence by well-ordered induction: given that there exists
+   *    unique approximations `G_y` for all `y < x`, we construct an approximation
+   *    `G_x` until `x`, and show that it is unique ([[recursionStep]]).
+   *
+   *    The approximation `G_x` is constructed as follows ([[recursionStepExistence]]):
+   *
+   *      Sucessor case ([[successorCase]]):
+   *       If `x` has a predecessor `p`, set `G_x = G_p ∪ {(p, F(p, G_p))}`.
+   *       Hence `G_x` is an extension of `G_p` with domain `dom(G_x) = A_<p ∪
+   *       {p} = A_<x`.
+   *
+   *      Limit case ([[limitCase]]):
+   *       If `x` has no predecessors (i.e. `x` is limit), set `G_x = ⋃{G_y | y
+   *       < x}`. `G_x` is a function by virtue of the fact that any two
+   *       approximations `G_y` and `G_z` are coherent on the intersection of
+   *       their domains ([[coherence]]).
+   *
+   *    The uniqueness proof for `G_x` is similar to the uniqueness proof above
+   *    ([[recursionStepUniqueness]]).
+   *
+   * 2. ([[existence]])
+   *    To define the function over `A`, we take `G = ⋃{G_x | x ∈ A}`, and we show
+   *    that it is a function, in a similar fashion as in 1.b (using [[coherence]]).
+   *    If there is a maximal element `m ∈ A`, we take `G' = G ∪ {(m, F(m, G))}` instead.
+   */
 
   //////////////////////////////////////////////////////////////
   section("Uniqueness")
 
-
   /**
    * Well-ordered recursion function is unique --- If `G1 : A -> V` and `G2 : A -> V`
    * satisfy the recursion equations, then `G1 = G2`.
-    *
-    * *Proof*:
-    *
-    * The proof goes by *minimal counter-example*: consider the set
-    *
-    *   `D = {x ∈ X | G1(x) ≠ G2(x)}`
-    *
-    * Assume towards a contradiction that `D ≠ ∅`. Then there exists a
-    * `<`-minimal element `x ∈ D` such that
-    *
-    *   `G1(x) ≠ G2(x)` and `G1(y) = G2(y)` for all `y < x`.
-    *
-    * But this implies that `G1 ↾ A_<x = G2 ↾ A_<x` and hence by definition
-    *
-    *   `G1(x) = F(x, G1 ↾ A_<x) = F(x, G2 ↾ A_<x) = G2(x)`,
-    *
-    * Contradiction.
-    */
+   *
+   * *Proof*:
+   *
+   * The proof goes by *minimal counter-example*: consider the set
+   *
+   *   `D = {x ∈ X | G1(x) ≠ G2(x)}`
+   *
+   * Assume towards a contradiction that `D ≠ ∅`. Then there exists a
+   * `<`-minimal element `x ∈ D` such that
+   *
+   *   `G1(x) ≠ G2(x)` and `G1(y) = G2(y)` for all `y < x`.
+   *
+   * But this implies that `G1 ↾ A_<x = G2 ↾ A_<x` and hence by definition
+   *
+   *   `G1(x) = F(x, G1 ↾ A_<x) = F(x, G2 ↾ A_<x) = G2(x)`,
+   *
+   * Contradiction.
+   */
   val uniqueness = Theorem(
     (
       wellOrder(A)(<),
@@ -143,7 +141,7 @@ object WellOrderedRecursion extends lisa.Main {
         thenHave(thesis) by Tautology.fromLastStep(
           Restriction.extensionality of (A := initialSegment(x)(A)(<), f := G1, g := G2),
           Functions.BasicTheorems.functionOnIsFunction of (f := G1),
-          Functions.BasicTheorems.functionOnIsFunction of (f := G2),
+          Functions.BasicTheorems.functionOnIsFunction of (f := G2)
         )
       }
 
@@ -151,7 +149,7 @@ object WellOrderedRecursion extends lisa.Main {
       have(minimal(x)(D)(<) |- G1(x) === G2(x)) by Congruence.from(
         lastStep,
         `G1(x)`,
-        `G2(x)`,
+        `G2(x)`
       )
 
       // Contradiction since x ∈ D implies G1(x) ≠ G2(x)
@@ -178,27 +176,24 @@ object WellOrderedRecursion extends lisa.Main {
     thenHave(thesis) by RightForall
   }
 
-
   //////////////////////////////////////////////////////////////
   section("Existence")
 
-
   /**
-    * Definition --- `g` is called an approximation of `G` if
-    * 1. `dom(g) = A_<x` for some `x ∈ A`
-    * 2. For all `x ∈ dom(g)` we have `g(x) = F(x, g ↾ A_<x)`
-    *
-    * `g` is an approximation until `x ∈ A` if `dom(g) = A_<x`.
-    */
+   * Definition --- `g` is called an approximation of `G` if
+   * 1. `dom(g) = A_<x` for some `x ∈ A`
+   * 2. For all `x ∈ dom(g)` we have `g(x) = F(x, g ↾ A_<x)`
+   *
+   * `g` is an approximation until `x ∈ A` if `dom(g) = A_<x`.
+   */
   private def approximation(g: Expr[Ind]): Expr[Prop] =
     ∃(x, approximationUntil(g, x))
   private def approximationUntil(g: Expr[Ind], x: Expr[Ind]): Expr[Prop] =
     (x ∈ A) /\ functionOn(g)(initialSegment(x)(A)(<)) /\ ∀(a ∈ initialSegment(x)(A)(<), g(a) === F(a)(g ↾ initialSegment(a)(A)(<)))
 
-
   /**
-    * Lemma --- If `f` is an approximation then `f` is a function.
-    */
+   * Lemma --- If `f` is an approximation then `f` is a function.
+   */
   val approximationIsFunction = Lemma(
     approximation(f) |- function(f)
   ) {
@@ -207,8 +202,8 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Lemma --- The domain of an approximation is a subset of A.
-    */
+   * Lemma --- The domain of an approximation is a subset of A.
+   */
   val approximationDomain = Lemma(
     approximation(f) |- dom(f) ⊆ A
   ) {
@@ -221,9 +216,9 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Lemma --- If `f` is an approximation until `x` then `f(y) = F(y, f ↾ initialSegment(y, A, <))`
-    * for all `y ∈ A_<x`.
-    */
+   * Lemma --- If `f` is an approximation until `x` then `f(y) = F(y, f ↾ initialSegment(y, A, <))`
+   * for all `y ∈ A_<x`.
+   */
   val approximationUntilApp = Lemma(
     (approximationUntil(f, x), y ∈ initialSegment(x)(A)(<)) |- f(y) === F(y)(f ↾ initialSegment(y)(A)(<))
   ) {
@@ -234,9 +229,9 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Lemma --- If `f` is an approximation then `f(x) = F(x, f ↾ initialSegment(x, A, <))`
-    * for all `x ∈ dom(f)`.
-    */
+   * Lemma --- If `f` is an approximation then `f(x) = F(x, f ↾ initialSegment(x, A, <))`
+   * for all `x ∈ dom(f)`.
+   */
   val approximationApp = Lemma(
     approximation(f) |- ∀(x ∈ dom(f), f(x) === F(x)(f ↾ initialSegment(x)(A)(<)))
   ) {
@@ -251,11 +246,10 @@ object WellOrderedRecursion extends lisa.Main {
     thenHave(thesis) by Restate
   }
 
-
   /**
-    * Lemma --- If `f` and `g` are approximations then `dom(f) ∩ dom(g) = initialSegment(x, A, <)`
-    * for some `x ∈ A`.
-    */
+   * Lemma --- If `f` and `g` are approximations then `dom(f) ∩ dom(g) = initialSegment(x, A, <)`
+   * for some `x ∈ A`.
+   */
   val approximationDomainIntersection = Lemma(
     (wellOrder(A)(<), approximation(f), approximation(g)) |- ∃(x ∈ A, dom(f) ∩ dom(g) === initialSegment(x)(A)(<))
   ) {
@@ -270,7 +264,7 @@ object WellOrderedRecursion extends lisa.Main {
     )
     thenHave((x ∈ A, y ∈ A, approximationUntil(f, x), approximationUntil(g, y)) |- ∃(z ∈ A, (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))) by Substitute(
       `dom(f)`,
-      `dom(f)` of (f := g, x := y),
+      `dom(f)` of (f := g, x := y)
     )
     thenHave((approximationUntil(f, x), approximationUntil(g, y)) |- ∃(z ∈ A, (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))) by Tautology
     thenHave((∃(x, approximationUntil(f, x)), approximationUntil(g, y)) |- ∃(z ∈ A, (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))) by LeftExists
@@ -279,13 +273,13 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Coherence lemma --- Any two approximations of `G` agree on the
-    * intersection of their domains.
-    *
-    * TODO: The coherence lemma could be applied to prove [[uniqueness]] by
-    * relaxing the definition of approximation to include A itself. Essentially
-    * the proofs of [[coherence]] and [[uniqueness]] are the same.
-    */
+   * Coherence lemma --- Any two approximations of `G` agree on the
+   * intersection of their domains.
+   *
+   * TODO: The coherence lemma could be applied to prove [[uniqueness]] by
+   * relaxing the definition of approximation to include A itself. Essentially
+   * the proofs of [[coherence]] and [[uniqueness]] are the same.
+   */
   val coherence = Lemma(
     (wellOrder(A)(<), approximation(f), approximation(g)) |- ∀(x ∈ (dom(f) ∩ dom(g)), f(x) === g(x))
   ) {
@@ -298,7 +292,7 @@ object WellOrderedRecursion extends lisa.Main {
     val `g(x)` = have(x ∈ dom(g) |- (g(x) === F(x)(g ↾ initialSegment(x)(A)(<)))) by InstantiateForall(x)(approximationApp of (f := g))
 
     // Let D = {x ∈ dom(f) ∩ dom(g) | f(x) ≠ g(x)}
-    val D = {x ∈ (dom(f) ∩ dom(g)) | f(x) ≠ g(x)}
+    val D = { x ∈ (dom(f) ∩ dom(g)) | f(x) ≠ g(x) }
     val `x ∈ D` = have(x ∈ D <=> (x ∈ (dom(f) ∩ dom(g))) /\ (f(x) ≠ g(x))) by Comprehension.apply
 
     // Towards a contradiction, assume that D is non-empty.
@@ -310,11 +304,11 @@ object WellOrderedRecursion extends lisa.Main {
         have(D ⊆ dom(f)) by Tautology.from(
           Comprehension.subset of (y := dom(f) ∩ dom(g), φ := λ(x, f(x) ≠ g(x))),
           Intersection.subsetLeft of (x := dom(f), y := dom(g)),
-          Subset.transitivity of (x := D, y := dom(f) ∩ dom(g), z := dom(f)),
+          Subset.transitivity of (x := D, y := dom(f) ∩ dom(g), z := dom(f))
         )
         thenHave(thesis) by Tautology.fromLastStep(
           approximationDomain,
-          Subset.transitivity of (x := D, y := dom(f), z := A),
+          Subset.transitivity of (x := D, y := dom(f), z := A)
         )
       }
 
@@ -335,7 +329,9 @@ object WellOrderedRecursion extends lisa.Main {
         have((z ∈ A, x ∈ initialSegment(z)(A)(<)) |- initialSegment(x)(initialSegment(z)(A)(<))(<) === initialSegment(x)(A)(<)) by Tautology.from(
           InitialSegment.absorption of (x := z, y := x)
         )
-        thenHave((z ∈ A, x ∈ (dom(f) ∩ dom(g)), (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<)) |- initialSegment(x)(dom(f) ∩ dom(g))(<) === initialSegment(x)(A)(<)) by Substitute((dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))
+        thenHave((z ∈ A, x ∈ (dom(f) ∩ dom(g)), (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<)) |- initialSegment(x)(dom(f) ∩ dom(g))(<) === initialSegment(x)(A)(<)) by Substitute(
+          (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<)
+        )
         thenHave((x ∈ (dom(f) ∩ dom(g)), z ∈ A /\ ((dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))) |- initialSegment(x)(dom(f) ∩ dom(g))(<) === initialSegment(x)(A)(<)) by Restate
         thenHave((x ∈ (dom(f) ∩ dom(g)), ∃(z ∈ A, (dom(f) ∩ dom(g)) === initialSegment(z)(A)(<))) |- initialSegment(x)(dom(f) ∩ dom(g))(<) === initialSegment(x)(A)(<)) by LeftExists
         thenHave(initialSegment(x)(dom(f) ∩ dom(g))(<) === initialSegment(x)(A)(<)) by Tautology.fromLastStep(
@@ -349,7 +345,7 @@ object WellOrderedRecursion extends lisa.Main {
         thenHave(thesis) by Tautology.fromLastStep(
           Restriction.extensionality of (A := initialSegment(x)(A)(<), f := f, g := g),
           approximationIsFunction,
-          approximationIsFunction of (f := g),
+          approximationIsFunction of (f := g)
         )
       }
 
@@ -357,7 +353,7 @@ object WellOrderedRecursion extends lisa.Main {
       have(minimal(x)(D)(<) |- f(x) === g(x)) by Congruence.from(
         lastStep,
         `f(x)`,
-        `g(x)`,
+        `g(x)`
       )
 
       // Contradiction since x ∈ D implies f(x) ≠ g(x)
@@ -374,7 +370,7 @@ object WellOrderedRecursion extends lisa.Main {
         lastStep,
         wellOrder.definition,
         WellFoundedRelation.minimalElement of (R := <, S := D, X := A),
-        `D ⊆ A`,
+        `D ⊆ A`
       )
     }
     // Therefore D = ∅
@@ -387,10 +383,10 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Lemma --- Any two approximations `f` and `g` such that `dom(f) = dom(g)` are equal.
-    *
-    * Consequence of the [[coherence]] lemma.
-    */
+   * Lemma --- Any two approximations `f` and `g` such that `dom(f) = dom(g)` are equal.
+   *
+   * Consequence of the [[coherence]] lemma.
+   */
   val recursionStepUniqueness = Theorem(
     (
       wellOrder(A)(<),
@@ -432,16 +428,16 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * We say that `p` is a predecessor of `x` if `p < x` and there does not
-    * exists `y` such that `p < y < x`.
-    */
+   * We say that `p` is a predecessor of `x` if `p < x` and there does not
+   * exists `y` such that `p < y < x`.
+   */
   def predecessor(p: Expr[Ind]): Expr[Prop] =
     (p ∈ A) /\ (p < x) /\ ¬(∃(z ∈ A, (p < z) /\ (z < x)))
 
   /**
-    * Theorem --- If `x` has a predecessor `p` that has an approximation, then there ∃ an
-    * approximation until `x`.
-    */
+   * Theorem --- If `x` has a predecessor `p` that has an approximation, then there ∃ an
+   * approximation until `x`.
+   */
   val successorCase = Theorem(
     (
       wellOrder(A)(<),
@@ -463,10 +459,11 @@ object WellOrderedRecursion extends lisa.Main {
 
     assume(predecessor(p))
 
-    /** We show that `G_x = G_p ∪ {(p, F(p, G_p))}` is the desired approximation.
-      * This follows from the fact that `A_<x = A_<p ∪ {p}` and thus `G_x` is a
-      * point extension of `G_p`.
-      */
+    /**
+     * We show that `G_x = G_p ∪ {(p, F(p, G_p))}` is the desired approximation.
+     * This follows from the fact that `A_<x = A_<p ∪ {p}` and thus `G_x` is a
+     * point extension of `G_p`.
+     */
     val G_p = ε(G, approximationUntil(G, p))
     val G_x = G_p ∪ singleton((p, F(p)(G_p)))
 
@@ -478,7 +475,9 @@ object WellOrderedRecursion extends lisa.Main {
       Singleton.membership of (x := p)
     )
 
-    /** 1. `G_x` is a function on `A_<x` */
+    /**
+     * 1. `G_x` is a function on `A_<x`
+     */
     val `function(G_p)` = have(function(G_p)) by Tautology.from(
       `approximationUntil(G_y, y)` of (y := p),
       Functions.BasicTheorems.functionOnIsFunction of (f := G_p, A := initialSegment(p)(A)(<))
@@ -533,11 +532,12 @@ object WellOrderedRecursion extends lisa.Main {
       )
       thenHave(G_p === (G_x ↾ initialSegment(p)(A)(<))) by Substitute(`dom(G_p)`)
 
-    /** 2. For all `a ∈ A_<x` we have `G_x(a) = F(a, G_x ↾ a)`.
-      * Essentially, we have to show 2 things:
-      * a. For `a = p` we have `G_x(p) = F(p, G_p)` by construction, i.e. `G_x ↾ A_<p = G_p`.
-      * b. For `a ∈ A_<p` we have `G_x ↾ A_<a = G_p ↾ A_<a`.
-      */
+    /**
+     * 2. For all `a ∈ A_<x` we have `G_x(a) = F(a, G_x ↾ a)`.
+     * Essentially, we have to show 2 things:
+     * a. For `a = p` we have `G_x(p) = F(p, G_p)` by construction, i.e. `G_x ↾ A_<p = G_p`.
+     * b. For `a ∈ A_<p` we have `G_x ↾ A_<a = G_p ↾ A_<a`.
+     */
     val `G_x(p)` = {
       have(G_x(p) === F(p)(G_x ↾ initialSegment(p)(A)(<))) subproof {
         have((p, F(p)(G_p)) ∈ G_x) by Tautology.from(
@@ -547,7 +547,7 @@ object WellOrderedRecursion extends lisa.Main {
         thenHave(G_x(p) === F(p)(G_p)) by Tautology.fromLastStep(
           Functions.BasicTheorems.appDefinition of (f := G_x, x := p, y := F(p)(G_p)),
           `G_x is a function`,
-          `p ∈ dom(G_x)`,
+          `p ∈ dom(G_x)`
         )
 
         // Conclude
@@ -570,12 +570,14 @@ object WellOrderedRecursion extends lisa.Main {
       thenHave(F(y)((G_x ↾ initialSegment(p)(A)(<)) ↾ initialSegment(y)(A)(<)) === G_x(y)) by Substitute(`G_p = G_x ↾ A_<p`)
 
       // It remains to remove the redundant restriction
-      thenHave(F(y)(G_x ↾ (initialSegment(p)(A)(<) ∩ initialSegment(y)(A)(<))) === G_x(y)) by Substitute(Restriction.doubleRestriction of (f := G_x, A := initialSegment(p)(A)(<), B := initialSegment(y)(A)(<)))
+      thenHave(F(y)(G_x ↾ (initialSegment(p)(A)(<) ∩ initialSegment(y)(A)(<))) === G_x(y)) by Substitute(
+        Restriction.doubleRestriction of (f := G_x, A := initialSegment(p)(A)(<), B := initialSegment(y)(A)(<))
+      )
       thenHave(F(y)(G_x ↾ (initialSegment(y)(A)(<) ∩ initialSegment(p)(A)(<))) === G_x(y)) by Substitute(
         Intersection.commutativity of (x := initialSegment(p)(A)(<), y := initialSegment(y)(A)(<))
       )
       thenHave((y < p, y ∈ A) |- F(y)(G_x ↾ initialSegment(y)(A)(<)) === G_x(y)) by Substitute(
-        InitialSegment.intersection of (x := y, y := p),
+        InitialSegment.intersection of (x := y, y := p)
       )
 
       thenHave(thesis) by Tautology.fromLastStep(InitialSegment.membership of (x := p))
@@ -588,17 +590,19 @@ object WellOrderedRecursion extends lisa.Main {
     )
     thenHave(∀(y ∈ initialSegment(x)(A)(<), G_x(y) === F(y)(G_x ↾ initialSegment(y)(A)(<)))) by RightForall
 
-    /** Conclude. */
+    /**
+     * Conclude.
+     */
     have(approximationUntil(G_x, x)) by Tautology.from(
       lastStep,
-      `G_x is a function on A_<x`,
+      `G_x is a function on A_<x`
     )
     thenHave(thesis) by RightExists
   }
 
   /**
-    * Theorem --- If `x` is limit, then there ∃ an approximation until `x`.
-    */
+   * Theorem --- If `x` is limit, then there ∃ an approximation until `x`.
+   */
   val limitCase = Theorem(
     (
       wellOrder(A)(<),
@@ -613,7 +617,9 @@ object WellOrderedRecursion extends lisa.Main {
     assume(∀(p, ¬(predecessor(p))))
     val `¬predecessor(y)` = thenHave(¬(predecessor(y))) by InstantiateForall(y)
 
-    /** Let `G_y` be the approximation until `y`. */
+    /**
+     * Let `G_y` be the approximation until `y`.
+     */
     def G_(y: Expr[Ind]): Expr[Ind] = ε(G, approximationUntil(G, y))
 
     assume(∀(y ∈ A, (y < x) ==> ∃!(G, approximationUntil(G, y))))
@@ -625,11 +631,11 @@ object WellOrderedRecursion extends lisa.Main {
     val `approximation(G_y)` = thenHave(y ∈ initialSegment(x)(A)(<) |- approximation(G_(y))) by RightExists
 
     /**
-      * If `x` is limit, for `G_x = ⋃{G_y | y < x}` we have that:
-      * 1. `G_x` is a function since all of the approximations are coherent
-      * 2. `dom(G_x) = ⋃{dom(G_y) | y < x} = A_<x`
-      * 3. For any `y < x` we have `G_x ↾ A_<y = G_y`.
-      */
+     * If `x` is limit, for `G_x = ⋃{G_y | y < x}` we have that:
+     * 1. `G_x` is a function since all of the approximations are coherent
+     * 2. `dom(G_x) = ⋃{dom(G_y) | y < x} = A_<x`
+     * 3. For any `y < x` we have `G_x ↾ A_<y = G_y`.
+     */
     val S = { G_(y) | y ∈ initialSegment(x)(A)(<) }
     val G_x = ⋃(S)
 
@@ -643,7 +649,9 @@ object WellOrderedRecursion extends lisa.Main {
       Union.subset of (y := G_(y), x := S)
     )
 
-    /** 1. `G_x` is a function */
+    /**
+     * 1. `G_x` is a function
+     */
     val `f ∈ S` = have(f ∈ S <=> ∃(y ∈ initialSegment(x)(A)(<), G_(y) === f)) by Replacement.apply
 
     val `G_y is a function` = have(y ∈ initialSegment(x)(A)(<) |- function(G_(y))) by Tautology.from(
@@ -668,12 +676,14 @@ object WellOrderedRecursion extends lisa.Main {
     val `f, g ∈ S are coherent` = {
       have((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<)) |- approximation(G_(y)) /\ approximation(G_(z))) by Tautology.from(
         `approximation(G_y)`,
-        `approximation(G_y)` of (y := z),
+        `approximation(G_y)` of (y := z)
       )
       thenHave(
         (
-          y ∈ initialSegment(x)(A)(<), f === G_(y),
-          z ∈ initialSegment(x)(A)(<), g === G_(z)
+          y ∈ initialSegment(x)(A)(<),
+          f === G_(y),
+          z ∈ initialSegment(x)(A)(<),
+          g === G_(z)
         ) |- approximation(f) /\ approximation(g)
       ) by Substitute(f === G_(y), g === G_(z))
       thenHave(
@@ -695,7 +705,8 @@ object WellOrderedRecursion extends lisa.Main {
         ) |- ∀(x ∈ (dom(f) ∩ dom(g)), f(x) === g(x))
       ) by LeftExists
       thenHave((f ∈ S, g ∈ S) |- ∀(x ∈ (dom(f) ∩ dom(g)), f(x) === g(x))) by Substitute(
-        `f ∈ S`, `f ∈ S` of (f := g)
+        `f ∈ S`,
+        `f ∈ S` of (f := g)
       )
       thenHave(f ∈ S |- (g ∈ S) ==> ∀(x ∈ (dom(f) ∩ dom(g)), f(x) === g(x))) by Restate
       thenHave(f ∈ S |- ∀(g ∈ S, ∀(x ∈ (dom(f) ∩ dom(g)), f(x) === g(x)))) by RightForall
@@ -709,12 +720,16 @@ object WellOrderedRecursion extends lisa.Main {
       `f, g ∈ S are coherent`
     )
 
-    /** 2. `dom(G_x) = A_<x` */
+    /**
+     * 2. `dom(G_x) = A_<x`
+     */
     val `dom(G_x)` = have(dom(G_x) === initialSegment(x)(A)(<)) subproof {
-      /** We proceed by double inclusion: we have both
-        * 1. dom(G_x) ⊆ A_<x, for dom(G_y) ⊆ A_<x for every y ∈ A_<x
-        * 2. A_<x ⊆ dom(G_x), since for every y ∈ A_<x there ∃ z > y such that y ∈ dom(G_z)
-        */
+
+      /**
+       * We proceed by double inclusion: we have both
+       * 1. dom(G_x) ⊆ A_<x, for dom(G_y) ⊆ A_<x for every y ∈ A_<x
+       * 2. A_<x ⊆ dom(G_x), since for every y ∈ A_<x there ∃ z > y such that y ∈ dom(G_z)
+       */
 
       val D = { dom(f) | f ∈ S }
       val `d ∈ D` = have(d ∈ D <=> ∃(f ∈ S, dom(f) === d)) by Replacement.apply
@@ -727,10 +742,10 @@ object WellOrderedRecursion extends lisa.Main {
       val `==>` = have(⋃(D) ⊆ initialSegment(x)(A)(<)) subproof {
         have((y ∈ A, y < x, G_(y) === f, dom(f) === d) |- d ⊆ initialSegment(x)(A)(<)) by Congruence.from(
           InitialSegment.monotonic of (x := y, y := x),
-          `dom(G_y)`,
+          `dom(G_y)`
         )
         thenHave(((y ∈ initialSegment(x)(A)(<)) /\ (G_(y) === f), dom(f) === d) |- d ⊆ initialSegment(x)(A)(<)) by Tautology.fromLastStep(
-          InitialSegment.membership,
+          InitialSegment.membership
         )
         thenHave((∃(y ∈ initialSegment(x)(A)(<), G_(y) === f), dom(f) === d) |- d ⊆ initialSegment(x)(A)(<)) by LeftExists
         thenHave((f ∈ S, dom(f) === d) |- d ⊆ initialSegment(x)(A)(<)) by Substitute(`f ∈ S`)
@@ -743,18 +758,21 @@ object WellOrderedRecursion extends lisa.Main {
       }
 
       val `<==` = have(initialSegment(x)(A)(<) ⊆ ⋃(D)) subproof {
-        /** Since `y` is limit, `y ∈ dom(G_z)` for any `z > y`. */
+
+        /**
+         * Since `y` is limit, `y ∈ dom(G_z)` for any `z > y`.
+         */
         have((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<), y < z) |- y ∈ initialSegment(z)(A)(<)) by Tautology.from(
           InitialSegment.membership,
           InitialSegment.membership of (x := z),
-          InitialSegment.membership of (y := z),
+          InitialSegment.membership of (y := z)
         )
         thenHave((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<), y < z) |- y ∈ dom(G_(z))) by Substitute(`dom(G_y)` of (y := z))
         thenHave((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<), y < z) |- (dom(G_(z)) ∈ D) /\ y ∈ dom(G_(z))) by Tautology.fromLastStep(`dom(G_y) ∈ D` of (y := z))
         thenHave((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<), y < z) |- ∃(d ∈ D, y ∈ d)) by RightExists
         thenHave((y ∈ initialSegment(x)(A)(<), z ∈ initialSegment(x)(A)(<), y < z) |- y ∈ ⋃(D)) by Substitute(⋃.definition of (z := y, x := D))
         thenHave((z ∈ A) /\ (y < z) /\ (z < x) |- y ∈ initialSegment(x)(A)(<) ==> (y ∈ ⋃(D))) by Tautology.fromLastStep(
-          InitialSegment.membership of (y := z),
+          InitialSegment.membership of (y := z)
         )
         thenHave(∃(z ∈ A, (y < z) /\ (z < x)) |- y ∈ initialSegment(x)(A)(<) ==> (y ∈ ⋃(D))) by LeftExists
         thenHave(y ∈ initialSegment(x)(A)(<) ==> (y ∈ ⋃(D))) by Tautology.fromLastStep(
@@ -773,15 +791,16 @@ object WellOrderedRecursion extends lisa.Main {
       thenHave(thesis) by Substitute(Functions.Operations.Union.domain of (𝓕 := S))
     }
 
-    /** 3. For all `y < x` we have `G_x(y) = F(y, G_x ↾ A_<y)`.
-      *
-      * Since `x` is limit, there exists an element `y < z < x` such that
-      * `G_x(y) = G_z(y)`, and by construction
-      *
-      *   `G_z(y) = F(y, G_z ↾ A_<y) = F(y, G_x ↾ A_<y)`
-      *
-      * as desired.
-      */
+    /**
+     * 3. For all `y < x` we have `G_x(y) = F(y, G_x ↾ A_<y)`.
+     *
+     * Since `x` is limit, there exists an element `y < z < x` such that
+     * `G_x(y) = G_z(y)`, and by construction
+     *
+     *   `G_z(y) = F(y, G_z ↾ A_<y) = F(y, G_x ↾ A_<y)`
+     *
+     * as desired.
+     */
     val `G_y = G_x ↾ A_<y` =
       have(y ∈ initialSegment(x)(A)(<) |- G_(y) === (G_x ↾ dom(G_(y)))) by Tautology.from(
         Restriction.subsetIsRestriction of (f := G_x, g := G_(y)),
@@ -795,7 +814,9 @@ object WellOrderedRecursion extends lisa.Main {
 
       val `y ∈ dom(G_z)` = have(y ∈ initialSegment(z)(A)(<) |- y ∈ dom(G_(z))) by Congruence.from(`dom(G_y)` of (y := z))
 
-      /** We show that if `y < z` then `G_z(y) = F(y, G_x ↾ A_<y)`. */
+      /**
+       * We show that if `y < z` then `G_z(y) = F(y, G_x ↾ A_<y)`.
+       */
       have((y ∈ initialSegment(z)(A)(<), z ∈ initialSegment(x)(A)(<)) |- G_(z)(y) === F(y)(G_x ↾ initialSegment(y)(A)(<))) subproof {
         assume(y ∈ initialSegment(z)(A)(<))
         assume(z ∈ initialSegment(x)(A)(<))
@@ -818,11 +839,13 @@ object WellOrderedRecursion extends lisa.Main {
         )
         thenHave(thesis) by Tautology.fromLastStep(
           InitialSegment.membership of (x := z),
-          InitialSegment.membership of (y := z),
+          InitialSegment.membership of (y := z)
         )
       }
 
-      /** Since `G_z ⊆ G_x` we have `G_x(y) = G_z(y) = F(y, G_x ↾ A_<y)` as desired. */
+      /**
+       * Since `G_z ⊆ G_x` we have `G_x(y) = G_z(y) = F(y, G_x ↾ A_<y)` as desired.
+       */
       have((y ∈ initialSegment(z)(A)(<), z ∈ initialSegment(x)(A)(<)) |- (G_x(y) === F(y)(G_x ↾ initialSegment(y)(A)(<)))) by Tautology.from(
         lastStep,
         Functions.BasicTheorems.extensionApp of (f := G_x, g := G_(z), x := y, y := F(y)(G_x ↾ initialSegment(y)(A)(<))),
@@ -832,15 +855,17 @@ object WellOrderedRecursion extends lisa.Main {
         `y ∈ dom(G_z)`
       )
 
-      /** Infer the existence of `z` since `x` is limit. */
+      /**
+       * Infer the existence of `z` since `x` is limit.
+       */
       thenHave((y ∈ A, (z ∈ A) /\ (y < z) /\ (z < x)) |- (G_x(y) === F(y)(G_x ↾ initialSegment(y)(A)(<)))) by Tautology.fromLastStep(
         InitialSegment.membership of (x := z),
-        InitialSegment.membership of (y := z),
+        InitialSegment.membership of (y := z)
       )
       thenHave((y ∈ A, ∃(z ∈ A, (y < z) /\ (z < x))) |- (G_x(y) === F(y)(G_x ↾ initialSegment(y)(A)(<)))) by LeftExists
       thenHave(thesis) by Tautology.fromLastStep(
         `¬predecessor(y)`,
-        InitialSegment.membership,
+        InitialSegment.membership
       )
     }
     thenHave(y ∈ initialSegment(x)(A)(<) ==> (G_x(y) === F(y)(G_x ↾ initialSegment(y)(A)(<)))) by Restate
@@ -856,9 +881,9 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Theorem --- Assuming that there ∃ a unique approximation `G_y` for all `y < x`, construct
-    * an approximation `G_x` with `dom(G_x) = initialSegment(x, A, <)`.
-    */
+   * Theorem --- Assuming that there ∃ a unique approximation `G_y` for all `y < x`, construct
+   * an approximation `G_x` with `dom(G_x) = initialSegment(x, A, <)`.
+   */
   val recursionStepExistence = Theorem(
     (
       wellOrder(A)(<),
@@ -878,11 +903,11 @@ object WellOrderedRecursion extends lisa.Main {
   }
 
   /**
-    * Theorem --- Assuming that there ∃ a unique approximation `G_y` for all `y < x`, there ∃
-    * a unique approximation `G_x` with `dom(G_x) = initialSegment(x, A, <)`.
-    *
-    * Combines [[recursionStepExistence]] with [[recursionStepUniqueness]].
-    */
+   * Theorem --- Assuming that there ∃ a unique approximation `G_y` for all `y < x`, there ∃
+   * a unique approximation `G_x` with `dom(G_x) = initialSegment(x, A, <)`.
+   *
+   * Combines [[recursionStepExistence]] with [[recursionStepUniqueness]].
+   */
   val recursionStep = Theorem(
     (
       wellOrder(A)(<),
@@ -902,17 +927,18 @@ object WellOrderedRecursion extends lisa.Main {
       thenHave(∀(f, ∀(g, approximationUntil(f, x) /\ approximationUntil(g, x) ==> (f === g)))) by Generalize
 
     have(thesis) by Tautology.from(
-      existence, uniqueness,
+      existence,
+      uniqueness,
       Quantifiers.existsOneAlternativeDefinition of (P := λ(f, approximationUntil(f, x)))
     )
   }
 
   /**
-    * Theorem --- For any `x ∈ A` there ∃ an approximation on `A_<x`.
-    *
-    * This theorem justifies the construction of sequences of ordinals up to an
-    * ordinal `α`, since `(α, ∈_α)` is a well-order.
-    */
+   * Theorem --- For any `x ∈ A` there ∃ an approximation on `A_<x`.
+   *
+   * This theorem justifies the construction of sequences of ordinals up to an
+   * ordinal `α`, since `(α, ∈_α)` is a well-order.
+   */
   val recursiveSequence = Theorem(
     wellOrder(A)(<) |- ∀(x ∈ A, ∃!(G, approximationUntil(G, x)))
   ) {
@@ -934,28 +960,29 @@ object WellOrderedRecursion extends lisa.Main {
    *
    * This recursion principle implies recursion on any ordinal `α`, since `α`
    * is well-ordered by the membership relation, and `α_<β = β` for `β ∈ α`.
-    */
+   */
   val existence = Theorem(
     wellOrder(A)(<) |- ∃(G, ∀(x ∈ A, G(x) === F(x)(G ↾ initialSegment(x)(A)(<))))
   ) {
     assume(wellOrder(A)(<))
 
-    /** We use [[recursiveSequence]] on the successor well-order `(A ∪ {m}, < ∪
-      * {(x, m) | x ∈ A})` where `m` is a fresh element. Hence we obtain a
-      * function that is defined for all `x < m`, i.e. for all `x ∈ A`.
-      *
-      * This also means that this theorem isn't necessary per se (and
-      * [[recursiveSequence]] is enough), since this successor trick always
-      * works.
-      */
+    /**
+     * We use [[recursiveSequence]] on the successor well-order `(A ∪ {m}, < ∪
+     * {(x, m) | x ∈ A})` where `m` is a fresh element. Hence we obtain a
+     * function that is defined for all `x < m`, i.e. for all `x ∈ A`.
+     *
+     * This also means that this theorem isn't necessary per se (and
+     * [[recursiveSequence]] is enough), since this successor trick always
+     * works.
+     */
 
     sorry
   }
 
   /**
-    * Definition --- `recursiveFunction(F, A, <)` builds the function obtained by well-ordered
-    * recursion of `F` on `(A, <)`.
-    */
+   * Definition --- `recursiveFunction(F, A, <)` builds the function obtained by well-ordered
+   * recursion of `F` on `(A, <)`.
+   */
   val recursiveFunction = DEF(λ(F, λ(A, λ(<, ε(G, ∀(x ∈ A, G(x) === F(x)(G ↾ initialSegment(x)(A)(<))))))))
 
 }

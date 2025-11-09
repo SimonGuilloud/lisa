@@ -1,18 +1,18 @@
 package lisa.maths.SetTheory.Ordinals
 
 import lisa.maths.Quantifiers
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.Predef.*
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Order
-import lisa.maths.SetTheory.Order.Predef.*
-import lisa.maths.SetTheory.Order.WellOrders.*
+import lisa.maths.SetTheory.Order.Predef._
+import lisa.maths.SetTheory.Order.WellOrders._
+import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
+import lisa.maths.SetTheory.Relations.Predef._
 
-import WellOrder.*
-import TransitiveSet.*
-import InitialSegment.*
-import MembershipRelation.*
+import WellOrder._
+import TransitiveSet._
+import InitialSegment._
+import MembershipRelation._
 
 /**
  * An ordinal is a set that is transitive and well-ordered by the membership relation:
@@ -131,7 +131,7 @@ object Ordinal extends lisa.Main {
         `x ∈ α`,
         `y ∈ α`,
         `x ∈_α y`,
-        `y ∈_α β`,
+        `y ∈_α β`
       )
       thenHave(x ∈ β) by Tautology.fromLastStep(MembershipRelation.membership of (y := β, A := α))
     }
@@ -177,7 +177,7 @@ object Ordinal extends lisa.Main {
           `y ∈ α`,
           `z ∈ α`,
           `x ∈_α y`,
-          `y ∈_α z`,
+          `y ∈_α z`
         )
         thenHave(x ∈ z) by Tautology.fromLastStep(MembershipRelation.membership of (x := x, y := z, A := α))
       }
@@ -231,7 +231,7 @@ object Ordinal extends lisa.Main {
           TransitiveSet.elementIsSubset of (x := β, A := α)
         )
         thenHave(B ⊆ α) by Tautology.fromLastStep(
-          Subset.transitivity of (x := B, y := β, z := α),
+          Subset.transitivity of (x := B, y := β, z := α)
         )
         val `x is ∈_α-minimal` = thenHave(∃(x, minimal(x)(B)(membershipRelation(α)))) by Tautology.fromLastStep(
           ordinal.definition,
@@ -256,7 +256,7 @@ object Ordinal extends lisa.Main {
         ) by Tableau
         thenHave(thesis) by Tautology.fromLastStep(
           `x is ∈_α-minimal`,
-          `x is ∈_α-minimal implies x is ∈_β-minimal`,
+          `x is ∈_α-minimal implies x is ∈_β-minimal`
         )
       }
       thenHave(∀(B, (B ⊆ β) /\ (B ≠ ∅) ==> ∃(x, minimal(x)(B)(membershipRelation(β))))) by RightForall
@@ -338,8 +338,8 @@ object Ordinal extends lisa.Main {
   }
 
   /**
-    * Theorem --- If `α < β` then `¬(β <= α)`.
-    */
+   * Theorem --- If `α < β` then `¬(β <= α)`.
+   */
   val asymmetry = Theorem(
     (ordinal(α), ordinal(β)) |- α < β <=> ¬(β <= α)
   ) {
@@ -348,8 +348,6 @@ object Ordinal extends lisa.Main {
 
   ////////////////////////////////////////////////////////////////////////////////
   section("Minimality")
-
-
 
   ////////////////////////////////////////////////////////////////////////////////
   section("Class of ordinals")
@@ -397,7 +395,7 @@ object Ordinal extends lisa.Main {
             `α ∈ A` of (α := γ),
             MembershipRelation.membership of (x := α, y := β),
             MembershipRelation.membership of (x := β, y := γ),
-            MembershipRelation.membership of (x := α, y := γ),
+            MembershipRelation.membership of (x := α, y := γ)
           )
           thenHave(∀(α, ∀(β, ∀(γ, (α ∈ A) /\ (β ∈ A) /\ (γ ∈ A) /\ ((α, β) ∈ membershipRelation(A)) /\ ((β, γ) ∈ membershipRelation(A)) ==> ((α, γ) ∈ membershipRelation(A)))))) by Generalize
           thenHave(∀(α ∈ A, ∀(β ∈ A, ∀(γ ∈ A, ((α, β) ∈ membershipRelation(A)) /\ ((β, γ) ∈ membershipRelation(A)) ==> ((α, γ) ∈ membershipRelation(A)))))) by Tableau
@@ -411,7 +409,7 @@ object Ordinal extends lisa.Main {
             `α ∈ A`,
             `α ∈ A` of (α := β),
             MembershipRelation.membership of (x := α, y := β),
-            MembershipRelation.membership of (x := β, y := α),
+            MembershipRelation.membership of (x := β, y := α)
           )
           thenHave(∀(α, ∀(β, (α ∈ A) /\ (β ∈ A) ==> (((α, β) ∈ membershipRelation(A)) \/ ((β, α) ∈ membershipRelation(A)) \/ (α === β))))) by Generalize
           thenHave(∀(α ∈ A, ∀(β ∈ A, ((α, β) ∈ membershipRelation(A)) \/ ((β, α) ∈ membershipRelation(A)) \/ (α === β)))) by Tableau
@@ -467,7 +465,7 @@ object Ordinal extends lisa.Main {
           transitivity,
           irreflexivity,
           totality,
-          wellFoundedness,
+          wellFoundedness
         )
       }
 

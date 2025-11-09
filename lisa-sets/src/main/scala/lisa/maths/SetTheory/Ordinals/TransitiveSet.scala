@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Ordinals
 
-import lisa.maths.SetTheory.Base.Predef.*
-import lisa.maths.SetTheory.Relations.Predef.*
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation.*
+import lisa.maths.SetTheory.Base.Predef._
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation._
+import lisa.maths.SetTheory.Relations.Predef._
 
 /**
  * A transitive set `A` is a set such that elements of elements of `A` are also in `A`:
@@ -86,7 +86,6 @@ object TransitiveSet extends lisa.Main {
     thenHave(x ∈ y /\ (y ∈ A) ==> x ∈ A) by InstantiateForall(x, y)
     thenHave(thesis) by Restate
   }
-
 
   /**
    * Theorem --- The empty set is transitive.

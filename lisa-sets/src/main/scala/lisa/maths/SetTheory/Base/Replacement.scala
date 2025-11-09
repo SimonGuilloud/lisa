@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Base
 
-import Class.*
-
 import scala.annotation.targetName
+
+import Class._
 
 /**
  * The replacement axiom schema states that for any class-function `F : V -> V`

@@ -1,8 +1,8 @@
 package lisa.maths.SetTheory.Relations
 package Examples
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef._
 
 /**
  * The universal relation on `X` is the relation `R` that relates every element
@@ -66,7 +66,7 @@ object UniversalRelation extends lisa.Main {
   ) {
     have((x ∈ X) /\ (y ∈ X) ==> ((x, y) ∈ (X × X) <=> (y, x) ∈ (X × X))) by Tautology.from(
       CartesianProduct.pairMembership of (x := x, y := y, A := X, B := X),
-      CartesianProduct.pairMembership of (x := y, y := x, A := X, B := X),
+      CartesianProduct.pairMembership of (x := y, y := x, A := X, B := X)
     )
     thenHave(∀(x, ∀(y, (x ∈ X) /\ (y ∈ X) ==> ((x, y) ∈ (X × X) <=> (y, x) ∈ (X × X))))) by Generalize
     thenHave(∀(x ∈ X, ∀(y ∈ X, (x, y) ∈ (X × X) <=> (y, x) ∈ (X × X)))) by Tableau
@@ -82,7 +82,7 @@ object UniversalRelation extends lisa.Main {
     have((x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ (x, y) ∈ (X × X) /\ (y, z) ∈ (X × X) ==> (x, z) ∈ (X × X)) by Tautology.from(
       CartesianProduct.pairMembership of (x := x, y := y, A := X, B := X),
       CartesianProduct.pairMembership of (x := y, y := z, A := X, B := X),
-      CartesianProduct.pairMembership of (x := x, y := z, A := X, B := X),
+      CartesianProduct.pairMembership of (x := x, y := z, A := X, B := X)
     )
     thenHave(∀(x, ∀(y, ∀(z, (x ∈ X) /\ (y ∈ X) /\ (z ∈ X) /\ (x, y) ∈ (X × X) /\ (y, z) ∈ (X × X) ==> (x, z) ∈ (X × X))))) by Generalize
     thenHave(∀(x ∈ X, ∀(y ∈ X, ∀(z ∈ X, (x, y) ∈ (X × X) /\ (y, z) ∈ (X × X) ==> (x, z) ∈ (X × X))))) by Tableau

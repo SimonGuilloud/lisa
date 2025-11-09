@@ -1,17 +1,16 @@
 package lisa.maths.SetTheory.Ordinals
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
-import lisa.maths.SetTheory.Functions.Predef.*
-import lisa.maths.SetTheory.Order.Predef.*
-import lisa.maths.SetTheory.Order.WellOrders.*
-
 import lisa.maths.Quantifiers.∃!
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
+import lisa.maths.SetTheory.Order.Predef._
+import lisa.maths.SetTheory.Order.WellOrders._
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
 
-import Ordinal.*
-import WellOrder.*
-import InitialSegment.*
-import MembershipRelation.*
+import Ordinal._
+import WellOrder._
+import InitialSegment._
+import MembershipRelation._
 
 /**
  * Transfinite recursion is a process for creating a class-function by recursion

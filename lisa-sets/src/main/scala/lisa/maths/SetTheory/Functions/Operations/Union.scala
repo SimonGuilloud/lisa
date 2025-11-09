@@ -1,11 +1,11 @@
 package lisa.maths.SetTheory.Functions
 package Operations
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Relations.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Relations.Predef.{_, given}
 
-import Function.*
-import Restriction.*
+import Function._
+import Restriction._
 
 /**
  * If `f` and `g` are two functions that agree on the intersection of their
@@ -39,10 +39,10 @@ object Union extends lisa.Main {
   }
 
   /**
-    * Theorem --- The domain of the unions is the ∪ of the domains.
-    */
+   * Theorem --- The domain of the unions is the ∪ of the domains.
+   */
   val domain = Theorem(
-    dom(⋃(𝓕)) === ⋃({ dom(f) | f ∈ 𝓕})
+    dom(⋃(𝓕)) === ⋃({ dom(f) | f ∈ 𝓕 })
   ) {
     have(x ∈ { fst(z) | z ∈ f } <=> ∃(z ∈ f, fst(z) === x)) by Replacement.apply
     val `x ∈ dom(f)` = thenHave(x ∈ dom(f) <=> ∃(z ∈ f, fst(z) === x)) by Substitute(dom.definition of (R := f))

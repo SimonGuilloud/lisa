@@ -1,13 +1,13 @@
 package lisa.maths.SetTheory.Order
 package Examples
 
-import lisa.maths.SetTheory.Base.Predef.*
+import lisa.maths.SetTheory.Base.Predef._
 import lisa.maths.SetTheory.Relations
-import lisa.maths.SetTheory.Relations.Predef.*
 import lisa.maths.SetTheory.Relations.Examples.EmptyRelation
+import lisa.maths.SetTheory.Relations.Predef._
 
-import PartialOrder.*
-import TotalOrder.*
+import PartialOrder._
+import TotalOrder._
 
 /**
  * The empty order is the order on the empty set.

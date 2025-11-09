@@ -1,6 +1,6 @@
 package lisa.maths.SetTheory.Base
 
-import Symbols.*
+import Symbols._
 
 /**
  * This file defines the set-builder notation by using the (restricted) comprehension

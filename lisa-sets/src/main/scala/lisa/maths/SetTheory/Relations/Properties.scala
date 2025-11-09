@@ -1,15 +1,16 @@
 package lisa.maths.SetTheory.Relations
 
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import Relation.*
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+
+import Relation._
 
 /**
-  * This file define important properties about relations:
-  * - Reflexivity
-  * - Symmetry
-  * - Anti-symmetry
-  * - Totality
-  */
+ * This file define important properties about relations:
+ * - Reflexivity
+ * - Symmetry
+ * - Anti-symmetry
+ * - Totality
+ */
 object Properties extends lisa.Main {
 
   /**
@@ -82,10 +83,9 @@ object Properties extends lisa.Main {
   val stronglyConnected = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y ∈ X, (x R y) \/ (y R x))))))
 
   /**
-    * Functional --- `R` is said to be functional on `X` if for all `x ∈ X`,
-    * whenever `x R y` and `x R z` hold, we must have `y = z`.
-    */
+   * Functional --- `R` is said to be functional on `X` if for all `x ∈ X`,
+   * whenever `x R y` and `x R z` hold, we must have `y = z`.
+   */
   val functional = DEF(λ(R, λ(X, ∀(x ∈ X, ∀(y, ∀(z, (x R y) /\ (x R z) ==> (y === z)))))))
 
 }
-

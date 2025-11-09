@@ -13,6 +13,9 @@ object Example extends lisa.Main:
   // a predicate with one argument
   val P = variable[Ind >>: Prop]
 
+  val form = forall(x, P(x) ==> exists(y, P(y)))
+  println(form.subexpressions.mkString("\n"))
+
   // a first-order function with one argument
   val f = variable[Ind >>: Ind]
 

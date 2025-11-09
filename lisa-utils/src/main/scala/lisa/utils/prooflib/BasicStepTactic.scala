@@ -1057,19 +1057,6 @@ object BasicStepTactic {
       else theFailure
   }
 
-  object Beta extends ProofTactic with ProofFactSequentTactic {
-
-    def apply(using lib: Library, proof: lib.Proof)(premise: proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement = {
-      val botK = bot.underlying
-      val red1 = K.sequentToFormula(botK).betaNormalForm
-      val red2 = K.sequentToFormula(proof.getSequent(premise).underlying).betaNormalForm
-      if (!K.isSame(red1, red2))
-        proof.InvalidProofTactic("The conclusion is not beta-OL-equivalent to the premise.")
-      else
-        proof.ValidProofTactic(bot, Seq(K.Beta(botK, -1)), Seq(premise))
-    }
-  }
-
   // Structural rules
   /**
    * <pre>

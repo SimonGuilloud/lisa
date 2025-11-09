@@ -1,10 +1,10 @@
 package lisa.maths
 
-import lisa.utils.K.repr
-import lisa.utils.prooflib.Library
-import lisa.utils.Printing
-import lisa.utils.prooflib.ProofTacticLib.ProofFactSequentTactic
 import lisa.automation.Substitution
+import lisa.utils.K.repr
+import lisa.utils.Printing
+import lisa.utils.prooflib.Library
+import lisa.utils.prooflib.ProofTacticLib.ProofFactSequentTactic
 
 /**
  * This file proves first-order logic theorems related to quantifiers. It includes:
@@ -100,9 +100,9 @@ object Quantifiers extends lisa.Main {
   }
 
   /**
-    * Theorem --- If there exists a unique element satisfying `P`, then `εx. P(x)`
-    * is that element.
-    */
+   * Theorem --- If there exists a unique element satisfying `P`, then `εx. P(x)`
+   * is that element.
+   */
   val existsOneEpsilonUniqueness = Theorem(
     ∃!(x, P(x)) |- P(y) <=> (y === ε(x, P(x)))
   ) {
@@ -113,7 +113,6 @@ object Quantifiers extends lisa.Main {
 
     have(thesis) by Tautology.from(`==>`, `<==`)
   }
-
 
   /**
    * Theorem --- There exists a unique `x` such that `P(x)` if and only if:

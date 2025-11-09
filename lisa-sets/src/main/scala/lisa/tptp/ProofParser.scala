@@ -5,17 +5,17 @@ import leo.datastructures.TPTP.FOF
 import leo.datastructures.TPTP.FOFAnnotated
 import leo.datastructures.TPTP.FOTAnnotated
 import leo.modules.input.{TPTPParser => Parser}
+import lisa.automation.Tableau
+import lisa.automation.Tableau.instantiate
+import lisa.automation.Tautology
 import lisa.utils.K
-import K.{repr, -<<, +<<, ->>, +>>, |-}
 
 import java.io.File
 
+import K.{repr, -<<, +<<, ->>, +>>, |-}
 import Parser.TPTPParseException
-import KernelParser.*
-import K.{given}
-import lisa.automation.Tautology
-import lisa.automation.Tableau
-import lisa.automation.Tableau.instantiate
+import KernelParser._
+import K.given
 
 object ProofParser {
   val TPTPversion = "TPTP v8.0.0"
@@ -42,7 +42,6 @@ object ProofParser {
   // else K.Variable(sanitize(f), K.Ind)
 
   given maps: MapTriplet = (mapAtom, mapTerm, mapVariable)
-
 
   def reconstructProof(file: File)(using maps: ((String, Int) => K.Expression, (String, Int) => K.Expression, String => K.Variable)): K.SCProof = {
     val problem = Parser.problem(io.Source.fromFile(file))
@@ -692,18 +691,21 @@ object ProofParser {
       def unapply(ann_seq: FOFAnnotated)(using defctx: DefContext, numbermap: String => Int, sequentmap: String => FOF.Sequent)(using maps: MapTriplet): Option[(K.SCProofStep, String)] =
         ann_seq match {
           case FOFAnnotated(name, role, sequent: FOF.Sequent, Inference("instMult", Seq(_, Sequence(instantiations)), Seq(t1)), origin) =>
-            val map = instantiations.map { case Tuple(Seq(String(sfl), expr, Sequence(varsl))) =>
-              val vars = varsl.map {
-                case String(xl) => K.Variable(sanitize(xl), K.Ind)
-                case _ => throw new Exception(s"$name: Expected a list of strings, but got $varsl")
-              }
-              expr match
-                case Ind(t) =>
-                  val sf = K.Variable(sfl, K.functionType(vars.size))
-                  sf -> K.lambda(vars, t)
-                case Prop(phi) =>
-                  val sp = K.Variable(sfl, K.predicateType(vars.size))
-                  sp -> K.lambda(vars, phi)
+            val map = instantiations.map { 
+              case Tuple(Seq(String(sfl), expr, Sequence(varsl))) =>
+                val vars = varsl.map {
+                  case String(xl) => K.Variable(sanitize(xl), K.Ind)
+                  case _ => throw new Exception(s"$name: Expected a list of strings, but got $varsl")
+                }
+                expr match
+                  case Ind(t) =>
+                    val sf = K.Variable(sfl, K.functionType(vars.size))
+                    sf -> K.lambda(vars, t)
+                  case Prop(phi) =>
+                    val sp = K.Variable(sfl, K.predicateType(vars.size))
+                    sp -> K.lambda(vars, phi)
+                  case _ => throw new Exception(s"$name: Expected either an Ind or Prop expression, but got $expr")
+              case _ => throw new Exception(s"$name: Expected a tuple of (String, Ind|Prop, Sequence[vars]), but got $instantiations")
             }.toMap
             val seq = convertToKernel(sequent)
             Some((K.InstSchema(seq, numbermap(t1), map), name))

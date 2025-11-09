@@ -2,7 +2,7 @@ package lisa.maths.SetTheory.Base
 
 import Comprehension.|
 import Union.∪
-import Symbols.*
+import Symbols._
 
 /**
  * The intersection of two sets `x` and `y` is the `x ∩ y` that contains
@@ -37,9 +37,9 @@ object Intersection extends lisa.Main {
   }
 
   /**
-    * Definition --- Two sets `x` and `y` are said to be disjoint
-    * if `x ∩ y = ∅`.
-    */
+   * Definition --- Two sets `x` and `y` are said to be disjoint
+   * if `x ∩ y = ∅`.
+   */
   val disjoint = DEF(λ(x, λ(y, x ∩ y === ∅)))
 
   /**
@@ -73,8 +73,8 @@ object Intersection extends lisa.Main {
   }
 
   /**
-    * Theorem --- Set intersection is idempotent: `x ∩ x = x`.
-    */
+   * Theorem --- Set intersection is idempotent: `x ∩ x = x`.
+   */
   val idempotence = Theorem(
     x ∩ x === x
   ) {
@@ -83,8 +83,8 @@ object Intersection extends lisa.Main {
   }
 
   /**
-    * Theorem --- For any `x, y` we have `x ∩ y ⊆ x`.
-    */
+   * Theorem --- For any `x, y` we have `x ∩ y ⊆ x`.
+   */
   val subsetLeft = Theorem(
     (x ∩ y) ⊆ x
   ) {
@@ -94,8 +94,8 @@ object Intersection extends lisa.Main {
   }
 
   /**
-    * Theorem --- For any `x, y` we have `x ∩ y ⊆ y`.
-    */
+   * Theorem --- For any `x, y` we have `x ∩ y ⊆ y`.
+   */
   val subsetRight = Theorem(
     (x ∩ y) ⊆ y
   ) {
