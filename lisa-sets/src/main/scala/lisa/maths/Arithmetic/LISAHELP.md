@@ -20,6 +20,12 @@ Practical implication:
 - Treat the *exact* left/right context of sequents as part of the proof state.
 - When the kernel complains about a premise mismatch, the fix is almost always: ensure the premises you feed into a tactic have **exactly the sequent shape** it expects.
 
+**Important practical workflow note (compile vs runtime)**
+
+- Scala compilation mostly checks syntax/types; it does **not** guarantee the proof is accepted by the kernel.
+- Always validate proof-heavy edits by running the relevant runnable theory (e.g. `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.Nat"`).
+	A proof can compile but still fail at runtime with messages like “tactic X did not succeed” or “proved sequent differs from expected sequent”.
+
 ---
 
 ## 2) Core syntax you use constantly
@@ -131,6 +137,17 @@ thenHave(∀(y, P(y))).by(Restate)
 
 Note that all these transformations are accepted by Restate without extra proof work, and they can be arbitrarily combined in one step, even deep in formulas.
 
+**Restate gotcha: folding lambda-applied predicates can fail**
+
+- `Restate` is great at *unfolding* definitions and doing light logical/definitional rewriting, but it can fail when you try to “fold back” a goal like
+	`Abs(n, ...)(t)` / `lambda(n, ...)(t)` into a named predicate `P(t)`.
+- Symptom: runtime failure like “Attempted true rewrite during tactic Restate failed” even though everything typechecks.
+- Reliable workaround: avoid needing this fold.
+	- In induction proofs, prefer working entirely with the **unfolded** predicate `∀(k, ...)` rather than `P(n)`.
+	- Use `Restate.from(induction of (Pred := P))` once to obtain an **unfolded induction principle** of the form:
+		`base /\ step ==> ∀n, n∈ℕ ==> ∀k, ...`.
+	- Then prove `base` and `step` directly in that unfolded form; you no longer need `Restate` to convert between `P(n)` and its lambda body.
+
 To add assumptions, use `Weakening`.
 
 If you have `Γ |- Δ` but need `(Γ, H) |- Δ`, add `H` with weakening.
@@ -158,6 +175,11 @@ val s = have(A, B |- C).by(Tautology.from(mem, otherLemma, previousStep))
 If you expected a lemma to match but it’s wrapped with a definition, `Tautology` may fail. 
 Chained uses of `Tautology`, `Restate`, and `Weakening` can often be merged into a single `Tautology.from(...)` step, but if there are too many assumptions (let say more than 5) it can be less efficient to do so.
 
+**Common failure mode**
+
+- Don’t use `Tautology` to discharge non-propositional obligations.
+	For example, after proving a `∀(k, ...)` via `RightForall`, you typically *already have the goal*; adding a trailing `have(thesis).by(Tautology)` often fails because it would require proving something genuinely first-order.
+
 ---
 
 
@@ -172,6 +194,13 @@ There are several ways to go back and forth between quantified statements and in
 val all = have(∀(x, P(x))).by(...)
 val inst = have(P(t)).by(InstantiateForall(t)(all))
 ```
+
+**Instantiation gotcha: context-sensitive mismatch**
+
+- `InstantiateForall(t)(all)` can fail at runtime if `all` is a closed theorem `|- ∀x ...` but your current goal sequent has extra assumptions on the left.
+- Reliable pattern:
+	- First `Weakening(all)` into the current context, then instantiate.
+	- Or instantiate the closed theorem *outside* the subproof/context, bind it to a `val`, then use `Weakening` when needed.
 
 #### Build a universal from an arbitrary variable
 
@@ -522,7 +551,8 @@ Patterns that helped:
 
 ### Use ` of (...)` with explicit names
 
-- Prefer `SomeLemma.of(A := ..., < := ..., x := ...)` with named parameters.
+- Prefer `SomeLemma.of(A := ..., < := ..., x := ...)` with named parameters to intantiate free variables.
+- Use positional parameters to instantiate universally quantified variables.
 - If you guess a parameter name wrong, Scala typechecking will fail; copy patterns from existing usages.
 
 ### Epsilon terms: always pair with existence

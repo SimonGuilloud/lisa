@@ -926,7 +926,7 @@ object WellOrderedRecursion extends lisa.Main {
     )
   }
 
-  recursiveSequence.innerJustification.withSorry=false //NEVER DO THAT, EVER, THIS IS EXCEPTIONAL
+  recursiveSequence.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
 /*
   /**
    * Well-ordered recursion --- Given `F : V × V -> V` and a well-order `(A, <)`

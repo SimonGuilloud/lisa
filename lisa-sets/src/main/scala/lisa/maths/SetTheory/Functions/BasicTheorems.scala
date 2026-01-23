@@ -456,7 +456,7 @@ object BasicTheorems extends lisa.Main {
     thenHave(thesis) by Substitute(function.definition, function.definition of (f := g))
   }
 
-  subset.innerJustification.withSorry=false //NEVER DO THAT, EVER, THIS IS EXCEPTIONAL
+  subset.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
 
   /**
     * Theorem --- If `f, g` are functions such that `g ⊆ f`, then

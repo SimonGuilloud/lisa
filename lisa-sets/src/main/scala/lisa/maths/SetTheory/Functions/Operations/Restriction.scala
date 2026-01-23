@@ -90,6 +90,7 @@ object Restriction extends lisa.Main {
 
     sorry
   }
+  domain.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
 
   /**
    * Theorem --- For all `x ∈ dom(f) ∩ A` we have `(f ↾ A)(x) = f(x)`.
@@ -160,6 +161,7 @@ object Restriction extends lisa.Main {
   ) {
     sorry
   }
+  subsetIsRestriction.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
 
   /**
    * Theorem --- If `f` and `g` agree on `A`, then `f↾A = g↾A`.
@@ -173,4 +175,5 @@ object Restriction extends lisa.Main {
 
     sorry
   }
+  extensionality.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
 }

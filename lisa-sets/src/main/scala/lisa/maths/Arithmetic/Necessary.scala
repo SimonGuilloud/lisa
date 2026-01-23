@@ -146,31 +146,12 @@ object Necessary extends lisa.Main {
     val domF = have(dom(f) === A).by(Tautology.from(FunBasicTheorems.functionOnDomain.of(f := f, A := A), fOnA))
     val xInDomF = have(x ∈ dom(f)).by(Congruence.from(xInA, domF))
 
-    val reflFx = have(f(x) === f(x)).by(Restate)
-
-    val pairInF = have((x, f(x)) ∈ f).by(Tautology.from(
-      FunBasicTheorems.appDefinition.of(f := f, x := x, y := f(x)),
+    have(thesis).by(Tautology.from(
+      Restriction.restrictedApp.of(f := f, A := A, x := x),
       funF,
       xInDomF,
-      reflFx
-    ))
-
-    val pairInRest = have((x, f(x)) ∈ (f ↾ A)).by(Tautology.from(
-      Restriction.pairMembership.of(f := f, A := A, x := x, y := f(x)),
-      pairInF,
       xInA
     ))
-
-    val funRest = have(function(f ↾ A)).by(Tautology.from(Restriction.isFunction.of(f := f, A := A), funF))
-    val xInDomRest = have(x ∈ dom(f ↾ A)).by(Tautology.from(BasicTheorems.domainMembership.of(R := (f ↾ A), x := x, y := f(x)), pairInRest))
-
-    have((f ↾ A)(x) === f(x)).by(Tautology.from(
-      FunBasicTheorems.appDefinition.of(f := (f ↾ A), x := x, y := f(x)),
-      funRest,
-      xInDomRest,
-      pairInRest
-    ))
-    have(thesis).by(Restate.from(lastStep))
   }
 
   /**
@@ -188,30 +169,12 @@ object Necessary extends lisa.Main {
     val xInA = have(x ∈ A).by(Tautology.from(Subset.membership.of(x := B, y := A, z := x), BSubA, xInB))
     val xInDomF = have(x ∈ dom(f)).by(Congruence.from(xInA, domF))
 
-    val reflFx = have(f(x) === f(x)).by(Restate)
-    val pairInF = have((x, f(x)) ∈ f).by(Tautology.from(
-      FunBasicTheorems.appDefinition.of(f := f, x := x, y := f(x)),
+    have(thesis).by(Tautology.from(
+      Restriction.restrictedApp.of(f := f, A := B, x := x),
       funF,
       xInDomF,
-      reflFx
-    ))
-
-    val pairInRest = have((x, f(x)) ∈ (f ↾ B)).by(Tautology.from(
-      Restriction.pairMembership.of(f := f, A := B, x := x, y := f(x)),
-      pairInF,
       xInB
     ))
-
-    val funRest = have(function(f ↾ B)).by(Tautology.from(Restriction.isFunction.of(f := f, A := B), funF))
-    val xInDomRest = have(x ∈ dom(f ↾ B)).by(Tautology.from(BasicTheorems.domainMembership.of(R := (f ↾ B), x := x, y := f(x)), pairInRest))
-
-    have((f ↾ B)(x) === f(x)).by(Tautology.from(
-      FunBasicTheorems.appDefinition.of(f := (f ↾ B), x := x, y := f(x)),
-      funRest,
-      xInDomRest,
-      pairInRest
-    ))
-    have(thesis).by(Restate.from(lastStep))
   }
 
   /**

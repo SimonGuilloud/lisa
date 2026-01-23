@@ -1613,6 +1613,9 @@ object Nat extends lisa.Main {
     have(thesis).by(Restate.from(lastStep))
   }
 
+  output(addSucc.sorryDependencies.map(_.fullName).toString())
+  output(lisa.maths.SetTheory.Functions.Operations.Restriction.restrictedApp.sorryDependencies.map(_.fullName).toString())
+
 
   /**
    * Let's define first a `double` function, as a first step.
@@ -1912,32 +1915,304 @@ object Nat extends lisa.Main {
   }
   /** Theorem: recursion equation for multiplication at successors (requires `n ∈ ℕ`). */
   val mulSucc = Theorem(∀(m, ∀(n, (n ∈ ℕ) ==> (m * S(n) === (m * n) + m)))) {
-    sorry
+    have((n ∈ ℕ) ==> (m * S(n) === (m * n) + m)) subproof {
+      val nInℕ = assume(n ∈ ℕ)
+
+      val wo = have(WellOrder.wellOrder(ℕ)(memRel)).by(Restate.from(natWellOrder))
+
+      val Fm = λ(
+        x,
+        λ(
+          h,
+          ε(
+            y,
+            ((x === zero) /\ (y === zero)) \/
+              ∃(k, (k ∈ ℕ) /\ (x === S(k)) /\ (y === add(app(h)(k))(m)))
+          )
+        )
+      )
+
+      val Gm = Necessary.recursiveFunctionOn(Fm)(ℕ)(memRel)
+
+      val spec = have(
+        functionOn(Gm)(ℕ) /\
+          ∀(x ∈ ℕ, app(Gm)(x) === Fm(x)(Gm ↾ InitialSegment.initialSegment(x)(ℕ)(memRel)))
+      ).by(Cut(wo, Necessary.recursiveFunctionOnSpec.of(A := ℕ, R := memRel, Necessary.Func := Fm)))
+
+      val GmOn = have(functionOn(Gm)(ℕ)).by(Tautology.from(spec))
+      val eqAll = have(
+        ∀(x ∈ ℕ, app(Gm)(x) === Fm(x)(Gm ↾ InitialSegment.initialSegment(x)(ℕ)(memRel)))
+      ).by(Tautology.from(spec))
+
+      val succClosedAll = have(∀(k, (k ∈ ℕ) ==> (S(k) ∈ ℕ))).by(Restate.from(succClosed))
+      val succClosedN = have((n ∈ ℕ) ==> (S(n) ∈ ℕ)).by(InstantiateForall(n)(succClosedAll))
+      val SnInℕ = have(S(n) ∈ ℕ).by(Tautology.from(nInℕ, succClosedN))
+
+      val eqSn = have(
+        S(n) ∈ ℕ |- app(Gm)(S(n)) === Fm(S(n))(Gm ↾ InitialSegment.initialSegment(S(n))(ℕ)(memRel))
+      ).by(InstantiateForall(S(n))(eqAll))
+
+      val initSn = have(S(n) ∈ ℕ |- InitialSegment.initialSegment(S(n))(ℕ)(memRel) === S(n)).by(
+        Restate.from(natInitialSegment.of(n := S(n)))
+      )
+
+      val eqSnr = have(S(n) ∈ ℕ |- app(Gm)(S(n)) === Fm(S(n))(Gm ↾ S(n))).by(Substitute(initSn)(eqSn))
+
+      val hSn = Gm ↾ S(n)
+
+      val Q = λ(
+        y,
+        ((S(n) === zero) /\ (y === zero)) \/
+          ∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)))
+      )
+
+      val FmSn = have(Fm(S(n))(hSn) === ε(y, Q(y))).by(Restate)
+
+      val exY = have(∃(y, Q(y))) subproof {
+        val SnEqSn = have(S(n) === S(n)).by(Restate)
+        val zRefl = have(add(app(hSn)(n))(m) === add(app(hSn)(n))(m)).by(Restate)
+        have((n ∈ ℕ) /\ (S(n) === S(n)) /\ (add(app(hSn)(n))(m) === add(app(hSn)(n))(m))).by(Tautology.from(nInℕ, SnEqSn, zRefl))
+        thenHave(∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (add(app(hSn)(n))(m) === add(app(hSn)(k))(m)))).by(RightExists)
+        thenHave(Q(add(app(hSn)(n))(m))).by(Tautology)
+        thenHave(thesis).by(RightExists)
+      }
+
+      val uniq = have(∀(y, Q(y) ==> (y === add(app(hSn)(n))(m)))) subproof {
+        have(Q(y) |- y === add(app(hSn)(n))(m)) subproof {
+          assume(Q(y))
+
+          val SnNe0 = have(S(n) =/= zero).by(Tautology.from(nInℕ, succNeZero.of(n := n)))
+          val notSnEq0 = have(¬(S(n) === zero)).by(Tautology.from(SnNe0))
+
+          val case1 = have((S(n) === zero) /\ (y === zero) |- y === add(app(hSn)(n))(m)) subproof {
+            val SnEq0 = have((S(n) === zero) /\ (y === zero) |- S(n) === zero).by(Tautology)
+            val notSnEq0Under = have((S(n) === zero) /\ (y === zero) |- ¬(S(n) === zero)).by(Weakening(notSnEq0))
+            val contra = have((S(n) === zero) /\ (y === zero) |- ()).by(Tautology.from(SnEq0, notSnEq0Under))
+            have(thesis).by(Weakening(contra))
+          }
+          val case1Imp = have(((S(n) === zero) /\ (y === zero)) ==> (y === add(app(hSn)(n))(m))).by(Restate.from(case1))
+
+          val case2 = have(
+            ∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m))) |- y === add(app(hSn)(n))(m)
+          ) subproof {
+            assume(∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m))))
+
+            have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- y === add(app(hSn)(n))(m)) subproof {
+              val SnEqSk = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- S(n) === S(k)).by(Tautology)
+              val yEq = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- y === add(app(hSn)(k))(m)).by(Tautology)
+
+              val inj = have(S(n) === S(k) |- n === k).by(Tautology.from(succInjective.of(m := n, n := k)))
+
+              val nEqk = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- n === k).by(Cut(SnEqSk, inj))
+              val kEqn = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- k === n).by(Congruence.from(nEqk))
+
+              val hkEq = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- app(hSn)(k) === app(hSn)(n)).by(
+                Congruence.from(kEqn)
+              )
+
+              val addEq = have((k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)) |- add(app(hSn)(k))(m) === add(app(hSn)(n))(m)).by(
+                Congruence.from(hkEq)
+              )
+
+              have(thesis).by(Congruence.from(yEq, addEq))
+            }
+            thenHave(∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m))) |- y === add(app(hSn)(n))(m)).by(LeftExists)
+          }
+
+          val case2Imp = have(
+            ∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m))) ==> (y === add(app(hSn)(n))(m))
+          ).by(Restate.from(case2))
+
+          val disj = have(
+            ((S(n) === zero) /\ (y === zero)) \/
+              ∃(k, (k ∈ ℕ) /\ (S(n) === S(k)) /\ (y === add(app(hSn)(k))(m)))
+          ).by(Restate)
+
+          have(thesis).by(Tautology.from(disj, case1Imp, case2Imp))
+        }
+        thenHave(Q(y) ==> (y === add(app(hSn)(n))(m))).by(Restate)
+        thenHave(thesis).by(RightForall)
+      }
+
+      val epsQ = have(Q(ε(y, Q(y)))).by(Cut(exY, Quantifiers.existsEpsilon.of(x := y, P := Q)))
+
+      val epsEq = have(ε(y, Q(y)) === add(app(hSn)(n))(m)) subproof {
+        have(∀(y, Q(y) ==> (y === add(app(hSn)(n))(m)))).by(Restate.from(uniq))
+        thenHave(Q(ε(y, Q(y))) ==> (ε(y, Q(y)) === add(app(hSn)(n))(m))).by(InstantiateForall(ε(y, Q(y))))
+        have(thesis).by(Tautology.from(epsQ, lastStep))
+      }
+
+      val hSnAtN = have(app(hSn)(n) === app(Gm)(n)) subproof {
+        val nSubℕ = have(n ⊆ ℕ).by(Cut(nInℕ, `n ∈ ℕ -> n ⊆ ℕ`))
+        val SnSubℕ = have(S(n) ⊆ ℕ).by(Tautology.from(succSubsetℕ, nSubℕ, nInℕ))
+        val nInSn = have(n ∈ S(n)).by(Weakening(nInSucc.of(n := n)))
+        val restEq = have((functionOn(Gm)(ℕ), S(n) ⊆ ℕ, n ∈ S(n)) |- app(Gm ↾ S(n))(n) === app(Gm)(n)).by(
+          Restate.from(Necessary.restrictionAppSubset.of(f := Gm, A := ℕ, B := S(n), x := n))
+        )
+        have(thesis).by(Tautology.from(restEq, GmOn, SnSubℕ, nInSn))
+      }
+
+      val rhsEq2 = have(add(app(hSn)(n))(m) === add(app(Gm)(n))(m)).by(Congruence.from(hSnAtN))
+      val trans = have((ε(y, Q(y)) === add(app(hSn)(n))(m), add(app(hSn)(n))(m) === add(app(Gm)(n))(m)) |- ε(y, Q(y)) === add(app(Gm)(n))(m)).by(Congruence)
+      val trans1 = have((ε(y, Q(y)) === add(app(hSn)(n))(m)) |- ε(y, Q(y)) === add(app(Gm)(n))(m)).by(Cut(rhsEq2, trans))
+      val rhsEqEps = have(ε(y, Q(y)) === add(app(Gm)(n))(m)).by(Cut(epsEq, trans1))
+      val rhsEq = have(Fm(S(n))(hSn) === add(app(Gm)(n))(m)).by(Congruence.from(FmSn, rhsEqEps))
+
+      val mulDefSn = have(m * S(n) === app(Gm)(S(n))).by(Restate.from(mul.definition.of(m := m, n := S(n))))
+      val mulDefN = have(m * n === app(Gm)(n)).by(Restate.from(mul.definition.of(m := m, n := n)))
+
+      val mulDefNsym = have(app(Gm)(n) === m * n).by(Congruence.from(mulDefN))
+      val addRhs = have(add(app(Gm)(n))(m) === (m * n) + m).by(Congruence.from(mulDefNsym))
+
+      val recSn = have(S(n) ∈ ℕ |- m * S(n) === (m * n) + m).by(Congruence.from(mulDefSn, eqSnr, rhsEq, addRhs))
+      have(thesis).by(Tautology.from(SnInℕ, recSn))
+    }
+
+    thenHave(∀(n, (n ∈ ℕ) ==> (m * S(n) === (m * n) + m))).by(RightForall)
+    thenHave(thesis).by(RightForall)
   }
 
   /** Theorem: closure of addition on `ℕ`. */
   val addClosed = Theorem(∀(m, ∀(n, (m ∈ ℕ /\ n ∈ ℕ) ==> ((m + n) ∈ ℕ)))) {
-    sorry
+    val k = variable[Ind]
+
+    val P = λ(n, ∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)))
+
+    val indUnfolded = have(
+      (∀(k, (k ∈ ℕ) ==> ((k + zero) ∈ ℕ))) /\
+        ∀(
+          n,
+          (n ∈ ℕ) ==>
+            (∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ)))
+        ) ==> ∀(n, (n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)))
+    ).by(Restate.from(induction of (Pred := P)))
+
+    val baseAll = have(∀(k, (k ∈ ℕ) ==> ((k + zero) ∈ ℕ))) subproof {
+      have((k ∈ ℕ) ==> ((k + zero) ∈ ℕ)) subproof {
+        val kInℕ = assume(k ∈ ℕ)
+        have(k + zero === k).by(InstantiateForall(k)(addZero))
+        val eq = lastStep
+        val iff = have((k + zero) ∈ ℕ <=> (k ∈ ℕ)).by(Congruence.from(eq))
+        have((k + zero) ∈ ℕ).by(Tautology.from(iff, kInℕ))
+      }
+      thenHave(thesis).by(RightForall)
+    }
+
+    val stepAll = have(∀(n, (n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ))))) subproof {
+      have((n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ)))) subproof {
+        val nInℕ = assume(n ∈ ℕ)
+        val IH = assume(∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)))
+
+        have(∀(k, (k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ))) subproof {
+          have((k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ)) subproof {
+            val kInℕ = assume(k ∈ ℕ)
+
+            val ihImp = have((k ∈ ℕ) ==> ((k + n) ∈ ℕ)).by(InstantiateForall(k)(IH))
+            val knInℕ = have((k + n) ∈ ℕ).by(Tautology.from(ihImp, kInℕ))
+
+            have((k + n) ∈ ℕ ==> (S(k + n) ∈ ℕ)).by(InstantiateForall(k + n)(succClosed))
+            val SknInℕ = have(S(k + n) ∈ ℕ).by(Tautology.from(lastStep, knInℕ))
+
+            val addSuccK = have(∀(n, (n ∈ ℕ) ==> (k + S(n) === S(k + n)))).by(InstantiateForall(k)(addSucc))
+            val addSuccImp = have((n ∈ ℕ) ==> (k + S(n) === S(k + n))).by(InstantiateForall(n)(addSuccK))
+            val eq = have(k + S(n) === S(k + n)).by(Tautology.from(addSuccImp, nInℕ))
+            val iff = have((k + S(n)) ∈ ℕ <=> (S(k + n) ∈ ℕ)).by(Congruence.from(eq))
+            have((k + S(n)) ∈ ℕ).by(Tautology.from(iff, SknInℕ))
+          }
+          thenHave(thesis).by(RightForall)
+        }
+      }
+      thenHave(thesis).by(RightForall)
+    }
+
+    val premiseAll = have((∀(k, (k ∈ ℕ) ==> ((k + zero) ∈ ℕ))) /\ ∀(n, (n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k + S(n)) ∈ ℕ))))).by(Tautology.from(baseAll, stepAll))
+    val allAll = have(∀(n, (n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ)))).by(Tautology.from(indUnfolded, premiseAll))
+
+    have((m ∈ ℕ /\ n ∈ ℕ) ==> ((m + n) ∈ ℕ)) subproof {
+      val both = assume(m ∈ ℕ /\ n ∈ ℕ)
+      val mInℕ = have(m ∈ ℕ).by(Tautology.from(both))
+      val nInℕ = have(n ∈ ℕ).by(Tautology.from(both))
+
+      val nImp = have((n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ))).by(InstantiateForall(n)(allAll))
+      val allK = have(∀(k, (k ∈ ℕ) ==> ((k + n) ∈ ℕ))).by(Tautology.from(nImp, nInℕ))
+
+      val mImp = have((m ∈ ℕ) ==> ((m + n) ∈ ℕ)).by(InstantiateForall(m)(allK))
+      have((m + n) ∈ ℕ).by(Tautology.from(mImp, mInℕ))
+    }
+    thenHave(∀(n, (m ∈ ℕ /\ n ∈ ℕ) ==> ((m + n) ∈ ℕ))).by(RightForall)
+    thenHave(thesis).by(RightForall)
   }
 
   /** Theorem: closure of multiplication on `ℕ`. */
   val mulClosed = Theorem(∀(m, ∀(n, (m ∈ ℕ /\ n ∈ ℕ) ==> ((m * n) ∈ ℕ)))) {
-    sorry
+    val k = variable[Ind]
+
+    val P = λ(n, ∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)))
+
+    val indUnfolded = have(
+      (∀(k, (k ∈ ℕ) ==> ((k * zero) ∈ ℕ))) /\
+        ∀(
+          n,
+          (n ∈ ℕ) ==>
+            (∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ)))
+        ) ==> ∀(n, (n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)))
+    ).by(Restate.from(induction of (Pred := P)))
+
+    val baseAll = have(∀(k, (k ∈ ℕ) ==> ((k * zero) ∈ ℕ))) subproof {
+      have((k ∈ ℕ) ==> ((k * zero) ∈ ℕ)) subproof {
+        assume(k ∈ ℕ)
+        have(k * zero === zero).by(InstantiateForall(k)(mulZero))
+        val eq = lastStep
+        val iff = have((k * zero) ∈ ℕ <=> (zero ∈ ℕ)).by(Congruence.from(eq))
+        have((k * zero) ∈ ℕ).by(Tautology.from(iff, zeroInℕ))
+      }
+      thenHave(thesis).by(RightForall)
+    }
+
+    val stepAll = have(∀(n, (n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ))))) subproof {
+      have((n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ)))) subproof {
+        val nInℕ = assume(n ∈ ℕ)
+        val IH = assume(∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)))
+
+        have(∀(k, (k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ))) subproof {
+          have((k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ)) subproof {
+            val kInℕ = assume(k ∈ ℕ)
+
+            val ihImp = have((k ∈ ℕ) ==> ((k * n) ∈ ℕ)).by(InstantiateForall(k)(IH))
+            val knInℕ = have((k * n) ∈ ℕ).by(Tautology.from(ihImp, kInℕ))
+
+            val addCl1 = have(∀(x, (((k * n) ∈ ℕ) /\ (x ∈ ℕ)) ==> (((k * n) + x) ∈ ℕ))).by(InstantiateForall(k * n)(addClosed))
+            val addCl2 = have((((k * n) ∈ ℕ) /\ (k ∈ ℕ)) ==> (((k * n) + k) ∈ ℕ)).by(InstantiateForall(k)(addCl1))
+            val rhsInℕ = have(((k * n) + k) ∈ ℕ).by(Tautology.from(addCl2, knInℕ, kInℕ))
+
+            val mulSuccK = have(∀(n, (n ∈ ℕ) ==> (k * S(n) === (k * n) + k))).by(InstantiateForall(k)(mulSucc))
+            val mulSuccImp = have((n ∈ ℕ) ==> (k * S(n) === (k * n) + k)).by(InstantiateForall(n)(mulSuccK))
+            val eq = have(k * S(n) === (k * n) + k).by(Tautology.from(mulSuccImp, nInℕ))
+            val iff = have((k * S(n)) ∈ ℕ <=> (((k * n) + k) ∈ ℕ)).by(Congruence.from(eq))
+            have((k * S(n)) ∈ ℕ).by(Tautology.from(iff, rhsInℕ))
+          }
+          thenHave(thesis).by(RightForall)
+        }
+      }
+      thenHave(thesis).by(RightForall)
+    }
+
+    val premiseAll = have((∀(k, (k ∈ ℕ) ==> ((k * zero) ∈ ℕ))) /\ ∀(n, (n ∈ ℕ) ==> (∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)) ==> ∀(k, (k ∈ ℕ) ==> ((k * S(n)) ∈ ℕ))))).by(Tautology.from(baseAll, stepAll))
+    val allAll = have(∀(n, (n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ)))).by(Tautology.from(indUnfolded, premiseAll))
+
+    have((m ∈ ℕ /\ n ∈ ℕ) ==> ((m * n) ∈ ℕ)) subproof {
+      val both = assume(m ∈ ℕ /\ n ∈ ℕ)
+      val mInℕ = have(m ∈ ℕ).by(Tautology.from(both))
+      val nInℕ = have(n ∈ ℕ).by(Tautology.from(both))
+
+      val nImp = have((n ∈ ℕ) ==> ∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ))).by(InstantiateForall(n)(allAll))
+      val allK = have(∀(k, (k ∈ ℕ) ==> ((k * n) ∈ ℕ))).by(Tautology.from(nImp, nInℕ))
+
+      val mImp = have((m ∈ ℕ) ==> ((m * n) ∈ ℕ)).by(InstantiateForall(m)(allK))
+      have((m * n) ∈ ℕ).by(Tautology.from(mImp, mInℕ))
+    }
+    thenHave(∀(n, (m ∈ ℕ /\ n ∈ ℕ) ==> ((m * n) ∈ ℕ))).by(RightForall)
+    thenHave(thesis).by(RightForall)
   }
 
-  ///////////////////////////
-  // A few derived lemmas.  //
-  ///////////////////////////
-
-  /** Lemma: `0 ∈ ℕ` (as a lemma, not just an axiom). */
-  val `0 ∈ ℕ` = Lemma(zero ∈ ℕ) {
-    have(thesis) by Restate.from(zeroInℕ)
-  }
-
-  /** Lemma: if `n ∈ ℕ` then `S(n) ∈ ℕ`. */
-  val `n ∈ ℕ -> S(n) ∈ ℕ` = Lemma((n ∈ ℕ) |- S(n) ∈ ℕ) {
-    have(∀(m, (m ∈ ℕ) ==> (S(m) ∈ ℕ))).by(Restate.from(succClosed))
-    thenHave((n ∈ ℕ) ==> (S(n) ∈ ℕ)) by InstantiateForall(n)
-    thenHave(thesis) by Tautology
-  }
 }
