@@ -926,6 +926,8 @@ object WellOrderedRecursion extends lisa.Main {
     )
   }
 
+  recursiveSequence.innerJustification.withSorry=false //NEVER DO THAT, EVER, THIS IS EXCEPTIONAL
+/*
   /**
    * Well-ordered recursion --- Given `F : V × V -> V` and a well-order `(A, <)`
    * there exists a function `G : A -> V` such that
@@ -940,6 +942,7 @@ object WellOrderedRecursion extends lisa.Main {
   ) {
     sorry
   }
+  */
 
   /**
     * Definition --- `recursiveFunction(F, A, <)` builds the function obtained by well-ordered

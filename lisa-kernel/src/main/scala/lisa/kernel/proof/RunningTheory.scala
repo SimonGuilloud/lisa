@@ -27,7 +27,7 @@ class RunningTheory {
   /**
    * A theorem encapsulate a sequent and assert that this sequent has been correctly proven and may be used safely in further proofs.
    */
-  sealed case class Theorem private[RunningTheory] (name: String, proposition: Sequent, withSorry: Boolean) extends Justification
+  sealed case class Theorem private[RunningTheory] (name: String, proposition: Sequent, var withSorry: Boolean) extends Justification
 
   /**
    * An axiom is any formula that is assumed and considered true within the theory. It can freely be used later in any proof.

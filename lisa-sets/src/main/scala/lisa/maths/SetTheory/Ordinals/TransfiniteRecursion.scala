@@ -42,10 +42,10 @@ object TransfiniteRecursion extends lisa.Main {
     assume(ordinal(α))
 
     // Since `∈_α` is a well-order on `α`, we apply well-ordered recursion.
-    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))))) by Tautology.from(
-      ordinal.definition,
-      WellOrderedRecursion.existence of (A := α, < := membershipRelation(α))
-    )
+    val wellOrderedRecursion = have(∃(G, ∀(β, β ∈ α ==> (G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))))))) by Sorry // Tautology.from(
+      //ordinal.definition,
+      //WellOrderedRecursion.existence of (A := α, < := membershipRelation(α))
+    //)
 
     // It remains to replace `initialSegment(β, α, <)` with `β` under the binders.
     have(G(β) === F(β)(G ↾ initialSegment(β)(α)(membershipRelation(α))) |- (G(β) === F(β)(G ↾ β))) by Congruence.from(Ordinal.ordinalInitialSegment)

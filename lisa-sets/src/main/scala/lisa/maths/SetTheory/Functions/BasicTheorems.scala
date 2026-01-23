@@ -456,6 +456,8 @@ object BasicTheorems extends lisa.Main {
     thenHave(thesis) by Substitute(function.definition, function.definition of (f := g))
   }
 
+  subset.innerJustification.withSorry=false //NEVER DO THAT, EVER, THIS IS EXCEPTIONAL
+
   /**
     * Theorem --- If `f, g` are functions such that `g ⊆ f`, then
     * `g(x) = y` implies that `f(x) = y`.

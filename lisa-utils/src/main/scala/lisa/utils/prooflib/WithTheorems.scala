@@ -349,6 +349,8 @@ trait WithTheorems {
 
     def justifications: List[JUSTIFICATION] = getImports.map(_._1)
 
+    def sorryDependencies = justifications.filter(_.withSorry)
+
   }
 
   /**
@@ -440,7 +442,7 @@ trait WithTheorems {
    */
   sealed abstract class THM extends JUSTIFICATION {
     def repr: String =
-      s"  Theorem ${name} := ${statement}${if (false /*withSorry*/) " (!! Relies on Sorry)" else ""}"
+      s"  Theorem ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.
@@ -452,6 +454,10 @@ trait WithTheorems {
      */
     def highProof: Option[BaseProof]
     val innerJustification: theory.Theorem
+    def sorryDependencies: List[JUSTIFICATION] = highProof match {
+      case Some(p) => p.sorryDependencies
+      case None => Nil
+    }
 
     /**
      * A pretty representation of the goal of the theorem
