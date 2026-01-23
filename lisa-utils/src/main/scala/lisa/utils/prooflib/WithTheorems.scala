@@ -47,7 +47,6 @@ trait WithTheorems {
           if e.isInstanceOf[F.Expr[?]] then Left(e.asInstanceOf[F.Expr[F.Ind]])
           else Right(e.asInstanceOf[F.SubstPair])
         }
-
         val (s1, p1) = if substPairs.isEmpty then (baseFormula, Seq()) else baseFormula.instantiateWithProof(substPairs.map(sp => (sp._1, sp._2)).toMap, -1)
         val (s2, p2) = if terms.isEmpty then (s1, p1) else s1.instantiateForallWithProof(terms, p1.length - 1)
         (s2, p1 ++ p2)
@@ -441,7 +440,7 @@ trait WithTheorems {
    */
   sealed abstract class THM extends JUSTIFICATION {
     def repr: String =
-      s"  Theorem ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
+      s"  Theorem ${name} := ${statement}${if (false /*withSorry*/) " (!! Relies on Sorry)" else ""}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.

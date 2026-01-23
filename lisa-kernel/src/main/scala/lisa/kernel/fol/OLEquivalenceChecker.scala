@@ -558,7 +558,7 @@ private[fol] trait OLEquivalenceChecker extends Syntax {
           case SimpleEquality(left, right, true) =>
             val l = computeNormalForm(left)
             val r = computeNormalForm(right)
-            if (l == r) SimpleLiteral(true)
+            if (latticesEQ(l, r)) SimpleLiteral(true)
             else if (l.uniqueKey >= r.uniqueKey) SimpleEquality(l, r, true)
             else SimpleEquality(r, l, true)
 

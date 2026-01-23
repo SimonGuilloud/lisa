@@ -655,7 +655,9 @@ object KernelHelpers {
       }
       .mkString("\n") + (judgement match {
       case SCValidProof(_, _) => ""
-      case SCInvalidProof(proof, path, message) => s"\nProof checker has reported an error at line ${path.mkString(".")}: $message"
+      case SCInvalidProof(proof, path, message) => 
+        val msg = message.split("\n").takeRight(5).mkString("\n")
+        s"\nProof checker has reported an error at line ${path.mkString(".")}: $msg"
     })
   }
 

@@ -8,6 +8,8 @@ import lisa.utils.prooflib._
 
 object ProofPrinter {
 
+  private val maxProofLines=5
+
   private def spaceSeparator(compact: Boolean): String = if (compact) "" else " "
 
   private def commaSeparator(compact: Boolean, symbol: String = ","): String = s"$symbol${spaceSeparator(compact)}"
@@ -100,7 +102,9 @@ object ProofPrinter {
       }
       ++ (error match {
         case None => Nil
-        case Some((path, message)) => List(s"\nProof checker has reported an error at line ${path.mkString(".")}: $message")
+        case Some((path, message)) => 
+          val msg = message.split("\n").takeRight(maxProofLines).mkString("\n")
+          List(s"\nProof checker has reported an error at line ${path.mkString(".")}: $msg")
       })
   }
 
@@ -115,6 +119,7 @@ object ProofPrinter {
 
   def prettyProof(proof: Library#Proof): String = prettyFullProofLines(proof, None).mkString("\n")
   def prettyProof(proof: Library#Proof, indent: Int): String = (" " * indent) + prettyFullProofLines(proof, None).mkString("\n" + (" " * indent))
+  def prettyProofCrop(proof: Library#Proof, indent: Int, max: Int): String = (" " * indent) + prettyFullProofLines(proof, None).takeRight(maxProofLines).mkString("\n" + (" " * indent))
 
   def prettyProof(proof: Library#Proof, error: Option[(IndexedSeq[Int], String)]): String = prettyFullProofLines(proof, error).mkString("\n")
   def prettyProof(proof: Library#Proof, indent: Int, error: Option[(IndexedSeq[Int], String)]): String = prettyFullProofLines(proof, None).mkString("\n" + " " * indent)
