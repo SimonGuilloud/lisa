@@ -138,20 +138,15 @@ object Necessary extends lisa.Main {
   }
 
   /** Restriction application (Arithmetic-local): if `f` is a function on `A` and `x ∈ A`, then `(f ↾ A)(x) = f(x)`. */
-  val restrictionApp = Lemma((functionOn(f)(A), x ∈ A) |- (f ↾ A)(x) === f(x)) {
+  lazy val restrictionApp = Lemma((functionOn(f)(A), x ∈ A) |- (f ↾ A)(x) === f(x)) {
     val fOnA = assume(functionOn(f)(A))
     val xInA = assume(x ∈ A)
+    val ASubA = have(A ⊆ A).by(Restate.from(Subset.reflexivity of (x := A)))
 
-    val funF = have(function(f)).by(Tautology.from(FunBasicTheorems.functionOnIsFunction.of(f := f, A := A), fOnA))
-    val domF = have(dom(f) === A).by(Tautology.from(FunBasicTheorems.functionOnDomain.of(f := f, A := A), fOnA))
-    val xInDomF = have(x ∈ dom(f)).by(Congruence.from(xInA, domF))
-
-    have(thesis).by(Tautology.from(
-      Restriction.restrictedApp.of(f := f, A := A, x := x),
-      funF,
-      xInDomF,
-      xInA
-    ))
+    val inst = have((functionOn(f)(A), A ⊆ A, x ∈ A) |- (f ↾ A)(x) === f(x)).by(
+      Restate.from(restrictionAppSubset.of(f := f, A := A, B := A, x := x))
+    )
+    have(thesis).by(Tautology.from(inst, fOnA, ASubA, xInA))
   }
 
   /**

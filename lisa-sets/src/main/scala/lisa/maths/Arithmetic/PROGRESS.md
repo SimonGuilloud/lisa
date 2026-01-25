@@ -37,3 +37,34 @@
 - Fixed `Nat.add`/`Nat.mul` definition registration (removed incorrect `addSymbol` calls that erased stored definitions).
 - Proved `Nat.addZero` and `Nat.mulZero` without `sorry` and validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.Nat"`.
 
+## 2026-01-24
+
+- Replaced the Scala-level successor wrapper `S` by a Lisa definition `Succ : ℕ → ℕ` in `Nat.scala` and migrated all arithmetic files to use `Succ` (`Syntax.scala`, `Examples.scala`, `NatAlgebra.scala`, `NatDerived.scala`).
+- Completed the `NatDerived.scala` port to `Succ`, including a recursion-defined `double` and theorems `doubleZero` and `doubleSucc`.
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.Nat"` and `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.NatDerived"` successfully.
+
+- Replaced `Nat.zero` by a Lisa definition `zero = DEF(∅)` and fixed downstream proofs that depended on `0` being syntactically `∅`.
+- Added `NatAlgebra.addAssoc` (addition associativity; Isabelle/HOL `Nat.thy` `add_assoc`-style lemma).
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.Nat"` and `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.NatAlgebra"` successfully.
+
+- Extended `NatAlgebra.scala` with more Isabelle/HOL `Nat.thy`-style basic lemmas: `addOneRight`, `mulZeroLeft`, `mulOneRight`, `mulOneLeft`.
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.NatAlgebra"` successfully.
+
+- Standardized theorem statement style across Arithmetic: prefer free variables and assumptions on the left of the sequent (instead of implications / outer quantifiers), while keeping the same API content.
+- Added Isabelle/HOL `Nat.thy`-style semiring lemmas to `NatAlgebra.scala`: `mulDistribLeft` (`a*(b+c)=a*b+a*c`) and `mulAssoc`.
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.Nat"`, `...NatAlgebra`, `...NatDerived`, and `...Examples` successfully.
+
+- Added Isabelle/HOL `Nat.thy`-style successor/zero disequality lemmas to `Nat.scala`: `succNeZero`, `zeroNeSucc`, `succNeSelf`, `selfNeSucc`.
+- Added basic right-zero/recursion-equation convenience lemmas and proved the zero characterizations `addEqZeroIff` (`add_is_0`) and `mulEqZeroIff` (`mult_is_0`) in `NatAlgebra.scala`.
+
+- Extended `NatAlgebra.scala` with further `Nat.thy`-style facts derived from `add_is_0` / `mult_is_0`: projections (`addEqZeroLeft/right`), nonzero corollaries (`addNeZeroLeft/right`, `mulNeZero`, `mulNeZeroBoth`), nonzero iff characterizations (`addNeZeroIff`, `mulNeZeroIff`), and the major characterization `mulEqSelfIff` (`mult_eq_self`).
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.NatAlgebra"` successfully.
+
+- Extended `NatAlgebra.scala` with more Isabelle/HOL `Nat.thy`-style algebraic characterizations and commutation lemmas:
+	- `addEqSelfIff` (`m+n=m ↔ n=0`) and `addEqSelfIffLeft` (`m+n=n ↔ m=0`).
+	- `addLeftComm` and `mulLeftComm` (left-commutativity).
+	- `mulEqSelfRightIff` (`m*n=n ↔ n=0 ∨ m=1`) via commutativity.
+	- Corollaries of `mult_is_0`: `mulEqZeroRightFromLeftNeZero` and `mulEqZeroLeftFromRightNeZero`.
+	- `addEqOneIff` (`m+n=1` characterization).
+- Validated by running `sbt --client -no-colors "lisa-sets/runMain lisa.maths.Arithmetic.NatAlgebra"` successfully.
+

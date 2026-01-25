@@ -4,8 +4,6 @@
 This document collects practical lessons learned when writing proofs in LISA’s Scala proof DSL.
 It focuses on what tends to *work reliably*, what tends to break (often subtly), and patterns that make proofs maintainable.
 
-For the short checklist-style version (naming/style conventions + compressed best practices), see `STYLE.md`.
-
 The examples are schematic: replace variables/lemmas with whatever your development imports.
 
 ---
@@ -64,6 +62,9 @@ val aHasP = have(P(a)).by(Cut(ex, Quantifiers.existsEpsilon.of(x := x, P := λ(x
 ---
 
 ## 3) Proof structure patterns that scale
+
+###
+If a proof step is directly used in the next step, PREFER `thenHave` (or if the tactic takes multiple premise, `lastStep`) over binding to a `val`.
 
 ### `Theorem(...) { ... }` + local lemmas
 

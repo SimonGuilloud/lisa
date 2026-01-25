@@ -12,6 +12,8 @@ object Examples extends lisa.Main {
 
   private val a = variable[Ind]
   private val b = variable[Ind]
+  private val m = variable[Ind]
+  private val n = variable[Ind]
 
   /** Example 1: `0 ∈ ℕ`. */
   val ex1_zeroInℕ = Theorem(0 ∈ ℕ) {
@@ -19,52 +21,52 @@ object Examples extends lisa.Main {
   }
 
   /** Example 2: `S(0) ∈ ℕ`. */
-  val ex2_oneInℕ = Theorem(S(0) ∈ ℕ) {
-    have(∀(a, (a ∈ ℕ) ==> (S(a) ∈ ℕ))).by(Restate.from(Nat.succClosed))
-    thenHave((Nat.zero ∈ ℕ) ==> (S(Nat.zero) ∈ ℕ)) by InstantiateForall(Nat.zero)
-    thenHave(thesis) by Tautology.fromLastStep(Nat.zeroInℕ)
+  val ex2_oneInℕ = Theorem(Succ(0) ∈ ℕ) {
+    have(thesis) by Cut(Nat.zeroInℕ, Nat.succClosed.of(n := Nat.zero))
   }
 
   /** Example 3: `S(S(0)) ∈ ℕ`. */
-  val ex3_twoInℕ = Theorem(S(S(0)) ∈ ℕ) {
-    have(∀(a, (a ∈ ℕ) ==> (S(a) ∈ ℕ))).by(Restate.from(Nat.succClosed))
-    thenHave((S(Nat.zero) ∈ ℕ) ==> (S(S(Nat.zero)) ∈ ℕ)) by InstantiateForall(S(Nat.zero))
-    thenHave(thesis) by Tautology.fromLastStep(ex2_oneInℕ)
+  val ex3_twoInℕ = Theorem(Succ(Succ(0)) ∈ ℕ) {
+    have(thesis) by Restate.from(Nat.twoInℕ)
   }
 
   /** Example 4: successor closure as a theorem. */
-  val ex4_succClosed = Theorem(∀(a, (a ∈ ℕ) ==> (S(a) ∈ ℕ))) {
-    have(thesis) by Restate.from(Nat.succClosed)
+  val ex4_succClosed = Theorem(a ∈ ℕ |- (Succ(a) ∈ ℕ)) {
+    have(thesis) by Restate.from(Nat.succClosed.of(n := a))
   }
 
   /** Example 5: `a + 0 = a`. */
-  val ex5_addZero = Theorem(∀(a, a + 0 === a)) {
-    have(thesis) by Restate.from(Nat.addZero)
+  val ex5_addZero = Theorem(a + 0 === a) {
+    have(thesis) by Restate.from(Nat.addZero.of(m := a))
   }
 
   /** Example 6: `a + S(b) = S(a + b)`. */
-  val ex6_addSucc = Theorem(∀(a, ∀(b, (b ∈ ℕ) ==> (a + S(b) === S(a + b))))) {
-    have(thesis) by Restate.from(Nat.addSucc)
+  val ex6_addSucc = Theorem(b ∈ ℕ |- (a + Succ(b) === Succ(a + b))) {
+    val bInℕ = assume(b ∈ ℕ)
+    val res = have(a + Succ(b) === Succ(a + b)).by(Cut(bInℕ, Nat.addSucc.of(m := a, n := b)))
+    have(thesis).by(Restate.from(res))
   }
 
   /** Example 7: `a * 0 = 0`. */
-  val ex7_mulZero = Theorem(∀(a, a * 0 === 0)) {
-    have(thesis) by Restate.from(Nat.mulZero)
+  val ex7_mulZero = Theorem(a * 0 === 0) {
+    have(thesis) by Restate.from(Nat.mulZero.of(m := a))
   }
 
   /** Example 8: `a * S(b) = a*b + a`. */
-  val ex8_mulSucc = Theorem(∀(a, ∀(b, (b ∈ ℕ) ==> (a * S(b) === (a * b) + a)))) {
-    have(thesis) by Restate.from(Nat.mulSucc)
+  val ex8_mulSucc = Theorem(b ∈ ℕ |- (a * Succ(b) === (a * b) + a)) {
+    val bInℕ = assume(b ∈ ℕ)
+    val res = have(a * Succ(b) === (a * b) + a).by(Cut(bInℕ, Nat.mulSucc.of(m := a, n := b)))
+    have(thesis).by(Restate.from(res))
   }
 
   /** Example 9: closure of addition on `ℕ`. */
-  val ex9_addClosed = Theorem(∀(a, ∀(b, (a ∈ ℕ /\ b ∈ ℕ) ==> ((a + b) ∈ ℕ)))) {
-    have(thesis) by Restate.from(Nat.addClosed)
+  val ex9_addClosed = Theorem((a ∈ ℕ, b ∈ ℕ) |- ((a + b) ∈ ℕ)) {
+    have(thesis) by Restate.from(Nat.addClosed.of(m := a, n := b))
   }
 
   /** Example 10: closure of multiplication on `ℕ`. */
-  val ex10_mulClosed = Theorem(∀(a, ∀(b, (a ∈ ℕ /\ b ∈ ℕ) ==> ((a * b) ∈ ℕ)))) {
-    have(thesis) by Restate.from(Nat.mulClosed)
+  val ex10_mulClosed = Theorem((a ∈ ℕ, b ∈ ℕ) |- ((a * b) ∈ ℕ)) {
+    have(thesis) by Restate.from(Nat.mulClosed.of(m := a, n := b))
   }
 
 }

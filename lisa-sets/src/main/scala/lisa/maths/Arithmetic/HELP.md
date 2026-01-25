@@ -15,12 +15,12 @@ It intentionally avoids repeating: scope constraints, run commands, and `sorry` 
 - `lisa-sets/src/main/scala/lisa/maths/Quantifiers.scala`: proven quantifier facts and `∃!`
 
 ## Isabelle/ZF pointers (Use only to first define ℕ set-theoretically!)
-The Isabelle/ZF reference library is vendored under `IsabelleZF/`. The most relevant files for defining naturals set-theoretically is:
+The Isabelle/ZF reference library is under `IsabelleZF/`. The most relevant files for defining naturals set-theoretically is:
 - `IsabelleZF/Nat.thy`: definition of natural numbers.
 
 ## Isabelle/HOL pointers (what to read, what to extract)
 
-The Isabelle/HOL reference library is vendored under `IsabelleHOL/`.
+The Isabelle/HOL reference library is under `IsabelleHOL/`.
 Use it as a *checklist of useful statements and lemma names*, not as code to copy.
 
 ### High-value Isabelle theories for “basic arithmetic”
@@ -46,7 +46,7 @@ Suggested workflow for populating `GOALS.md` and planning your lemma API:
 - For each candidate lemma, record in `GOALS.md`:
   - Isabelle file + lemma name
   - the informal statement (paraphrase)
-  - the Lisa-side name you want (following `STYLE.md`)
+  - the Lisa-side name you want.
 
 ### Translating Isabelle statements to Lisa set-theoretic naturals
 

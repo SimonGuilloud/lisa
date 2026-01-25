@@ -46,24 +46,18 @@ Derive (API):
 - `m * S(n) = m*n + m`
 - closure: `m,n ∈ ℕ -> m+n ∈ ℕ` and `m*n ∈ ℕ`
 
-## Step 3: Basic arithmetic properties (useful lemmas)
-
-Inspired by Isabelle `Nat.thy` (paraphrased; no code copying):
-- Addition:
-	- associativity, commutativity
-	- neutral elements: `0 + n = n`, `n + 0 = n`
-	- cancellation / injectivity of `S`
-- Multiplication:
-	- associativity, commutativity
-	- distributivity over addition
-	- neutral/absorbing: `n * 1 = n`, `n * 0 = 0`, `0 * n = 0`
-
-## Step 4: Longer-term theorem targets
-
-These are *ideal* goals to discuss with the maintainer before proving:
+## Step 3: Short-term theorem targets
+From here, only use the API and do not rely on the particular set-theoretic encoding of naturals.
 - `≤` on naturals (as subset / ordinal order) and its basic laws
 - monotonicity of `+` and `*`
 - inequalities like `n < S(n)` and basic order arithmetic
 - parity (even/odd) and simple lemmas
 - exponentiation by recursion (`n^0 = 1`, `n^(S k) = n^k * n`)
 
+
+## Step 4: Long-term theorem targets
+Create new very ambitious goals from Isabelle/HOL.
+- Every Number has a unique primte factorization (fundamental theorem of arithmetic)
+- Euclid's theorem: There are infinitely many primes
+- Bezout identity and gcd/lcm properties
+- Chinese remainder theorem

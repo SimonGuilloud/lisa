@@ -13,23 +13,17 @@ Reference policy:
 - Do not copy/paste Isabelle code or comments verbatim.
 
 ## Goals
-- The first step of the project is to define natural numbers as a set, as well as the basic operations on them. We want to prove the necessary lemmas (which correspond to the property one obtains from an inductive definition) to be able to work with natural numbers, so that we can then "forget" the underlying set-theoretic representation and work with natural numbers as if they were a primitive type, only using the basic lemmas we proved. To implement natural numbers in set theory, refer to the Isabelle/ZF development (pointed to in the `HELP.md` file) for inspiration. Write the definition of natural numbers and the basic lemmas in the `Nat.scala` file.
-
-- Second, We should then include helpers to make a nice and natural syntax for natural numbers and their operations. For this part, refer to the `LISAHELP.md` file. Finally, write 10 example theorems about natural numbers using only the basic lemmas you proved and the syntax, to show that the development is usable.
-
-- The third step is to prove all the basic properties and helper lemmas of arithmetic: simple properties that we will need later. Look at the Isabelle/HOL library for reference, and add only useful theorems. These theorems should be named and organized properly, following the conventions in the `LISAHELP.md` file, to maximize future usability and searchability.
+- The first step is to prove all the basic properties and helper lemmas of arithmetic: simple properties that we will need later. Look at the Isabelle/HOL library for reference, and add only useful theorems. These theorems should be named and organized properly, following the conventions in the `LISAHELP.md` file, to maximize future usability and searchability.
 
 
-- The fourth step is to prove as many complex theorems about arithmetic as possible, proving intermediate lemmas. For this step, establish a list of theorems you want to prove, and discuss it with the project maintainer before starting the proofs. Write those "ideal goal theorems" in the `GOALS.md` file. Only consider theorems that can reasonably be proven with only the basic properties of arithmetic. Again, refer to the Isabelle/HOL library for inspiration, and make the list as large as possible so that there is a good chance that at least some theorems will be proven. Then, make a plan of intermediate useful lemmas that will help prove those theorems, also in the `GOALS.md` file. Finally, start proving as much of those theorems and lemmas as possible. At this stage, focus on making deep progress, while going back to prove more basic lemmas if necessary. You should split your time on easy, medium and hard theorems, to ensure that you make progress on all fronts.
+- The fourth step is to prove as many complex theorems about arithmetic as possible, proving intermediate lemmas. For this step, establish a list of theorems you want to prove, and discuss it with the project maintainer before starting the proofs. Write those "ideal goal theorems" in the `GOALS.md` file. Only consider theorems that can reasonably be proven with only the basic properties of arithmetic. Again, refer to the Isabelle/HOL library for inspiration, and make the list as large as possible so that there is a good chance that at least some theorems will be proven. Then, make a plan of intermediate useful lemmas that will help prove those theorems, also in the `GOALS.md` file. Finally, start proving as much of those theorems and lemmas as possible. At this stage, focus on making deep progress, while going back to prove more basic lemmas if necessary. You should split your time on easy, medium and hard theorems, to ensure that you make progress on all fronts. Overall, be ambitious! We want to prove impressive theorems.
 
 Recommended file organization:
-- Put the list of long-term targets and intermediate lemma plans in `GOALS.md` (create it under this folder if it does not exist).
+- Put the list of long-term targets and intermediate lemma plans in `GOALS.md`.
 - Put the 10 example theorems in a dedicated file (e.g. `Examples.scala`) so they stay easy to find and run.
 
 ## Progress tracking
 - Document important milestones and progress in the `PROGRESS.md` file under this folder. This file should contain a list of important steps of this project that have already been achieved. Only do it for very important steps, so that future AI agent can pick up where you left off easily. Don't use this file for documentation. Important achievements worth documenting are:
-    - Completion of the natural numbers definition and basic lemmas (step 1).
-    - Completion of the syntax and helper functions for natural numbers (step 2).
     - Completion of the basic properties and helper lemmas of arithmetic (step 3).
     - Completion of a major theorems about arithmetic (step 4).
     - Implementation of major tactics relevant to arithmetic proofs.
