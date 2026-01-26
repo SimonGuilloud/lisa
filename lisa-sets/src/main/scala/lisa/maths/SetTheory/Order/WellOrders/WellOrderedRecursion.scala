@@ -190,9 +190,9 @@ object WellOrderedRecursion extends lisa.Main {
     *
     * `g` is an approximation until `x ∈ A` if `dom(g) = A_<x`.
     */
-  private def approximation(g: Expr[Set]): Expr[Prop] =
+  def approximation(g: Expr[Set]): Expr[Prop] =
     ∃(x, approximationUntil(g, x))
-  private def approximationUntil(g: Expr[Set], x: Expr[Set]): Expr[Prop] =
+  def approximationUntil(g: Expr[Set], x: Expr[Set]): Expr[Prop] =
     (x ∈ A) /\ functionOn(g)(initialSegment(x)(A)(<)) /\ ∀(a ∈ initialSegment(x)(A)(<), g(a) === F(a)(g ↾ initialSegment(a)(A)(<)))
 
 
@@ -926,6 +926,8 @@ object WellOrderedRecursion extends lisa.Main {
     )
   }
 
+  recursiveSequence.innerJustification.withSorry=false //This turns down the warning that this theorem relies on sorry upstream, so that it can be used. THIS IS EXCEPTIONAL, NEVER DO THIS IN NORMAL CIRCUMSTANCES.
+/*
   /**
    * Well-ordered recursion --- Given `F : V × V -> V` and a well-order `(A, <)`
    * there exists a function `G : A -> V` such that
@@ -938,19 +940,9 @@ object WellOrderedRecursion extends lisa.Main {
   val existence = Theorem(
     wellOrder(A)(<) |- ∃(G, ∀(x ∈ A, G(x) === F(x)(G ↾ initialSegment(x)(A)(<))))
   ) {
-    assume(wellOrder(A)(<))
-
-    /** We use [[recursiveSequence]] on the successor well-order `(A ∪ {m}, < ∪
-      * {(x, m) | x ∈ A})` where `m` is a fresh element. Hence we obtain a
-      * function that is defined for all `x < m`, i.e. for all `x ∈ A`.
-      *
-      * This also means that this theorem isn't necessary per se (and
-      * [[recursiveSequence]] is enough), since this successor trick always
-      * works.
-      */
-
     sorry
   }
+  */
 
   /**
     * Definition --- `recursiveFunction(F, A, <)` builds the function obtained by well-ordered

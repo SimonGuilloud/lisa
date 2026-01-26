@@ -47,7 +47,6 @@ trait WithTheorems {
           if e.isInstanceOf[F.Expr[?]] then Left(e.asInstanceOf[F.Expr[F.Ind]])
           else Right(e.asInstanceOf[F.SubstPair])
         }
-
         val (s1, p1) = if substPairs.isEmpty then (baseFormula, Seq()) else baseFormula.instantiateWithProof(substPairs.map(sp => (sp._1, sp._2)).toMap, -1)
         val (s2, p2) = if terms.isEmpty then (s1, p1) else s1.instantiateForallWithProof(terms, p1.length - 1)
         (s2, p1 ++ p2)
@@ -350,6 +349,8 @@ trait WithTheorems {
 
     def justifications: List[JUSTIFICATION] = getImports.map(_._1)
 
+    def sorryDependencies = justifications.filter(_.withSorry)
+
   }
 
   /**
@@ -440,8 +441,9 @@ trait WithTheorems {
    * A proven, reusable statement. A justification corresponding to [[K.Theorem]].
    */
   sealed abstract class THM extends JUSTIFICATION {
+    val kind: TheoremKind
     def repr: String =
-      s"  Theorem ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
+      s"  ${kind.kind2} ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.
@@ -453,6 +455,10 @@ trait WithTheorems {
      */
     def highProof: Option[BaseProof]
     val innerJustification: theory.Theorem
+    def sorryDependencies: List[JUSTIFICATION] = highProof match {
+      case Some(p) => p.sorryDependencies
+      case None => Nil
+    }
 
     /**
      * A pretty representation of the goal of the theorem
@@ -616,6 +622,7 @@ trait WithTheorems {
       val s = library.contextHypotheses.getOrElse(file, Set.empty).foldLeft(statement)(_ +<< _)
       val thm = THM(s, name.value, line.value, file.value, this)(computeProof)
       if this == Theorem then show(thm)
+      else show(thm)
       thm
     }
 

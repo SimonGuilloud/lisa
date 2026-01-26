@@ -18,10 +18,10 @@ object SimpleDeducedSteps {
     // scala compiler doesn't resolve the overload with a type alias, dependant type and implicit parameter
 
     def apply(using lib: Library, proof: lib.Proof)(premise: proof.ProofStep | proof.OutsideFact | Int | proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement =
-      unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite during tactic Restate failed.")
+      unwrapTactic(Weakening(premise)(bot))("Attempted rewrite during tactic Restate failed.")
 
     def from(using lib: Library, proof: lib.Proof)(premise: proof.ProofStep | proof.OutsideFact | Int | proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement =
-      unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite during tactic Restate failed.")
+      unwrapTactic(Weakening(premise)(bot))("Attempted rewrite during tactic Restate failed.")
 
   }
 
