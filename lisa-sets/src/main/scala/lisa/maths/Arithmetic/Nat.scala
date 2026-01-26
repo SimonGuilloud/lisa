@@ -28,6 +28,8 @@ object Nat extends lisa.Main {
   private val m = variable[Ind]
   private val n = variable[Ind]
   private val k = variable[Ind]
+  private val c = variable[Ind]
+  private val leW = variable[Ind]
   private val A = variable[Ind]
   private val R = variable[Ind]
   private val X = variable[Ind]
@@ -169,6 +171,16 @@ object Nat extends lisa.Main {
     infix def +(b: Expr[Ind]): Expr[Ind] = add(a)(b)
     infix def *(b: Expr[Ind]): Expr[Ind] = mul(a)(b)
 
+  /////////////////////
+  // Arithmetic order //
+  /////////////////////
+
+  /** Arithmetic definition of `m ≤ n`: there exists `c ∈ ℕ` such that `n = m + c`. */
+  val le = DEF(λ(m, λ(n, ∃(leW, (leW ∈ ℕ) /\ (n === add(m)(leW)))))).printInfix("<=")
+
+  /** Arithmetic definition of `m < n`: there exists `c ∈ ℕ`, `c ≠ 0` such that `n = m + c`. */
+  val lt = DEF(λ(m, λ(n, ∃(leW, (leW ∈ ℕ) /\ (leW =/= zero) /\ (n === add(m)(leW)))))).printInfix("<")
+
   ////////////////////////////////
   // Recursion-defined candidates //
   ////////////////////////////////
@@ -224,33 +236,45 @@ object Nat extends lisa.Main {
     val zeroDef = have(zero === ∅) by Restate.from(zero.definition)
     val indDef = have(inductive(ℕ) <=> ((∅ ∈ ℕ) /\ ∀(n, (n ∈ ℕ) ==> (successor(n) ∈ ℕ)))) by Restate.from(inductive.definition of (x := ℕ))
 
+    val iff0 = have((zero ∈ ℕ) <=> (∅ ∈ ℕ)) by Congruence.from(zeroDef)
+    val emptyInℕ = have(∅ ∈ ℕ) by Tautology.from(zeroInℕ, iff0)
+
     val memN = have(n ∈ ℕ <=> (n ∈ I /\ ∀(i, inductive(i) ==> (n ∈ i)))) by Restate.from(memℕ)
     val memSN = have(successor(n) ∈ ℕ <=> (successor(n) ∈ I /\ ∀(i, inductive(i) ==> (successor(n) ∈ i)))) by Restate.from(memℕ of (n := successor(n)))
 
-    val indIff = have(inductive(I) <=> ((∅ ∈ I) /\ ∀(k, (k ∈ I) ==> (successor(k) ∈ I)))) by Restate.from(inductive.definition of (x := I))
-    have(∀(k, (k ∈ I) ==> (successor(k) ∈ I))) by Tautology.from(indIff, IInductive)
-    val succInIFromInI = thenHave((n ∈ I) ==> (successor(n) ∈ I)) by InstantiateForall(n)
+    val indIffI = have(inductive(I) <=> ((∅ ∈ I) /\ ∀(k, (k ∈ I) ==> (successor(k) ∈ I)))) by Restate.from(inductive.definition of (x := I))
+    val stepIAll = have(∀(k, (k ∈ I) ==> (successor(k) ∈ I))) by Tautology.from(indIffI, IInductive)
+    val stepI = have((n ∈ I) ==> (successor(n) ∈ I)) by InstantiateForall(n)(stepIAll)
 
-    val succInI = have(n ∈ ℕ |- successor(n) ∈ I) by Tautology.from(memN, succInIFromInI)
+    val succAll = have(∀(n, (n ∈ ℕ) ==> (successor(n) ∈ ℕ))) subproof {
+      have((n ∈ ℕ) |- successor(n) ∈ ℕ) subproof {
+        val nInℕ = assume(n ∈ ℕ)
 
-    have(n ∈ ℕ |- ∀(i, inductive(i) ==> (n ∈ i))) by Tautology.from(memN)
-    val nInInd = thenHave(n ∈ ℕ |- (inductive(i) ==> (n ∈ i))) by InstantiateForall(i)
+        val nInI = have(n ∈ I) by Tautology.from(memN, nInℕ)
+        val succInI = have(successor(n) ∈ I) by Tautology.from(stepI, nInI)
 
-    val indiIff = have(inductive(i) <=> ((∅ ∈ i) /\ ∀(k, (k ∈ i) ==> (successor(k) ∈ i)))) by Restate.from(inductive.definition of (x := i))
-    have(inductive(i) ==> ∀(k, (k ∈ i) ==> (successor(k) ∈ i))) by Tautology.from(indiIff)
-    thenHave(inductive(i) |- ∀(k, (k ∈ i) ==> (successor(k) ∈ i))) by Tautology
-    val stepInInd = thenHave(inductive(i) |- (n ∈ i) ==> (successor(n) ∈ i)) by InstantiateForall(n)
+        val allNInInd = have(∀(i, inductive(i) ==> (n ∈ i))) by Cut(nInℕ, inAllInductive)
+        val succInAllInd = have(∀(i, inductive(i) ==> (successor(n) ∈ i))) subproof {
+          have(inductive(i) ==> (successor(n) ∈ i)) subproof {
+            val iInd = assume(inductive(i))
+            val nIniImp = have(inductive(i) ==> (n ∈ i)) by InstantiateForall(i)(allNInInd)
+            val nIni = have(n ∈ i) by Tautology.from(nIniImp, iInd)
 
-    have(n ∈ ℕ |- inductive(i) ==> (successor(n) ∈ i)) by Tautology.from(nInInd, stepInInd)
-    val allSuccInInd = thenHave(n ∈ ℕ |- ∀(i, inductive(i) ==> (successor(n) ∈ i))) by RightForall
+            val indIff = have(inductive(i) <=> ((∅ ∈ i) /\ ∀(k, (k ∈ i) ==> (successor(k) ∈ i)))) by Restate.from(inductive.definition of (x := i))
+            val allStep = have(∀(k, (k ∈ i) ==> (successor(k) ∈ i))) by Tautology.from(indIff, iInd)
+            val stepn = have((n ∈ i) ==> (successor(n) ∈ i)) by InstantiateForall(n)(allStep)
+            have(thesis) by Tautology.from(stepn, nIni)
+          }
+          thenHave(thesis) by RightForall
+        }
 
-    val rhs = have(n ∈ ℕ |- successor(n) ∈ I /\ ∀(i, inductive(i) ==> (successor(n) ∈ i))) by Tautology.from(succInI, allSuccInInd)
-    have(n ∈ ℕ |- successor(n) ∈ ℕ) by Tautology.from(memSN, rhs)
-    thenHave((n ∈ ℕ) ==> (successor(n) ∈ ℕ)) by Tautology
-    val succAll = thenHave(∀(n, (n ∈ ℕ) ==> (successor(n) ∈ ℕ))) by RightForall
+        val rhs = have(successor(n) ∈ I /\ ∀(i, inductive(i) ==> (successor(n) ∈ i))) by Tautology.from(succInI, succInAllInd)
+        have(thesis) by Tautology.from(memSN, rhs)
+      }
+      thenHave((n ∈ ℕ) ==> successor(n) ∈ ℕ) by Restate
+      thenHave(thesis) by RightForall
+    }
 
-    val iff0 = have((zero ∈ ℕ) <=> (∅ ∈ ℕ)) by Congruence.from(zeroDef)
-    val emptyInℕ = have(∅ ∈ ℕ) by Tautology.from(zeroInℕ, iff0)
     val conj = have((∅ ∈ ℕ) /\ ∀(n, (n ∈ ℕ) ==> (successor(n) ∈ ℕ))) by Tautology.from(emptyInℕ, succAll)
     have(thesis) by Tautology.from(indDef, conj)
   }
@@ -292,59 +316,66 @@ object Nat extends lisa.Main {
     val H0 = Pred(zero)
     val Hstep = ∀(n, (n ∈ ℕ) ==> (Pred(n) ==> Pred(Succ(n))))
 
-    val hyp0 = have((H0, Hstep) |- H0) by Tautology
-    val hypAllStep = have((H0, Hstep) |- Hstep) by Tautology
-
     val memK = have(n ∈ KPred <=> (n ∈ ℕ /\ Pred(n))) by Comprehension.apply
-    val memℕUnfold = have(n ∈ ℕ <=> (n ∈ I /\ ∀(i, inductive(i) ==> (n ∈ i)))) by Restate.from(Nat.memℕ)
-
-    // Base: 0 ∈ KPred
-    val zeroMemℕ = have((H0, Hstep) |- zero ∈ ℕ) by Tautology.from(zeroInℕ)
     val memK0 = have(zero ∈ KPred <=> (zero ∈ ℕ /\ Pred(zero))) by Comprehension.apply
-    val zeroConj = have((H0, Hstep) |- zero ∈ ℕ /\ Pred(zero)) by Tautology.from(zeroMemℕ, hyp0)
-    val zeroMemK = have((H0, Hstep) |- zero ∈ KPred) by Tautology.from(memK0, zeroConj)
-
-    val zeroDef = have(zero === ∅) by Restate.from(zero.definition)
-    val iff0K = have((zero ∈ KPred) <=> (∅ ∈ KPred)) by Congruence.from(zeroDef)
-    val emptyMemK = have((H0, Hstep) |- ∅ ∈ KPred) by Tautology.from(zeroMemK, iff0K)
-
-    // Step: n ∈ KPred -> Succ(n) ∈ KPred
-    val predStep = have((H0, Hstep) |- (n ∈ ℕ) ==> (Pred(n) ==> Pred(Succ(n)))) by InstantiateForall(n)(hypAllStep)
-
-    val nInℕ = have((H0, Hstep, n ∈ KPred) |- n ∈ ℕ) by Tautology.from(memK)
-    val predN = have((H0, Hstep, n ∈ KPred) |- Pred(n)) by Tautology.from(memK)
-    val succFact = have(n ∈ ℕ |- Succ(n) ∈ ℕ).by(Restate.from(succClosed))
-    val succInℕ = have((H0, Hstep, n ∈ KPred) |- Succ(n) ∈ ℕ).by(Cut(nInℕ, succFact))
-    val predSucc = have((H0, Hstep, n ∈ KPred) |- Pred(Succ(n))) by Tautology.from(nInℕ, predN, predStep)
-
     val memKS = have(Succ(n) ∈ KPred <=> (Succ(n) ∈ ℕ /\ Pred(Succ(n)))) by Comprehension.apply
-    val SnConj = have((H0, Hstep, n ∈ KPred) |- Succ(n) ∈ ℕ /\ Pred(Succ(n))) by Tautology.from(succInℕ, predSucc)
-    have((H0, Hstep, n ∈ KPred) |- Succ(n) ∈ KPred) by Tautology.from(memKS, SnConj)
-    thenHave((H0, Hstep) |- (n ∈ KPred) ==> (Succ(n) ∈ KPred)) by Tautology
-    val allStepK = thenHave((H0, Hstep) |- ∀(n, (n ∈ KPred) ==> (Succ(n) ∈ KPred))) by RightForall
 
-    // KPred is inductive
-    val indDefK = have(inductive(KPred) <=> ((∅ ∈ KPred) /\ ∀(n, (n ∈ KPred) ==> (successor(n) ∈ KPred)))) by Restate.from(inductive.definition of (x := KPred))
+    // Base: ∅ ∈ KPred.
+    val emptyMemK = have((H0, Hstep) |- ∅ ∈ KPred) subproof {
+      val hyp0 = have((H0, Hstep) |- H0) by Hypothesis
+      val zeroMemℕ = have((H0, Hstep) |- zero ∈ ℕ).by(Weakening(zeroInℕ))
+      val zeroConj = have((H0, Hstep) |- zero ∈ ℕ /\ Pred(zero)) by RightAnd(zeroMemℕ, hyp0)
+      val zeroMemK = have((H0, Hstep) |- zero ∈ KPred) by Tautology.from(memK0, zeroConj)
 
-    val defEqK = have(Succ(n) === successor(n)) by Restate.from(Succ.definition of (x := n))
-    val iffK = have(Succ(n) ∈ KPred <=> successor(n) ∈ KPred) by Congruence.from(defEqK)
+      val zeroDef = have(zero === ∅) by Restate.from(zero.definition)
+      val iff0K = have((zero ∈ KPred) <=> (∅ ∈ KPred)) by Congruence.from(zeroDef)
+      have(thesis) by Tautology.from(zeroMemK, iff0K)
+    }
 
-    have((H0, Hstep) |- (n ∈ KPred) ==> (Succ(n) ∈ KPred)) by InstantiateForall(n)(allStepK)
-    val stepSucc = have((H0, Hstep) |- (n ∈ KPred) ==> (successor(n) ∈ KPred)) by Tautology.from(iffK, lastStep)
-    val allStepKSucc = thenHave((H0, Hstep) |- ∀(n, (n ∈ KPred) ==> (successor(n) ∈ KPred))) by RightForall
-    val indK = have((H0, Hstep) |- inductive(KPred)) by Tautology.from(indDefK, emptyMemK, allStepKSucc)
+    // Step: n ∈ KPred -> successor(n) ∈ KPred.
+    val indK = have((H0, Hstep) |- inductive(KPred)) subproof {
+      val hypAllStep = have((H0, Hstep) |- Hstep) by Tautology
+      val predStep0 = have((H0, Hstep) |- (n ∈ ℕ) ==> (Pred(n) ==> Pred(Succ(n)))) by InstantiateForall(n)(hypAllStep)
 
-    // From definition of ℕ: n ∈ ℕ -> (inductive(KPred) -> n ∈ KPred)
-    have((H0, Hstep, n ∈ ℕ) |- ∀(i, inductive(i) ==> (n ∈ i))) by Tautology.from(memℕUnfold)
-    val nInKFromInd = thenHave((H0, Hstep, n ∈ ℕ) |- inductive(KPred) ==> (n ∈ KPred)) by InstantiateForall(KPred)
-    val indKInCtx = have((H0, Hstep, n ∈ ℕ) |- inductive(KPred)) by Tautology.from(indK)
-    val nInK = have((H0, Hstep, n ∈ ℕ) |- n ∈ KPred) by Tautology.from(nInKFromInd, indKInCtx)
+      val allStepKSucc = have((H0, Hstep) |- ∀(n, (n ∈ KPred) ==> (successor(n) ∈ KPred))) subproof {
+        have((H0, Hstep) |- (n ∈ KPred) ==> (successor(n) ∈ KPred)) subproof {
+          val nMemK = assume(n ∈ KPred)
+          val nInℕ = have(n ∈ ℕ) by Tautology.from(memK, nMemK)
+          val predN = have(Pred(n)) by Tautology.from(memK, nMemK)
 
-    // Hence Pred(n)
-    have((H0, Hstep, n ∈ ℕ) |- Pred(n)) by Tautology.from(memK, nInK)
-    thenHave((H0, Hstep) |- (n ∈ ℕ) ==> Pred(n)) by Tautology
-    val concl = thenHave((H0, Hstep) |- ∀(n, (n ∈ ℕ) ==> Pred(n))) by RightForall
-    have(thesis).by(Restate.from(concl))
+          val succInℕ = have(Succ(n) ∈ ℕ) by Cut(nInℕ, succClosed)
+          val predStep = have((H0, Hstep, n ∈ KPred) |- (n ∈ ℕ) ==> (Pred(n) ==> Pred(Succ(n)))) by Weakening(predStep0)
+          val predSucc = have((H0, Hstep, n ∈ KPred) |- Pred(Succ(n))) by Tautology.from(predStep, nInℕ, predN)
+          val SnConj = have((H0, Hstep, n ∈ KPred) |- Succ(n) ∈ ℕ /\ Pred(Succ(n))) by RightAnd(succInℕ, predSucc)
+
+          val SnMemK = have((H0, Hstep, n ∈ KPred) |- Succ(n) ∈ KPred) by Tautology.from(memKS, SnConj)
+
+          val defEqK = have(Succ(n) === successor(n)) by Restate.from(Succ.definition of (x := n))
+          val iffK = have(Succ(n) ∈ KPred <=> successor(n) ∈ KPred) by Congruence.from(defEqK)
+          have((H0, Hstep, n ∈ KPred) |- successor(n) ∈ KPred) by Tautology.from(iffK, SnMemK)
+        }
+        thenHave(thesis) by RightForall
+      }
+
+      val indDefK = have(inductive(KPred) <=> ((∅ ∈ KPred) /\ ∀(n, (n ∈ KPred) ==> (successor(n) ∈ KPred)))) by Restate.from(inductive.definition of (x := KPred))
+      have(thesis) by Tautology.from(indDefK, emptyMemK, allStepKSucc)
+    }
+
+    // Conclude: n ∈ ℕ -> Pred(n) from the defining property of ℕ.
+    have((H0, Hstep) |- (n ∈ ℕ) ==> Pred(n)) subproof {
+      val nInℕ = assume(n ∈ ℕ)
+      val allInd = have(∀(i, inductive(i) ==> (n ∈ i))) by Cut(nInℕ, inAllInductive)
+      val nInKFromInd = have(inductive(KPred) ==> (n ∈ KPred)) by InstantiateForall(KPred)(allInd)
+
+      val indKInCtx = have((H0, Hstep, n ∈ ℕ) |- inductive(KPred)) by Weakening(indK)
+      val nInKFromIndCtx = have((H0, Hstep, n ∈ ℕ) |- inductive(KPred) ==> (n ∈ KPred)) by Weakening(nInKFromInd)
+      val nInK = have((H0, Hstep, n ∈ ℕ) |- n ∈ KPred) by Tautology.from(indKInCtx, nInKFromIndCtx)
+
+      val memKPred0 = have((n ∈ KPred) ==> Pred(n)) by Tautology.from(memK)
+      have((H0, Hstep, n ∈ ℕ) |- Pred(n)) by Tautology.from(memKPred0, nInK)
+    }
+    thenHave((H0, Hstep) |- ∀(n, (n ∈ ℕ) ==> Pred(n))) by RightForall
+    have(thesis) by Restate.from(lastStep)
   }
 
   /** Lemma: `n ∈ ℕ` implies `0 ∈ Succ(n)`. */
@@ -570,8 +601,7 @@ object Nat extends lisa.Main {
       thenHave(thesis) by RightForall
     }
 
-    val premise = have(P(zero) /\ ∀(n, (n ∈ ℕ) ==> (P(n) ==> P(Succ(n))))).by(Tautology.from(base, step))
-    val all = have(∀(n, (n ∈ ℕ) ==> P(n))).by(Tautology.from(induction of (Pred := P), premise))
+    val all = have(∀(n, (n ∈ ℕ) ==> P(n))).by(Tautology.from(induction of (Pred := P), base, step))
 
     have((n ∈ ℕ) ==> P(n)).by(InstantiateForall(n)(all))
     thenHave(thesis) by Restate
@@ -773,13 +803,12 @@ object Nat extends lisa.Main {
       thenHave(thesis) by RightForall
     }
 
-    val premise = have(P(zero) /\ ∀(n, (n ∈ ℕ) ==> (P(n) ==> P(Succ(n))))) by Tautology.from(base, step)
-    val all = have(∀(n, (n ∈ ℕ) ==> P(n))) by Tautology.from(induction.of(Pred := P), premise)
+    val all = have(∀(n, (n ∈ ℕ) ==> P(n))) by Tautology.from(induction.of(Pred := P), base, step)
 
     // Use the proved ∀n∈ℕ. P(n) at our specific n.
     val nInℕ = assume(n ∈ ℕ)
     val impN = have((n ∈ ℕ) ==> P(n)) by InstantiateForall(n)(all)
-    val Pn = have(P(n)) by Tautology.from(impN, nInℕ)
+    val Pn = have(P(n)) by Tautology.from(impN)
 
     // Now instantiate P(n) at k and apply k ∈ n.
     have(∀(k, k ∈ n ==> ((Succ(k) ∈ n) \/ (Succ(k) === n)))) by Restate.from(Pn)
@@ -814,21 +843,16 @@ object Nat extends lisa.Main {
 
         val caseZero = have(m === zero |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)) by Tautology
 
-        val caseSucc = have(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)) subproof {
-          assume(∃(k, (k ∈ ℕ) /\ (m === Succ(k))))
-          have((k ∈ ℕ) /\ (m === Succ(k)) |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)) subproof {
-            assume((k ∈ ℕ) /\ (m === Succ(k)))
-            val kInℕ = have(k ∈ ℕ) by Tautology
-            val mEqSk = have(m === Succ(k)) by Tautology
+        val instK = have((k ∈ ℕ) /\ (m === Succ(k)) |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)) subproof {
+          val hk = assume((k ∈ ℕ) /\ (m === Succ(k)))
+          val kInℕ = have(k ∈ ℕ) by Tautology.from(hk)
+          val mEqSk = have(m === Succ(k)) by Tautology.from(hk)
 
-            val zeroInSk = have(zero ∈ Succ(k)) by Tautology.from(`n ∈ ℕ -> 0 ∈ Succ(n)`.of(n := k), kInℕ)
-            val zeroInM = have(zero ∈ m) by Congruence.from(zeroInSk, mEqSk)
-            have(thesis) by Tautology.from(zeroInM)
-          }
-          thenHave(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)) by LeftExists
+          val zeroInSk = have(zero ∈ Succ(k)) by Tautology.from(`n ∈ ℕ -> 0 ∈ Succ(n)`.of(n := k), kInℕ)
+          val zeroInM = have(zero ∈ m) by Congruence.from(zeroInSk, mEqSk)
+          have(thesis) by Tautology.from(zeroInM)
         }
-
-        val goal = (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)
+        val caseSucc = have(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === zero) \/ (m ∈ zero) \/ (zero ∈ m)).by(LeftExists(instK))
 
         have(thesis) by Tautology.from(mCases, caseZero, caseSucc)
       }
@@ -855,13 +879,10 @@ object Nat extends lisa.Main {
             have(thesis) by Tautology.from(lastStep)
           }
 
-          val caseSucc = have(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) subproof {
-            assume(∃(k, (k ∈ ℕ) /\ (m === Succ(k))))
-
-            have((k ∈ ℕ) /\ (m === Succ(k)) |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) subproof {
-              assume((k ∈ ℕ) /\ (m === Succ(k)))
-              val kInℕ = have(k ∈ ℕ) by Tautology
-              val mEqSk = have(m === Succ(k)) by Tautology
+          val instK = have((k ∈ ℕ) /\ (m === Succ(k)) |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) subproof {
+            val hk = assume((k ∈ ℕ) /\ (m === Succ(k)))
+            val kInℕ = have(k ∈ ℕ) by Tautology.from(hk)
+            val mEqSk = have(m === Succ(k)) by Tautology.from(hk)
 
               // Compare k and n using Q(n)
               have(∀(m, (m ∈ ℕ) ==> ((m === n) \/ (m ∈ n) \/ (n ∈ m)))) by Restate.from(Qn)
@@ -876,17 +897,15 @@ object Nat extends lisa.Main {
               }
 
               val ltCase = have(k ∈ n |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) subproof {
-                assume(k ∈ n)
-                val kInN2 = assume(k ∈ n)
-                val SkInSn = have(Succ(k) ∈ Succ(n)) by Tautology.from(succMemMonotone.of(k := k, n := n), kInN2, nInℕ)
+                val kInN = assume(k ∈ n)
+                val SkInSn = have(Succ(k) ∈ Succ(n)) by Tautology.from(succMemMonotone.of(k := k, n := n), kInN, nInℕ)
                 have(m ∈ Succ(n)) by Congruence.from(SkInSn, mEqSk)
                 have(thesis) by Tautology.from(lastStep)
               }
 
               val gtCase = have(n ∈ k |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) subproof {
-                assume(n ∈ k)
-                val nInK2 = assume(n ∈ k)
-                val SnInSk = have(Succ(n) ∈ Succ(k)) by Tautology.from(succMemMonotone.of(k := n, n := k), nInK2, kInℕ)
+                val nInK = assume(n ∈ k)
+                val SnInSk = have(Succ(n) ∈ Succ(k)) by Tautology.from(succMemMonotone.of(k := n, n := k), nInK, kInℕ)
                 have(Succ(n) ∈ m) by Congruence.from(SnInSk, mEqSk)
                 have(thesis) by Tautology.from(lastStep)
               }
@@ -896,13 +915,9 @@ object Nat extends lisa.Main {
               val eqSeq = have(k === n |- goal) by Tautology.from(eqCase)
               val ltSeq = have(k ∈ n |- goal) by Tautology.from(ltCase)
               val gtSeq = have(n ∈ k |- goal) by Tautology.from(gtCase)
-
               have(thesis) by Tautology.from(cmp, eqSeq, ltSeq, gtSeq)
-            }
-
-            thenHave(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)) by LeftExists
-            have(thesis) by Restate.from(lastStep)
           }
+          val caseSucc = have(∃(k, (k ∈ ℕ) /\ (m === Succ(k))) |- (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)).by(LeftExists(instK))
 
           val goal2 = (m === Succ(n)) \/ (m ∈ Succ(n)) \/ (Succ(n) ∈ m)
 
@@ -922,14 +937,12 @@ object Nat extends lisa.Main {
       thenHave(thesis) by RightForall
     }
 
-    val premise = have(Q(zero) /\ ∀(n, (n ∈ ℕ) ==> (Q(n) ==> Q(Succ(n))))) by Tautology.from(base, step)
-    val all = have(∀(n, (n ∈ ℕ) ==> Q(n))) by Tautology.from(induction.of(Pred := Q), premise)
+    val all = have(∀(n, (n ∈ ℕ) ==> Q(n))) by Tautology.from(induction.of(Pred := Q), base, step)
 
     // Instantiate at our n, then at m.
-    assume(n ∈ ℕ)
     val impN = have((n ∈ ℕ) ==> Q(n)) by InstantiateForall(n)(all)
     val nInℕ2 = assume(n ∈ ℕ)
-    val Qn = have(Q(n)) by Tautology.from(impN, nInℕ2)
+    val Qn = have(Q(n)) by Tautology.from(impN)
 
     have(∀(m, (m ∈ ℕ) ==> ((m === n) \/ (m ∈ n) \/ (n ∈ m)))) by Restate.from(Qn)
     val imp = thenHave((m ∈ ℕ) ==> ((m === n) \/ (m ∈ n) \/ (n ∈ m))) by InstantiateForall(m)

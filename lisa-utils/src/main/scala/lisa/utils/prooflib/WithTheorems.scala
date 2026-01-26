@@ -441,8 +441,9 @@ trait WithTheorems {
    * A proven, reusable statement. A justification corresponding to [[K.Theorem]].
    */
   sealed abstract class THM extends JUSTIFICATION {
+    val kind: TheoremKind
     def repr: String =
-      s"  Theorem ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
+      s"  ${kind.kind2} ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.
@@ -621,6 +622,7 @@ trait WithTheorems {
       val s = library.contextHypotheses.getOrElse(file, Set.empty).foldLeft(statement)(_ +<< _)
       val thm = THM(s, name.value, line.value, file.value, this)(computeProof)
       if this == Theorem then show(thm)
+      else show(thm)
       thm
     }
 

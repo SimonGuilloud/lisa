@@ -244,28 +244,7 @@ val inst = Union.membership.of(x := A, y := B, z := t)
 have(t ∈ (A ∪ B) <=> (t ∈ A) \/ (t ∈ B)).by(Tautology.from(inst))
 ```
 
-**Things that weren’t obvious to me initially**
-
-- The names in `.of(...)` must match the theorem’s parameter names (as defined in that lemma’s `of(...)` signature).
-	If you guess the name wrong (e.g. `R := ...` vs `< := ...`), Scala will fail typechecking.
-
-- Many definitions/lemmas use *non-obvious* parameter names (`<` for a relation, `X/Y` for sets, etc.).
-	When in doubt, search for existing usages of the lemma and copy the instantiation pattern.
-
-- `.of(...)` is not “proof”: it just produces the instantiated *statement*.
-	You still need a tactic (`Tautology`, `Cut`, `InstantiateForall`, …) to actually use it.
-
-**Recommendation**
-
-- Prefer `.of(...)` with explicit named arguments over positional arguments; it’s much harder to mix up.
-- When a proof fails due to a mismatch, inspect the instantiated statement (bind it to a `val inst = ...`) and compare it to your goal sequent.
-- If the parameter/variable of the theorem is not in you namespace, you can always create a `val` for it first:
-
-```scala
-private val rareVariable = variable[Set]
-val inst = SomeLemma.of(rareVariable := ...)
-```
-
+Positional parameters instantiate the forall quantifier. This means that .of(x) can be use in place of InstantiateForall
 ---
 
 ### Existentials: `RightExists`, `LeftExists`, and the safe pattern
@@ -344,14 +323,6 @@ val stepH = assume(H)
 	If you insert a debugging lemma in the middle, references like `fromLastStep(...)` can silently start pointing to a different step.
 
 - In nested `subproof` blocks, `lastStep` refers to the last step *in that subproof*, not outside it.
-
-- Using `Tautology.fromLastStep(...)` can be brittle when the target lemma expects a different left-context (missing hypotheses, different ordering).
-	Prefer naming the exact step and using `Weakening`/`Restate` explicitly.
-
-**Recommendation**
-
-- Use `lastStep` for very local glue.
-- When a step is logically important (a key lemma, a cut formula, a quantifier instantiation), bind it to a `val` and refer to it by name.
 
 ---
 
@@ -463,23 +434,6 @@ val A2mem = have(z ∈ (A ∪ {m}) <=> (z ∈ A) \/ (z === m)).by(Tautology.from
 val R2mem = have((x, y) ∈ R2 <=> (...)).by(Tautology.from(...))
 ```
 
-
-
-### Prefer library lemmas over re-proving basics
-
-Before writing a `subproof` for a standard fact, search the library: many 10–30 line derivations already exist.
-
-Examples that commonly replace manual work:
-
-```scala
-// Instead of a manual ⊆ proof for A ⊆ A ∪ {m}
-val A2 = A ∪ singleton(m)
-val ASubA2 = have(A ⊆ A2).by(Tautology.from(Union.leftSubset.of(x := A, y := singleton(m))))
-
-// Similarly, {m} ⊆ A ∪ {m}
-val mSubA2 = have(singleton(m) ⊆ A2).by(Tautology.from(Union.rightSubset.of(x := A, y := singleton(m))))
-```
-
 ### Use “applied” theorems to avoid quantifier plumbing
 
 Unfolding `transitive.definition` / `total.definition` / `irreflexive.definition` and then rebuilding `∀`-layers is a major source of line count.
@@ -518,20 +472,6 @@ Heuristic:
 - Collapsing multi-line `Tautology.from(...)` into a single line is a line-count win, but doing it everywhere makes the proof harder to read and harder to debug.
 - Rule of thumb: keep one-liners for “obvious glue”; keep multi-line blocks when they mark a conceptual boundary (e.g., “compute membership”, “use minimality”, “extract contradiction”).
 
-### Don’t merge too many premises into one `Tautology.from(...)`
-
-- There’s a sweet spot: a few premises is fast and robust; “kitchen sink” `Tautology.from(step1, ..., step12)` can become slow or fail to match.
-- If you see timeouts/slowdowns, split the reasoning into 2–3 `Tautology.from(...)` steps with named intermediates.
-
-
-## Prefer `Extensionality` for set equalities
-
-If you already have a membership equivalence, close the goal directly:
-
-```scala
-have(z ∈ S <=> z ∈ T).by(...)
-thenHave(S === T).by(Extensionality)
-```
 
 ## Be disciplined with `lastStep`
 
@@ -542,13 +482,6 @@ Patterns that helped:
 - Bind important steps to a `val`.
 - Avoid nesting proof-producing calls inside other tactic arguments.
 - Don't use `val step = lastStep`; instead name the step or assumption directly when creating it.
-
-
-### Keep `lastStep` local
-
-- Use `lastStep` only for very short glue.
-- Bind key steps (cut formulas, instantiated ∀, membership characterizations) to `val`s.
-- Avoid `Tautology.fromLastStep(...)` unless the dependency is truly adjacent and stable.
 
 ### Use ` of (...)` with explicit names
 

@@ -19,10 +19,12 @@ object Syntax {
 
   given Conversion[Int, Expr[Ind]] = n => numeral(n)
 
-  export Nat.{ℕ, Succ, add, mul}
+  export Nat.{ℕ, Succ, add, mul, le, lt}
 
   extension (a: Expr[Ind])
     infix def +(b: Expr[Ind]): Expr[Ind] = Nat.add(a)(b)
     infix def *(b: Expr[Ind]): Expr[Ind] = Nat.mul(a)(b)
+    infix def <=(b: Expr[Ind]): Expr[Prop] = Nat.le(a)(b)
+    infix def <(b: Expr[Ind]): Expr[Prop] = Nat.lt(a)(b)
 
 }
