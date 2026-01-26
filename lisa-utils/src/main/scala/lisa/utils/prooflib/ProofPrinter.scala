@@ -93,12 +93,12 @@ object ProofPrinter {
     val lines = prettyProofRecursive(printedProof, 0, IndexedSeq.empty, IndexedSeq.empty)
     val maxStepNameLength = lines.map { case (_, _, stepName, _) => stepName.length }.maxOption.getOrElse(0)
     lines.map { case (isMarked, indices, stepName, sequent) =>
-        val suffix = Seq(indices, rightPadSpaces(stepName, maxStepNameLength), sequent)
-        val full = if (error.isDefined) (if (isMarked) marker else leftPadSpaces("", marker.length)) +: suffix else suffix
-        full.mkString(" ")
+      val suffix = Seq(indices, rightPadSpaces(stepName, maxStepNameLength), sequent)
+      val full = if (error.isDefined) (if (isMarked) marker else leftPadSpaces("", marker.length)) +: suffix else suffix
+      full.mkString(" ")
     } ++ (error match {
       case None => Nil
-      case Some((path, message)) => 
+      case Some((path, message)) =>
         val msg = message.split("\n").mkString("\n")
         List(s"\nProof checker has reported an error at line ${path.mkString(".")}: $msg")
     })
@@ -115,7 +115,7 @@ object ProofPrinter {
 
   def prettyProof(proof: Library#Proof): String = prettyFullProofLines(proof, None).mkString("\n")
   def prettyProof(proof: Library#Proof, indent: Int): String = (" " * indent) + prettyFullProofLines(proof, None).mkString("\n" + (" " * indent))
-  def prettyProofCrop(proof: Library#Proof, indent: Int, maxLines: Int): String = (" " * indent) + prettyFullProofLines(proof, None).takeRight(maxLines+2).mkString("\n" + (" " * indent))
+  def prettyProofCrop(proof: Library#Proof, indent: Int, maxLines: Int): String = (" " * indent) + prettyFullProofLines(proof, None).takeRight(maxLines + 2).mkString("\n" + (" " * indent))
 
   def prettyProof(proof: Library#Proof, error: Option[(IndexedSeq[Int], String)]): String = prettyFullProofLines(proof, error).mkString("\n")
   def prettyProof(proof: Library#Proof, indent: Int, error: Option[(IndexedSeq[Int], String)]): String = prettyFullProofLines(proof, error).mkString("\n" + " " * indent)

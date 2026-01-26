@@ -10,7 +10,6 @@ import lisa.utils.prooflib._
 
 object SimpleDeducedSteps {
 
-
   object Discharge extends ProofTactic {
     def apply(using lib: Library, proof: lib.Proof)(premises: proof.Fact*)(premise: proof.Fact): proof.ProofTacticJudgement = {
       val ss = premises zip (premises map (e => proof.getSequent(e)))

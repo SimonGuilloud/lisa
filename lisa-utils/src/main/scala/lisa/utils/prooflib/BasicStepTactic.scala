@@ -63,7 +63,6 @@ object BasicStepTactic {
 
   }
 
-
   /**
    * <pre>
    *  Γ |- Δ, φ    φ, Σ |- Π

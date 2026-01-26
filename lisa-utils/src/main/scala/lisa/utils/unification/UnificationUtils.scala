@@ -6,9 +6,9 @@ import lisa.utils.collection.{VecSet => Set}
 import lisa.utils.fol.FOL
 import lisa.utils.fol.FOL.{_, given}
 import lisa.utils.memoization.memoized
+import lisa.utils.prooflib.BasicStepTactic
 import lisa.utils.prooflib.Library
 import lisa.utils.prooflib.SimpleDeducedSteps
-import lisa.utils.prooflib.BasicStepTactic
 
 /**
  * General utilities for unification, substitution, and rewriting
