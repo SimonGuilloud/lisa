@@ -31,7 +31,7 @@ val commonSettings3 = commonSettings ++ Seq(
   scalacOptions ++= Seq(
     "-language:implicitConversions",
     //"-Wconf:msg=.*will never be selected.*:silent",
-    "-Wconf:msg=.*trait or object is defined in the compilation unit.*:silent",
+    "-Wconf:msg=.*trait or object is defined in the compilation unit.*:silent,msg=.*not declared infix.*:silent",
     "-language:experimental.modularity"
   ),
   javaOptions += "-Xmx10G",
