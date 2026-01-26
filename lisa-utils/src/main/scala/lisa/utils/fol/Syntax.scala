@@ -182,7 +182,7 @@ trait Syntax {
      * The sort of the expression
      */
     val sort: K.Sort
-    private val arity = K.flatTypeParameters(sort).size
+    val arity = K.flatTypeParameters(sort).size
 
     /**
      * The underlying kernel expression

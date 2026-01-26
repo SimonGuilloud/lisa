@@ -41,7 +41,7 @@ object Symbols extends lisa.Main:
   /**
    * Universe(Type) level
    */
-  val Typ = variable[Ind]
+  val Typ0 = variable[Ind]
   def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
     if (n == 1) then base
     else universeOf(getUniverse(n - 1, base))
@@ -76,11 +76,11 @@ object Symbols extends lisa.Main:
         case _ => (x, args(1))
       s"λ($v: $typ). $body"
     )
-  case class typeAssign(x: Variable[Ind], typ: Expr[Ind])
+  case class VarTypeAssign(x: Variable[Ind], typ: Expr[Ind])
   extension (x: Variable[Ind]) {
-    infix def ::(e: Expr[Ind]) = typeAssign(x, e)
+    infix def ::(e: Expr[Ind]) = VarTypeAssign(x, e)
   }
-  def fun(v: typeAssign, b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.x, b))
+  def fun(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.x, b))
 
   // Pattern extractor for the 'abs' Shallow Embedding constant.
   // It allows matching expressions of the form abs(typ)(body) using the pattern Sabs(typ, body).
@@ -113,7 +113,7 @@ object Symbols extends lisa.Main:
       case _ => (x, args(1))
     s"Π($v: $ty1). $ty2"
   )
-  def `Π`(v: typeAssign, b: Expr[Ind]): Expr[Ind] = Pi(v.typ)(λ(v.x, b))
+  def `Π`(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = Pi(v.typ)(λ(v.x, b))
 
   // Pattern extractor for the 'Pi' Shallow Embedding constant.
   // It allows matching expressions of the form Pi(T1)(T2) using the pattern SPi(T1, T2).
