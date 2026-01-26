@@ -204,7 +204,7 @@ trait Syntax {
      *   case f(a, b, c) => ...
      * }}}
      */
-    def unapplySeq[Target](e: Expr[Target]): Option[ArgsTo[S, Target]] =
+    def unapply2[Target](e: Expr[Target]): Option[ArgsTo[S, Target]] =
       def inner[Target](e: Expr[Target]): Option[ArgsTo[S, Target]] = e match
         case App(f2, arg) if this == f2 => Some((arg *: EmptyTuple).asInstanceOf[ArgsTo[S, Target]])
         case App(f2, arg) => inner(f2).map(value => (arg *: value).asInstanceOf[ArgsTo[S, Target]])

@@ -53,6 +53,7 @@ object Function extends lisa.Main {
    * @see [[Relation.dom]]
    */
   export Relation.range
+  
 
   /**
    * Function application --- For any `x`, we denote by `f(x)` the application
@@ -65,6 +66,7 @@ object Function extends lisa.Main {
     val x = args(1)
     s"$f($x)"
   })
+
 
   extension (f: Expr[Ind]) {
 

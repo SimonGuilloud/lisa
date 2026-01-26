@@ -2,7 +2,7 @@ package lisa.maths.SetTheory.Functions
 
 import lisa.maths.SetTheory.Base.Predef.{_, given}
 
-import Function._
+import Function.{apply => _, *}
 import Sigma._
 
 /**
@@ -16,7 +16,7 @@ object Pi extends lisa.Main {
   private val A, B = variable[Ind]
 
   extension (f: Expr[Ind]) {
-    def apply(x: Expr[Ind]) = app(f)(x)
+    def apply(x: Expr[Ind]) = app.apply(f)(x)
   }
 
   /**

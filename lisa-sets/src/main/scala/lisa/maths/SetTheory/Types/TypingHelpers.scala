@@ -215,6 +215,10 @@ object TypingHelpers extends lisa.Main:
     infix def @@(arg: Expr[Ind]): Expr[Ind] = app(f)(arg)
     infix def *(arg: Expr[Ind]): Expr[Ind] = app(f)(arg)
   }
+  object * {
+    private val multi_app = Multiapp(app)
+    def unapply(t: Expr[Ind]): Option[(Expr[Ind], Expr[Ind])] = app.unapply2(t)
+  }
 
 
   // ============================================================================
@@ -233,16 +237,21 @@ object TypingHelpers extends lisa.Main:
       super.substitute(pairs*).asInstanceOf[TypedConstant]
   }
 
-  case class FunctionalClass(inTyp: List[Typ], outTyp: Typ, args: List[Variable[Ind]]) {
+
+  def optype(t: Option[Typ], member: Expr[Ind]): Expr[Prop] = t match
+    case Some(typ) => member is typ
+    case None => top
+
+  case class FunctionalClass(inTyp: List[Option[Typ]], args: List[Variable[Ind]], outTyp: Typ) {
     def formula(f: Expr[?]): Expr[Prop] = {
-      val inner = (args.zip(inTyp).map((term, typ) => term `is` typ)
-        .reduceLeft[Expr[Prop]]((a, b) => a /\ b)) ==> ((f #@@ args).asInstanceOf[Expr[Ind]] `is` outTyp)
+      val inner = (args.zip(inTyp).map((term, inType) => optype(inType, term)
+        ).reduceLeft[Expr[Prop]]((a, b) => a /\ b)) ==> ((f #@@ args).asInstanceOf[Expr[Ind]] `is` outTyp)
       args.foldRight(inner)((v, form) => forall(v, form))
     }
 
     def formulaMinusOne(f: Constant[?]): Expr[Prop] = {
-      val inner = (args.zip(inTyp).map((term, typ) => term `is` typ)
-        .reduceLeft[Expr[Prop]]((a, b) => a /\ b)) ==> ((f #@@ args).asInstanceOf[Expr[Ind]] `is` outTyp)
+      val inner = (args.zip(inTyp).map((term, inType) => optype(inType, term)
+        ).reduceLeft[Expr[Prop]]((a, b) => a /\ b)) ==> ((f #@@ args).asInstanceOf[Expr[Ind]] `is` outTyp)
       args.tail.foldRight(inner)((v, form) => forall(v, form))
     }
   }
