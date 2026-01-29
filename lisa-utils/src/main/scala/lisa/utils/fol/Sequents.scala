@@ -6,6 +6,7 @@ import lisa.utils.prooflib.Library
 import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 
 import scala.annotation.showAsInfix
+import scala.annotation.targetName
 
 trait Sequents extends Predef {
 
@@ -338,8 +339,8 @@ trait Sequents extends Predef {
   given [H, T <: Tuple](using FormulaSetConverter[H], FormulaSetConverter[T]): FormulaSetConverter[H *: T] =
     t => toFormulaSet(t.head) ++ toFormulaSet(t.tail)
 
-  given FormulaSetConverter[Expr[Prop]] = Set(_)
-  given FormulaSetConverter[Iterable[Expr[Prop]]] = _.toSet
+  given [T <: Expr[Prop]]: FormulaSetConverter[T] = Set(_)
+  given formulaSetConverterFromSeq[T <: Expr[Prop]]: FormulaSetConverter[Iterable[T]] = _.toSet
 
   extension [L](left: L)(using FormulaSetConverter[L]) {
 

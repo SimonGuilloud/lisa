@@ -182,7 +182,7 @@ trait Syntax {
      * The sort of the expression
      */
     val sort: K.Sort
-    val arity = K.flatTypeParameters(sort).size
+    def arity = K.flatTypeParameters(sort).size
 
     /**
      * The underlying kernel expression
@@ -386,6 +386,10 @@ trait Syntax {
    */
   object Variable {
     def unsafe(id: String, sort: K.Sort): Variable[?] = Variable(id)(using unsafeSortEvidence(sort))
+    def fresh[S: Sort](existing: Iterable[Expr[?]], baseId: String = "v"): Variable[S] = {
+      val newId = freshId(existing.flatMap(_.freeVars.map(_.id)), baseId)
+      Variable[S](newId)
+    }
 
     /**
      * Constructs a variable whose sort is only known at runtime.

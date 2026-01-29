@@ -38,12 +38,6 @@ object TypingHelpers extends lisa.Main:
   import lisa.maths.SetTheory.Cardinal.Predef.{*}
   import lisa.maths.Quantifiers.{*}
 
-  // Enter next level of universe
-  val Next = DEF(λ(U, universeOf(U)))  
-  def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
-    if (n == 1) then base
-    else universeOf(getUniverse(n - 1, base))
-  }
   import lisa.maths.SetTheory.Functions.Predef.{app}
   // Base term
   val e1, e2 = variable[Ind]
@@ -74,6 +68,13 @@ object TypingHelpers extends lisa.Main:
 
   type Typ = Expr[Ind] // | Expr[Ind >>: Prop]
 
+  // Enter next level of universe
+  val Next = DEF(λ(U, universeOf(U)))
+  def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
+    if (n == 1) then base
+    else universeOf(getUniverse(n - 1, base))
+  }
+
 
   // Pattern extractor for the 'app' Shallow Embedding constant.
   // It allows matching expressions of the form app(func)(arg) using the pattern Sapp(func, arg)
@@ -93,8 +94,16 @@ object TypingHelpers extends lisa.Main:
         case _ => (x, args(1))
       s"λ($v: $typ). $body"
     )
-  class VarTypeAssign(val x: Variable[Ind], val typ: Expr[Ind]) extends App[Ind, Prop](∈(x), typ) {
-    this : Expr[Prop] =>
+  private class VarTypeAssign_(val x: Variable[Ind], val typ: Expr[Ind]) extends App[Ind, Prop](∈(x), typ) {
+  }
+  opaque type VarTypeAssign <: Expr[Prop] & {val x: Variable[Ind]; val typ: Expr[Ind]} = VarTypeAssign_
+  object VarTypeAssign {
+    def apply(x: Variable[Ind], typ: Expr[Ind]): VarTypeAssign = new VarTypeAssign_(x, typ)
+    def unapply(e:Expr[Prop]): Option[(Variable[Ind], Expr[Ind])] = 
+      if e.isInstanceOf[VarTypeAssign_] then 
+        val vta = e.asInstanceOf[VarTypeAssign_]
+        Some((vta.x, vta.typ))
+      else None
   }
   extension (x: Variable[Ind]) {
     infix def ::(e: Expr[Ind]): VarTypeAssign & Expr[Prop] = VarTypeAssign(x, e)
@@ -103,6 +112,7 @@ object TypingHelpers extends lisa.Main:
 
   inline given Conversion[VarTypeAssign, Expr[Prop]] with
     def apply(vta: VarTypeAssign): Expr[Prop] = vta
+
 
 
   def fun(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.x, b))
@@ -139,10 +149,12 @@ object TypingHelpers extends lisa.Main:
     )
   ).printAs(args =>
     val ty1 = args(0)
-    val (v, ty2) = args(1) match
-      case Abs(v, body) => (v, body)
-      case _ => (x, args(1))
-    s"Π($v: $ty1). $ty2"
+    val ty2 = args(1)
+    ty2 match
+      case Abs(v, body) => 
+        if body.freeVars.contains(v) then s"Π($v: $ty1). $body"
+        else s"$ty1 ->: $body"
+      case _ => s"Π(_: $ty1). $ty2(_)"
   )
   def `Π`(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = Pi(v.typ)(λ(v.x, b))
 
@@ -264,7 +276,8 @@ object TypingHelpers extends lisa.Main:
 
   class TypedConstantFunctional[S: Sort]
     (id: Identifier, val typ: FunctionalClass, val justif: JUSTIFICATION) extends Constant[S](id) {
-    assert(typ.inTyp.size == arity)
+    
+    assert(typ.inTyp.size == arity, s"TypedConstantFunctional arity mismatch: symbol $id  expected arity ${arity}, got ${typ.inTyp}.")
 
     override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): TypedConstantFunctional[S] = this
     override def substituteWithCheck(m: Map[Variable[?], Expr[?]]): TypedConstantFunctional[S] =
