@@ -162,8 +162,7 @@ object Substitution:
           // rewriting is possible, construct the proof
 
           import lib.{have, thenHave, lastStep}
-          import BasicStepTactic.{TacticSubproof, Weakening, Cut, LeftSubstEq, RightSubstEq}
-          import SimpleDeducedSteps.Restate
+          import BasicStepTactic.{TacticSubproof, Weakening, Cut, LeftSubstEq, RightSubstEq, Restate}
 
           TacticSubproof:
             val leftRewrites = leftSubsts.get

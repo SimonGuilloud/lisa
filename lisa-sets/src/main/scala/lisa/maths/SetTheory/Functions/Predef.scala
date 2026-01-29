@@ -8,7 +8,7 @@ package lisa.maths.SetTheory.Functions
  */
 object Predef {
   export lisa.maths.SetTheory.Relations.Predef.*
-  export lisa.maths.SetTheory.Functions.Function.{functionBetween, ::, function, functionOn, app, apply, injective, surjective, bijective}
+  export lisa.maths.SetTheory.Functions.Function.{functionBetween, ::, function, functionOn, app, apply, injective, surjective, bijective, given}
   export lisa.maths.SetTheory.Functions.Operations.Restriction
   export lisa.maths.SetTheory.Functions.Operations.Restriction.{↾}
 }
