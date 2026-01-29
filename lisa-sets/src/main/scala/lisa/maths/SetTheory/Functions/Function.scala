@@ -66,13 +66,24 @@ object Function extends lisa.Main {
     s"$f($x)"
   })
 
-  extension (f: Expr[Ind]) {
+  /**
+   * Implicit conversion enabling the function application syntax `f(x)` for set-theoretic terms.
+   *
+   * This allows writing `f(x)` directly instead of using the explicit `app(f)(x)` combinator,
+   * aligning the code syntax with the printed notation.
+   *
+   * To use this notation, import it as follows:
+   * {{{
+   * import lisa.maths.SetTheory.Functions.Predef.given
+   * }}}
+   */
+  class AppliableTerm(f: Expr[Ind]):
+    def apply(arg: Expr[Ind]): Expr[Ind] = app(f)(arg)
 
-    /**
-     * Syntax for `f(x)`.
-     */
-    def apply(x: Expr[Ind]): Expr[Ind] = app(f)(x)
-  }
+    def apply(arg1: Expr[Ind], args: Expr[Ind]*): Expr[Ind] =
+      args.foldLeft(app(f)(arg1))((acc, arg) => app(acc)(arg))
+
+  given Conversion[Expr[Ind], AppliableTerm] = AppliableTerm(_)
 
   /**
    * Injective function --- `f` is said to be injective on `A` if `f(x) = f(y)` implies `x = y`.
