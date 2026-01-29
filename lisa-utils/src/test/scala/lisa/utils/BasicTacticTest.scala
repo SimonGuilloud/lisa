@@ -41,7 +41,7 @@ class BasicTacticTest extends ProofTacticTestLib {
   /*
   // rewrite
   // TODO: make this use equivalence checker tests
-  test("Tactic Tests: Rewrite") {
+  test("Tactic Tests: Restate") {
     val correct = List(
       ("'P('x); 'Q('x) |- 'R('x)", "'P('x) /\\ 'Q('x) |- 'R('x)"),
       ("'P('x) |- 'R('x); 'Q('x)", "'P('x) |- 'R('x) \\/ 'Q('x)")
@@ -55,12 +55,12 @@ class BasicTacticTest extends ProofTacticTestLib {
 
     testTacticCases(correct, incorrect) { (stmt1, stmt2) =>
       val prem = introduceSequent(stmt1)
-      Rewrite(prem)(stmt2)
+      Restate(prem)(stmt2)
     }
   }
 
   // rewrite true
-  test("Tactic Tests: Rewrite True") {
+  test("Tactic Tests: Restate True") {
     val correct = List(
       ("'P('x); 'Q('x) |- 'P('x); 'Q('x)"),
       ("'P('x) |- 'P('x); 'Q('x)"),
@@ -77,7 +77,7 @@ class BasicTacticTest extends ProofTacticTestLib {
     )
 
     testTacticCases(correct, incorrect) {
-      RewriteTrue(_)
+      RestateTrue(_)
     }
   }
 
