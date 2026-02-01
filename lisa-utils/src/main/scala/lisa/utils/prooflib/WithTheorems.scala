@@ -362,6 +362,8 @@ trait WithTheorems {
 
     def justifications: List[JUSTIFICATION] = getImports.map(_._1)
 
+    def sorryDependencies = justifications.filter(_.withSorry)
+
   }
 
   /**
@@ -452,8 +454,9 @@ trait WithTheorems {
    * A proven, reusable statement. A justification corresponding to [[K.Theorem]].
    */
   sealed abstract class THM extends JUSTIFICATION {
+    val kind: TheoremKind
     def repr: String =
-      s"  Theorem ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
+      s"  ${kind.kind2} ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.
@@ -465,6 +468,10 @@ trait WithTheorems {
      */
     def highProof: Option[BaseProof]
     val innerJustification: theory.Theorem
+    def sorryDependencies: List[JUSTIFICATION] = highProof match {
+      case Some(p) => p.sorryDependencies
+      case None => Nil
+    }
 
     /**
      * A pretty representation of the goal of the theorem
@@ -627,7 +634,7 @@ trait WithTheorems {
     def apply(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = {
       val s = library.contextHypotheses.getOrElse(file, Set.empty).foldLeft(statement)(_ +<< _)
       val thm = THM(s, name.value, line.value, file.value, this)(computeProof)
-      if this == Theorem then show(thm)
+      show(thm)
       thm
     }
 

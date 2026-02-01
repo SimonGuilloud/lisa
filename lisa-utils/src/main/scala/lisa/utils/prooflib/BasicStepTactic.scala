@@ -28,7 +28,7 @@ object BasicStepTactic {
     }
   }
 
-  object Rewrite extends ProofTactic with ProofFactSequentTactic {
+  object Restate_ extends ProofTactic with ProofFactSequentTactic {
     def apply(using lib: Library, proof: lib.Proof)(premise: proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement = {
       val botK = bot.underlying
       if (!K.isSameSequent(botK, proof.getSequent(premise).underlying))
@@ -38,7 +38,7 @@ object BasicStepTactic {
     }
   }
 
-  object RewriteTrue extends ProofTactic with ProofSequentTactic {
+  object RestateTrue_ extends ProofTactic with ProofSequentTactic {
     def apply(using lib: Library, proof: lib.Proof)(bot: F.Sequent): proof.ProofTacticJudgement = {
       val botK = bot.underlying
       if (!K.isSameSequent(botK, () `K|-` K.top))
@@ -46,6 +46,21 @@ object BasicStepTactic {
       else
         proof.ValidProofTactic(bot, Seq(K.RestateTrue(botK)), Seq())
     }
+  }
+
+  object Restate extends ProofTactic with ProofSequentTactic with ProofFactSequentTactic {
+    def apply(using lib: Library, proof: lib.Proof)(bot: F.Sequent): proof.ProofTacticJudgement =
+      unwrapTactic(RestateTrue_(bot))("Attempted true Restate during tactic Restate failed.")
+
+    // (proof.ProofStep | proof.OutsideFact | Int)     is definitionally equal to proof.Fact, but for some reason
+    // scala compiler doesn't resolve the overload with a type alias, dependant type and implicit parameter
+
+    def apply(using lib: Library, proof: lib.Proof)(premise: proof.ProofStep | proof.OutsideFact | Int | proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement =
+      unwrapTactic(Restate_(premise)(bot))("Attempted Restate during tactic Restate failed.")
+
+    def from(using lib: Library, proof: lib.Proof)(premise: proof.ProofStep | proof.OutsideFact | Int | proof.Fact)(bot: F.Sequent): proof.ProofTacticJudgement =
+      unwrapTactic(Restate_(premise)(bot))("Attempted Restate during tactic Restate failed.")
+
   }
 
   /**
@@ -136,9 +151,9 @@ object BasicStepTactic {
           case _ => proof.InvalidProofTactic("Could not infer a conjunction as pivot from premise and conclusion.")
         }
       else
-        // try a rewrite, if it works, go ahead with it, otherwise malformed
+        // try a Restate, if it works, go ahead with it, otherwise malformed
         if (F.isSameSequent(premiseSequent, bot))
-          unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial LeftAnd failed.")
+          unwrapTactic(Restate_(premise)(bot))("Attempted Restate on trivial LeftAnd failed.")
         else
           proof.InvalidProofTactic("Left-hand side of premise + φ∧ψ is not the same as left-hand side of conclusion + either φ, ψ or both.")
     }
@@ -452,7 +467,7 @@ object BasicStepTactic {
       if (pivot.isEmpty)
         if (instantiatedPivot.isEmpty)
           if (F.isSameSequent(premiseSequent, bot))
-            unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial premise for LeftExists failed.")
+            unwrapTactic(Restate_(premise)(bot))("Attempted Restate on trivial premise for LeftExists failed.")
           else
             proof.InvalidProofTactic("Could not infer a pivot from premise and conclusion.")
         else if (instantiatedPivot.tail.isEmpty) {
@@ -513,7 +528,7 @@ object BasicStepTactic {
       if (pivot.isEmpty)
         if (instantiatedPivot.isEmpty)
           if (F.isSameSequent(premiseSequent, bot))
-            unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial premise for LeftExistsOne failed.")
+            unwrapTactic(Restate(premise)(bot))("Attempted Restate on trivial premise for LeftExistsOne failed.")
           else
             proof.InvalidProofTactic("Right-hand side of conclusion is not a superset of the premises.")
         else if (instantiatedPivot.tail.isEmpty) {
@@ -625,9 +640,9 @@ object BasicStepTactic {
           case _ => proof.InvalidProofTactic("Could not infer a disjunction as pivot from premise and conclusion.")
         }
       else
-        // try a rewrite, if it works, go ahead with it, otherwise malformed
+        // try a Restate, if it works, go ahead with it, otherwise malformed
         if (F.isSameSequent(premiseSequent, bot))
-          unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial premise for RightOr failed.")
+          unwrapTactic(Restate_(premise)(bot))("Attempted Restate on trivial premise for RightOr failed.")
         else
           proof.InvalidProofTactic("Right-hand side of conclusion + φ∧ψ is not the same as right-hand side of premise + either φ, ψ or both.")
     }
@@ -801,7 +816,7 @@ object BasicStepTactic {
       if (pivot.isEmpty)
         if (instantiatedPivot.isEmpty)
           if (F.isSameSequent(premiseSequent, bot))
-            unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial premise for RightForall failed.")
+            unwrapTactic(Restate_(premise)(bot))("Attempted Restate on trivial premise for RightForall failed.")
           else
             proof.InvalidProofTactic("Could not infer a pivot from the premise and conclusion.")
         else if (instantiatedPivot.tail.isEmpty) {
@@ -967,7 +982,7 @@ object BasicStepTactic {
       if (pivot.isEmpty)
         if (instantiatedPivot.isEmpty)
           if (F.isSameSequent(premiseSequent, bot))
-            unwrapTactic(Rewrite(premise)(bot))("Attempted rewrite on trivial premise for RightExistsOne failed.")
+            unwrapTactic(Restate(premise)(bot))("Attempted Restate on trivial premise for RightExistsOne failed.")
           else
             proof.InvalidProofTactic("Could not infer a pivot from premise and conclusion.")
         else if (instantiatedPivot.tail.isEmpty) {
@@ -1204,7 +1219,7 @@ object BasicStepTactic {
         val phi_s_for_f = K.substituteVariables(phi_body, (phi_args zip s_es).toMap)
         val phi_t_for_f = K.substituteVariables(phi_body, (phi_args zip t_es).toMap)
         val sEqT_es = equalsK map { case (s, t) =>
-          val no = (s.freeVariables ++ t.freeVariables).view.map(_.id.no).max + 1
+          val no = (s.freeVariables ++ t.freeVariables).view.map(_.id.no).maxOption.getOrElse(0) + 1
           val vars = (no until no + s.sort.depth).map(i => K.Variable(K.Identifier("x", i), K.Ind))
           val inner1 = vars.foldLeft(s)(_(_))
           val inner2 = vars.foldLeft(t)(_(_))

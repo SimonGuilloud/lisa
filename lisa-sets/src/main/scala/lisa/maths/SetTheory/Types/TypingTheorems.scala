@@ -3,9 +3,39 @@ import TypingHelpers.*
 import lisa.maths.SetTheory.Base.Predef.{*, given}
 import lisa.maths.SetTheory.Functions.Predef.{*}
 import lisa.maths.SetTheory.Cardinal.Predef.{*}
+import lisa.maths.SetTheory.Functions.Predef.*
 import lisa.maths.Quantifiers.*
 
 object TypingTheorems extends lisa.Main:
+  import lisa.maths.SetTheory.Functions.Predef.{app}
+  // Base term
+  private val e1, e2 = variable[Ind]
+
+  // Function
+  private val e = variable[Ind >>: Ind]
+
+  // Base type
+  private val T, T1 = variable[Ind]
+
+  // Dependent type
+  private val T2, T2p = variable[Ind >>: Ind]
+
+  // Proposition
+  private val Q, H = variable[Ind >>: Prop]
+
+  // Type Universe
+  private val U, U1, U2 = variable[Ind]
+
+  // Proposition
+  private val p = variable[Prop]
+
+  import lisa.maths.SetTheory.Cardinal.Predef.{*}
+
+  val Next = DEF(λ(U, universeOf(U)))
+    def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
+      if (n == 1) then base
+      else universeOf(getUniverse(n - 1, base))
+    }
   
 
 
@@ -18,7 +48,7 @@ object TypingTheorems extends lisa.Main:
    *
    * Proves: e1 ∈ {f ∈ S | P(f)} <=> e1 ∈ S ∧ P(e1)
    */
-  val pi_expansion = Lemma(
+  val piExpansion  = Lemma(
     e1 ∈ {
       f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) |
         (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))
@@ -75,18 +105,6 @@ object TypingTheorems extends lisa.Main:
     assume(y === z)
     have(x === z) by Congruence
     thenHave(thesis) by Restate
-  }
-
-  /**
-   * Transitivity of Equality (Implication form).
-   * This is friendlier for use with Tautology.from.
-   *
-   * Proves: (x = y ∧ y = z) ==> x = z
-   */
-  val equalTransitivityApplication = Theorem(
-    ((x === y) /\ (y === z)) ==> (x === z)
-  ) {
-    have(thesis) by Tautology.from(equalTransitivity)
   }
 
   /**
@@ -183,7 +201,7 @@ object TypingTheorems extends lisa.Main:
               thenHave(snd(x, T2(x)) === y) by Substitute(pairEq)
               val yEq = thenHave(y === T2(x)) by Tautology.fromLastStep(
                 Pair.pairSnd of (y := T2(x)),
-                equalTransitivityApplication of (x := y, y := snd(x, T2(x)), z := T2(x))
+                equalTransitivity of (x := y, y := snd(x, T2(x)), z := T2(x))
               )
               have(x ∈ A /\ (T2(x) === T2(x))) by Tautology
               thenHave(∃(a ∈ A, T2(a) === T2(x))) by RightExists
@@ -380,6 +398,11 @@ object TypingTheorems extends lisa.Main:
   }
 
   /**
+   * Theorem --- Covariance of Pi types (Dependent Function Types).
+   *
+   * If two Pi types share the same domain, and the codomain of the first is
+   * a subset of the codomain of the second for all inputs (pointwise subset),
+   * then the first Pi type is a subset of the second.
    */
   val piCovariance = Theorem(
     (T === T1, ∀(x ∈ T, T2(x) ⊆ T2p(x))) |- Π(x :: T, T2(x)) ⊆ Π(x :: T1, T2p(x))
@@ -391,7 +414,7 @@ object TypingTheorems extends lisa.Main:
       have(f ∈ Π(x :: T, T2(x))) by Hypothesis
       thenHave(f ∈ Π(x :: T1, T2(x))) by Substitute(equalFormula)
       thenHave(f ∈ { f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) | (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a))))) }) by Substitute(Pi.definition)
-      val stmt = thenHave(f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) /\ (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))) by Tautology.fromLastStep(pi_expansion of (e1 := f))
+      val stmt = thenHave(f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) /\ (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))) by Tautology.fromLastStep(piExpansion  of (e1 := f))
 
       have(∀(x ∈ T, T2(x) ⊆ T2p(x))) by Tautology
       thenHave(x ∈ T ==> T2(x) ⊆ T2p(x)) by InstantiateForall(x)
@@ -473,7 +496,7 @@ object TypingTheorems extends lisa.Main:
         cond1,
         cond2,
         cond3,
-        pi_expansion of (e1 := f, T2 := T2p)
+        piExpansion  of (e1 := f, T2 := T2p)
       )
       thenHave(f ∈ Π(x :: T1, T2p(x))) by Substitute(Pi.definition of (T2 := T2p))
     }

@@ -207,7 +207,7 @@ trait Syntax {
     def unapply2[Target](e: Expr[Target]): Option[ArgsTo[S, Target]] =
       def inner[Target](e: Expr[Target]): Option[ArgsTo[S, Target]] = e match
         case App(f2, arg) if this == f2 => Some((arg *: EmptyTuple).asInstanceOf[ArgsTo[S, Target]])
-        case App(f2, arg) => inner(f2).map(value => (arg *: value).asInstanceOf[ArgsTo[S, Target]])
+        case App(f2, arg) => inner(f2).map(value => (value :* arg).asInstanceOf[ArgsTo[S, Target]])
         case _ => None
       inner[Target](e)
 
@@ -405,7 +405,7 @@ trait Syntax {
   case class Constant[S: Sort as sortEv](id: K.Identifier) extends Expr[S] {
     val sort: K.Sort = sortEv.underlying
     private var infix: Boolean = false
-    private var customPrinter: Option[Seq[Expr[?]] => String] = None
+    var customPrinter: Option[Seq[Expr[?]] => String] = None
 
     /**
      * Set the variable to be printed infix.

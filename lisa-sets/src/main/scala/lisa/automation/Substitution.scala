@@ -162,8 +162,7 @@ object Substitution:
           // rewriting is possible, construct the proof
 
           import lib.{have, thenHave, lastStep}
-          import BasicStepTactic.{TacticSubproof, Weakening, Cut, LeftSubstEq, RightSubstEq}
-          import SimpleDeducedSteps.Restate
+          import BasicStepTactic.{TacticSubproof, Weakening, Cut, LeftSubstEq, RightSubstEq, Restate}
 
           TacticSubproof:
             val leftRewrites = leftSubsts.get
@@ -197,7 +196,7 @@ object Substitution:
             val rightFormulas = rightRules.map(_.toFormula)
             val preRight = rightRewrites.map(_.toLeft).toSet
             val postRight = rightRewrites.map(_.toRight).toSet
-            val rightVars = rightRewrites.head.vars
+            val rightVars = if rightRewrites.nonEmpty then rightRewrites.head.vars else Seq.empty
             val rightLambda = orAllOrFalse(rightRewrites.map(_.lambda))
             thenHave(rpremise.left |- orAllOrFalse(preRight)) by Restate
             thenHave(rightFormulas ++ rpremise.left |- orAllOrFalse(preRight)) by Weakening

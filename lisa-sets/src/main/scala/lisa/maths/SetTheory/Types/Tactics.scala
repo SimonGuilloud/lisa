@@ -4,6 +4,7 @@ import lisa.utils.prooflib.*
 import lisa.utils.prooflib.ProofTacticLib.*
 import lisa.utils.prooflib.Library
 import lisa.utils.fol.{FOL => F}
+import F.{∀ as _, *}
 import scala.collection.Set
 import lisa.SetTheoryLibrary
 import TypingRules.{TVar, TAbs, TApp, TSort, TConvAdv}
@@ -11,13 +12,36 @@ import lisa.maths.SetTheory.Base.Predef.∪
 import lisa.maths.SetTheory.Base.Subset.{reflexivity, transitivity, doubleInclusion}
 import lisa.maths.SetTheory.Base.Union.{commutativity, leftUnionSubset}
 import lisa.maths.SetTheory.Cardinal.Predef.{isUniverse, universeOf, universeOfIsUniverse}
+import lisa.maths.SetTheory.Functions.Predef.*
 import TypingHelpers.*
 import TypingTheorems.{universeHierarchyPiClosureLeft, universeHierarchyPiClosureRight, subsetOfUniverse, piCovariance}
-import lisa.utils.prooflib.BasicStepTactic.RightForall
-import lisa.utils.prooflib.BasicStepTactic.Weakening
+import lisa.utils.prooflib.BasicStepTactic.*
+import lisa.automation.*
 
 object Tactics:
   val x, y, z, A, B, C = variable[Ind]
+  // Base term
+  private val e1, e2 = variable[Ind]
+
+  // Function
+  private val e = variable[Ind >>: Ind]
+
+  // Base type
+  private val T, T1 = variable[Ind]
+
+  // Dependent type
+  private val T2, T2p = variable[Ind >>: Ind]
+
+  // Proposition
+  private val Q, H = variable[Ind >>: Prop]
+
+  // Type Universe
+  private val U, U1, U2 = variable[Ind]
+
+  // Proposition
+  private val p = variable[Prop]
+
+
   object Typecheck extends ProofTactic:
     // Helper function: get universe level
     def getDepth(e: Expr[Ind]): Int = e match
@@ -204,6 +228,7 @@ object Tactics:
 
     // Construct subset proof(ty1 ⊆ ty2) for the given two expressions
     def subsetProof(using lib: SetTheoryLibrary.type, proof: lib.Proof)(localContext: Set[Expr[Prop]], sub: Expr[Ind], sup: Expr[Ind]): proof.ProofTacticJudgement =
+      import lib.*
       // println("Trying to construct subsetProof for: " + sub.toString() + " ⊆ " + sup.toString())
       TacticSubproof {
         (sub, sup) match

@@ -74,7 +74,7 @@ object TypingRules extends lisa.Main:
       thenHave((x, y) ∈ abs(T)(e) /\ (x, z) ∈ abs(T)(e) ==> (y === z)) by Tautology.fromLastStep(
         case1,
         absApplicationMembership of (y := z, T := T),
-        equalTransitivityApplication of (x := y, y := e(x), z := z)
+        equalTransitivity of (x := y, y := e(x), z := z)
       )
       thenHave(thesis) by Generalize
     }
@@ -264,7 +264,7 @@ object TypingRules extends lisa.Main:
       val unionEq = have((U1 ∪ U2) === U1) by Tautology.from(
         unionAbsorb of (A := U2, B := U1),
         Union.commutativity of (x := U1, y := U2),
-        equalTransitivityApplication of (x := (U1 ∪ U2), y := (U2 ∪ U1), z := U1)
+        equalTransitivity of (x := (U1 ∪ U2), y := (U2 ∪ U1), z := U1)
       )
       have(piTerm ∈ U1) by Tautology.from(
         universeHierarchyPiClosureRight
@@ -296,6 +296,6 @@ object TypingRules extends lisa.Main:
     )
     thenHave(thesis) by Tautology.fromLastStep(
       app.definition of (x := e2, f := abs(T)(e)),
-      equalTransitivityApplication of (x := app(abs(T)(e))(e2), y := ε(y, (e2, y) ∈ abs(T)(e)), z := e(e2))
+      equalTransitivity of (x := app(abs(T)(e))(e2), y := ε(y, (e2, y) ∈ abs(T)(e)), z := e(e2))
     )
   }

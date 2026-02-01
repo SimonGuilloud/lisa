@@ -9,12 +9,12 @@ import lisa.utils.fol.FOL.*
 import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 import lisa.SetTheoryLibrary
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
-import lisa.maths.SetTheory.Types.TypingHelpers.{=== => _, *}
+import lisa.maths.SetTheory.Types.TypingHelpers.{*}
 //import lisa.hol.VarsAndFunctions.HOLSequent.toHOLSequent
 import lisa.maths.SetTheory.Base.Predef.{pair, ∅, singleton, unorderedPair, ∈ }
 import lisa.maths.SetTheory.Base.CartesianProduct.cartesianProduct
 import lisa.maths.SetTheory.Base.Pair.{snd}
-import lisa.maths.SetTheory.Functions.Function.app
+import lisa.maths.SetTheory.Functions.Predef.{*, given}
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
 
 import scala.annotation.targetName
@@ -29,6 +29,7 @@ object VarsAndFunctions extends lisa.Main :
   val a = variable[Ind]
   val A, B = variable[Ind]
   val any = DEF(λ(x, ⊤))
+  val G, H = variable[Ind >>: Ind]
 
 
   // A ->: B is the set of functions from A to B
@@ -189,11 +190,11 @@ object VarsAndFunctions extends lisa.Main :
     r
 
 
-  def computeContext(terms: Set[Expr[Ind]]): Set[VarTypeAssign] = computeContextKnown(terms, Set.empty)
+  def computeContext(terms: Set[Expr[Ind]]): Set[TypeAssign[Variable[Ind]]] = computeContextKnown(terms, Set.empty)
 
-  def computeContextKnown(terms: Set[Expr[Ind]], known: Set[Variable[Ind]]): Set[VarTypeAssign] = 
+  def computeContextKnown(terms: Set[Expr[Ind]], known: Set[Variable[Ind]]): Set[TypeAssign[Variable[Ind]]] = 
     val frees = terms.flatMap(_.freeVars) -- known
-    val r1 = frees.foldLeft(List.empty[VarTypeAssign]) {
+    val r1 = frees.foldLeft(List.empty[TypeAssign[Variable[Ind]]]) {
       case (acc1, v: TypedVar) => 
         (v is v.typ) :: acc1
       case (acc1, v) => 
@@ -201,14 +202,14 @@ object VarsAndFunctions extends lisa.Main :
     }
     r1.toSet
 
-  def computeContextOfFormulas(formulas: Set[Expr[Prop]], known: Set[Variable[Ind]] = Set()): (Set[VarTypeAssign]) = 
+  def computeContextOfFormulas(formulas: Set[Expr[Prop]], known: Set[Variable[Ind]] = Set()): (Set[TypeAssign[Variable[Ind]]]) = 
     val vars = formulas.flatMap(_.freeVars) -- known
     computeContextKnown(vars.filter(_.sort == K.Ind).toSet.asInstanceOf[Set[Expr[Ind]]], Set.empty)
 
   class HOLSequent(
     val premises: Set[Expr[Ind]],
     val conclusion: Expr[Ind],
-    val varTypes: Set[VarTypeAssign]
+    val varTypes: Set[TypeAssign[Variable[Ind]]]
     ) extends F.Sequent(premises.map(_ === One) ++ varTypes, Set(conclusion === One)) {
       
       infix def +<<(t: Expr[Ind]): HOLSequent = HOLSequent(this.premises + t, conclusion)
@@ -252,16 +253,30 @@ object VarsAndFunctions extends lisa.Main :
       val r = s.right.head
       r match 
         case eqOne(t) => 
-          var vartypes = List.empty[VarTypeAssign]
+          var vartypes = List.empty[TypeAssign[Variable[Ind]]]
           var prems = Set.empty[Expr[Ind]]
           s.left.foreach {a => a match 
-            case VarTypeAssign(_, _)  => vartypes = a.asInstanceOf[VarTypeAssign] :: vartypes
+            case TypeAssign[Variable[Ind]](_, _)  => vartypes = a.asInstanceOf[TypeAssign[Variable[Ind]]] :: vartypes
             case eqOne(t) => prems = prems + t
             case _ => throw new IllegalArgumentException("Premises must be of the form t === One, be a type assignment or an abstraction definition.")
           }
           new HOLSequent(prems.toSet, t, vartypes.toSet)
         case _ => 
           throw new IllegalArgumentException("Conclusion must be of the form t === One.")
+
+    def unapply(s: F.Sequent): Option[(Set[Expr[Ind]], Expr[Ind])] = 
+      if s.isInstanceOf[HOLSequent] then 
+        val s1 = s.asInstanceOf[HOLSequent]
+        Some((s1.premises, s1.conclusion))
+      else 
+        try {
+          val s1 = fromFOLSequent(s)
+          Some((s1.premises, s1.conclusion))
+        }
+        catch
+          case e: IllegalArgumentException => 
+            println(e.getMessage())
+            return None
   }
 
 
@@ -290,12 +305,6 @@ object VarsAndFunctions extends lisa.Main :
 
 
 
-  val functionalExtentionality = Axiom({
-    val f = typedvar(A ->: B)
-    val g = typedvar(A ->: B)
-    val x = typedvar(A)
-    ((f :: (A ->: B)) /\ (g :: (A ->: B)) /\ tforall(x, f*x === g*x)) ==> (f === g)
-  })
 
 
   val boolNonEmpty = Theorem(exists(x, (x ∈ Bool))) {

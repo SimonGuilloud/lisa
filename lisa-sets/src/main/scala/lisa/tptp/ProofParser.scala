@@ -691,7 +691,7 @@ object ProofParser {
       def unapply(ann_seq: FOFAnnotated)(using defctx: DefContext, numbermap: String => Int, sequentmap: String => FOF.Sequent)(using maps: MapTriplet): Option[(K.SCProofStep, String)] =
         ann_seq match {
           case FOFAnnotated(name, role, sequent: FOF.Sequent, Inference("instMult", Seq(_, Sequence(instantiations)), Seq(t1)), origin) =>
-            val map = instantiations.map { 
+            val map = instantiations.map {
               case Tuple(Seq(String(sfl), expr, Sequence(varsl))) =>
                 val vars = varsl.map {
                   case String(xl) => K.Variable(sanitize(xl), K.Ind)

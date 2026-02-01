@@ -4,9 +4,12 @@ package lisa.maths.SetTheory.Types
 //import lisa.maths.SetTheory.Functions.Predef.{*}
 //import lisa.maths.SetTheory.Cardinal.Predef.{*}
 //import lisa.maths.Quantifiers.*
-import lisa.utils.prooflib._  
-import lisa.utils.fol.FOL.{=== as _, ≠ as _, *, given}
-import lisa.SetTheoryLibrary.{given, _}
+import lisa.SetTheoryLibrary.{*, given}
+import lisa.utils.prooflib.OutputManager
+import lisa.utils.fol.FOL.{∀ as _, === as _, ≠ as _, *, given}
+import lisa.maths.SetTheory.Base.Predef.{∪}
+import lisa.maths.SetTheory.Functions.Predef.*
+import lisa.maths.SetTheory.Cardinal.Universe.universeOf
 /**
  * This file defines the most common variable symbols (x, y, z, etc.)
  * and their types for a consistent use through the Calculus of Construction
@@ -32,33 +35,33 @@ import lisa.SetTheoryLibrary.{given, _}
  * - `fun(x :: A, e(x))` — lambda abstraction using VarTypeAssign
  */
 
-object TypingHelpers extends lisa.Main:
-  import lisa.maths.SetTheory.Base.Predef.{*, given}
-  import lisa.maths.SetTheory.Functions.Predef.{*}
-  import lisa.maths.SetTheory.Cardinal.Predef.{*}
-  import lisa.maths.Quantifiers.{*}
+object TypingHelpers:
+  import lisa.maths.SetTheory.Base.Predef.{ |, ×, ⊆, given}
+  //import lisa.maths.SetTheory.Functions.Predef.{}
+  //import lisa.maths.SetTheory.Cardinal.Predef.{}
+  import lisa.maths.Quantifiers.{∃!}
 
-  import lisa.maths.SetTheory.Functions.Predef.{app}
+
   // Base term
-  val e1, e2 = variable[Ind]
+  private val e1, e2, x, y, f, a, b = variable[Ind]
 
   // Function
-  val e = variable[Ind >>: Ind]
+  private val e = variable[Ind >>: Ind]
 
   // Base type
-  val T, T1 = variable[Ind]
+  private val T, T1 = variable[Ind]
 
   // Dependent type
-  val T2, T2p = variable[Ind >>: Ind]
+  private val T2, T2p = variable[Ind >>: Ind]
 
   // Proposition
-  val Q, H = variable[Ind >>: Prop]
+  private val Q, H = variable[Ind >>: Prop]
 
   // Type Universe
-  val U, U1, U2 = variable[Ind]
+  private val U, U1, U2 = variable[Ind]
 
   // Proposition
-  val p = variable[Prop]
+  private val p = variable[Prop]
 
   /**
    * Universe(Type) level
@@ -67,13 +70,6 @@ object TypingHelpers extends lisa.Main:
   val typeOf = ∈
 
   type Typ = Expr[Ind] // | Expr[Ind >>: Prop]
-
-  // Enter next level of universe
-  val Next = DEF(λ(U, universeOf(U)))
-  def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
-    if (n == 1) then base
-    else universeOf(getUniverse(n - 1, base))
-  }
 
 
   // Pattern extractor for the 'app' Shallow Embedding constant.
@@ -86,94 +82,43 @@ object TypingHelpers extends lisa.Main:
         case _ => None
 
   // Type/Term abstraction λx:T.e <=> abs(T)(λx.e)
-  val abs: Constant[Ind >>: (Ind >>: Ind) >>: Ind] = DEF(λ(T, λ(e, { (x, e(x)) | x ∈ T })))
-    .printAs(args =>
-      val typ = args(0)
-      val (v, body) = args(1) match
-        case Abs(v, b) => (v, b)
-        case _ => (x, args(1))
-      s"λ($v: $typ). $body"
-    )
-  private class VarTypeAssign_(val x: Variable[Ind], val typ: Expr[Ind]) extends App[Ind, Prop](∈(x), typ) {
-  }
-  opaque type VarTypeAssign <: Expr[Prop] & {val x: Variable[Ind]; val typ: Expr[Ind]} = VarTypeAssign_
-  object VarTypeAssign {
-    def apply(x: Variable[Ind], typ: Expr[Ind]): VarTypeAssign = new VarTypeAssign_(x, typ)
-    def unapply(e:Expr[Prop]): Option[(Variable[Ind], Expr[Ind])] = 
-      if e.isInstanceOf[VarTypeAssign_] then 
-        val vta = e.asInstanceOf[VarTypeAssign_]
+  
+  private class TypeAssign_[+T <: Expr[Ind]](val x: T, val typ: Expr[Ind]) extends App[Ind, Prop](∈(x), typ)
+  opaque type TypeAssign[+T <: Expr[Ind]] <: (Expr[Prop] & {val x: T; val typ: Expr[Ind]}) = TypeAssign_[T]
+  object TypeAssign {
+    def apply[T <: Expr[Ind]](x: T, typ: Expr[Ind]): TypeAssign[T] = new TypeAssign_(x, typ)
+    def unapply[T](e:Expr[Prop]): Option[(Expr[Ind], Expr[Ind])] = 
+      if e.isInstanceOf[TypeAssign_[Expr[Ind]]] then 
+        val vta = e.asInstanceOf[TypeAssign_[Expr[Ind]]]
         Some((vta.x, vta.typ))
       else None
   }
-  extension (x: Variable[Ind]) {
-    infix def ::(e: Expr[Ind]): VarTypeAssign & Expr[Prop] = VarTypeAssign(x, e)
-    infix def is(e: Expr[Ind]) = VarTypeAssign(x, e)
+  object VarTypeAssign:
+    def unapply(e:Expr[Prop]): Option[(Variable[Ind], Expr[Ind])] = e match
+      case TypeAssign(x: Variable[Ind], typ) => Some((x, typ))
+      case _ => None
+
+
+  extension [T <: Expr[Ind]] (t: T) {
+    infix def ::(e: Expr[Ind]) = TypeAssign[T](t, e)
+    infix def is(e: Expr[Ind]) = TypeAssign[T](t, e)
   }
 
-  inline given Conversion[VarTypeAssign, Expr[Prop]] with
-    def apply(vta: VarTypeAssign): Expr[Prop] = vta
+  inline given [T <: Expr[Ind]]: Conversion[TypeAssign[T], Expr[Prop]] with
+    def apply(vta: TypeAssign[T]): Expr[Prop] = vta
 
 
 
-  def fun(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.x, b))
+  def fun(v: TypeAssign[Variable[Ind]], b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.x, b))
+  
+  def `Π`(v: TypeAssign[Variable[Ind]], b: Expr[Ind]): Expr[Ind] = Pi(v.typ)(λ(v.x, b))
+
 
   class CstTypeAssign(val c: Constant[Ind], val typ: Expr[Ind]) extends App[Ind, Prop](∈(c), typ)
-  extension (c: Constant[Ind]) {
-    infix def ::(e: Expr[Ind]) = CstTypeAssign(c, e)
-    infix def is(e: Expr[Ind]) = CstTypeAssign(c, e)
-  }
 
-  // Pattern extractor for the 'abs' Shallow Embedding constant.
-  // It allows matching expressions of the form abs(typ)(body) using the pattern Sabs(typ, body).
-  object Sabs:
-    def unapply(e: Expr[?]): Option[(Expr[Ind], Expr[Ind >>: Ind])] =
-      e match
-        // We match against the specific Constant 'abs' being applied twice: App(App(abs, typ), body)
-        case App(App(`abs`, typ), body) =>
-          Some((typ.asInstanceOf[Expr[Ind]], body.asInstanceOf[Expr[Ind >>: Ind]]))
-        case _ => None
 
   // Dependent productin type: Π(x:T1).T2
-  val Pi: Constant[Ind >>: (Ind >>: Ind) >>: Ind] = DEF(
-    λ(
-      T1,
-      λ(
-        T2, {
-          f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) |
-            // f is a function
-            (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\
-            // f(a)'s type should be T2(a)
-            (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a))))) //
-        }
-      )
-    )
-  ).printAs(args =>
-    val ty1 = args(0)
-    val ty2 = args(1)
-    ty2 match
-      case Abs(v, body) => 
-        if body.freeVars.contains(v) then s"Π($v: $ty1). $body"
-        else s"$ty1 ->: $body"
-      case _ => s"Π(_: $ty1). $ty2(_)"
-  )
-  def `Π`(v: VarTypeAssign, b: Expr[Ind]): Expr[Ind] = Pi(v.typ)(λ(v.x, b))
 
-  // Pattern extractor for the 'Pi' Shallow Embedding constant.
-  // It allows matching expressions of the form Pi(T1)(T2) using the pattern SPi(T1, T2).
-  object SPi:
-    def unapply(e: Expr[?]): Option[(Expr[Ind], Expr[Ind >>: Ind])] =
-      e match
-        // We match against the specific Constant 'Pi' being applied twice: App(App(Pi, T1), T2)
-        case App(App(`Pi`, t1), t2) =>
-          Some((t1.asInstanceOf[Expr[Ind]], t2.asInstanceOf[Expr[Ind >>: Ind]]))
-        case _ => None
-
-  object SArrow:
-    def unapply(e: Expr[?]): Option[(Expr[Ind], Expr[Ind])] =
-      e match
-        case SPi(t1, lambda(x, t2)) if !t2.freeVars.contains(x) =>
-          Some((t1, t2))
-        case _ => None
 
   // Pattern extractor for the `⊆` Shallow Embedding constant.
   // It allows matching expressions of the form ⊆(t1)(t2) using the pattern SUnion(t1, t2)
@@ -184,37 +129,11 @@ object TypingHelpers extends lisa.Main:
           Some((t1.asInstanceOf[Expr[Ind]], t2.asInstanceOf[Expr[Ind]]))
         case _ => None
 
-  /**
-   * Notation `A ->: B <=> Π(x :: A). B`
-   * where B is independent on x
-   */
-  extension (a: Expr[Ind]) {
-    infix def ->:(b: Expr[Ind]): Expr[Ind] =
-      Pi(a)(λ(x, b))
-  }
-  object `->:` :
-    def unapply(e: Expr[?]): Option[(Expr[Ind], Expr[Ind])] =
-      e match
-        case SPi(a, lambda(x, b)) if !b.freeVars.contains(x) =>
-          Some((a, b))
-        case _ => None
+
 
   // ============================================================================
   // Syntactic Sugar Extensions (OldTypeSystem compatibility layer)
   // ============================================================================
-
-  /**
-   * Type membership operators (aliases for ∈)
-   * 
-   * Usage:
-   *   t is T  // equivalent to t ∈ T
-   *   t :: T  // equivalent to t ∈ T (for general terms, not just variables)
-   */
-  extension (t: Expr[Ind]) {
-    infix def is(typ: Expr[Ind]): Expr[Prop] = t ∈ typ
-    // Note: :: for general terms (variables already have :: via VarTypeAssign)
-    infix def `::`(typ: Expr[Ind]): Expr[Prop] = t ∈ typ
-  }
 
   /**
    * Function application operators (aliases for app)
@@ -239,7 +158,7 @@ object TypingHelpers extends lisa.Main:
 
   class TypedConstant
     (id: Identifier, val typ: Typ, val justif: JUSTIFICATION) extends Constant[Ind](id) {
-    val formula = CstTypeAssign(this, typ)
+    val formula = TypeAssign[Constant[Ind]](this, typ)
     assert(justif.statement.left.isEmpty && (justif.statement.right.head == formula))
 
     override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): TypedConstant = this

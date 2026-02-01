@@ -2,11 +2,12 @@ package lisa.maths.SetTheory.Functions
 
 import lisa.maths.Quantifiers
 import lisa.maths.Quantifiers.∃!
-import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Base.Predef.{*, given}
 import lisa.maths.SetTheory.Relations
 import lisa.maths.SetTheory.Relations.Predef._
 
-import Function._
+import Function.{*, given}
+import Pi.{*, given}
 
 /**
  * This file contains proofs of basic properties about functions.
@@ -16,8 +17,14 @@ import Function._
  */
 object BasicTheorems extends lisa.Main {
 
+  private val e1, e2 = variable[Ind]
   private val S = variable[Ind]
+  private val T, T1 = variable[Ind]
   private val P, Q = variable[Ind >>: Prop]
+  // Function
+  private val e = variable[Ind >>: Ind]
+  // Set functions
+  private val Gf, Hf = variable[Ind >>: Ind]
 
   extension (f: Expr[Ind]) {
 
@@ -37,13 +44,13 @@ object BasicTheorems extends lisa.Main {
     (function(f), z ∈ f) |- (z === (fst(z), snd(z)))
   ) {
     assume(z ∈ f)
-    have(f :: A -> B |- (z === (fst(z), snd(z)))) by Tautology.from(
+    have(functionBetween(f)(A)(B) |- (z === (fst(z), snd(z)))) by Tautology.from(
       functionBetween.definition,
       Relations.BasicTheorems.relationBetweenIsRelation of (R := f, X := A, Y := B),
       Relations.BasicTheorems.inversion of (R := f)
     )
-    thenHave(∃(B, f :: A -> B) |- (z === (fst(z), snd(z)))) by LeftExists
-    thenHave(∃(A, ∃(B, f :: A -> B)) |- (z === (fst(z), snd(z)))) by LeftExists
+    thenHave(∃(B, functionBetween(f)(A)(B)) |- (z === (fst(z), snd(z)))) by LeftExists
+    thenHave(∃(A, ∃(B, functionBetween(f)(A)(B))) |- (z === (fst(z), snd(z)))) by LeftExists
     thenHave(thesis) by Substitute(function.definition)
   }
 
@@ -112,11 +119,11 @@ object BasicTheorems extends lisa.Main {
    * Lemma --- If `f : A -> B` then `f` is a function.
    */
   val functionBetweenIsFunction = Theorem(
-    f :: A -> B |- function(f)
+    functionBetween(f)(A)(B) |- function(f)
   ) {
-    assume(f :: A -> B)
-    thenHave(∃(B, f :: A -> B)) by RightExists
-    thenHave(∃(A, ∃(B, f :: A -> B))) by RightExists
+    assume(functionBetween(f)(A)(B))
+    thenHave(∃(B, functionBetween(f)(A)(B))) by RightExists
+    thenHave(∃(A, ∃(B, functionBetween(f)(A)(B)))) by RightExists
     thenHave(thesis) by Substitute(function.definition)
   }
 
@@ -124,10 +131,10 @@ object BasicTheorems extends lisa.Main {
    * Lemma --- If `f : A -> B` then `f` is a function on `A`.
    */
   val functionBetweenIsFunctionOn = Theorem(
-    f :: A -> B |- functionOn(f)(A)
+    functionBetween(f)(A)(B) |- functionOn(f)(A)
   ) {
-    assume(f :: A -> B)
-    thenHave(∃(B, f :: A -> B)) by RightExists
+    assume(functionBetween(f)(A)(B))
+    thenHave(∃(B, functionBetween(f)(A)(B))) by RightExists
     thenHave(thesis) by Substitute(functionOn.definition)
   }
 
@@ -135,9 +142,9 @@ object BasicTheorems extends lisa.Main {
    * Theorem --- If `f : A -> B` then `dom(f) = A`.
    */
   val functionBetweenDomain = Theorem(
-    f :: A -> B |- dom(f) === A
+    functionBetween(f)(A)(B) |- dom(f) === A
   ) {
-    assume(f :: A -> B)
+    assume(functionBetween(f)(A)(B))
 
     have(x ∈ { fst(z) | z ∈ f } <=> ∃(z ∈ f, fst(z) === x)) by Replacement.apply
     val `x ∈ dom(f)` = thenHave(x ∈ dom(f) <=> ∃(z ∈ f, fst(z) === x)) by Substitute(dom.definition)
@@ -174,7 +181,7 @@ object BasicTheorems extends lisa.Main {
    * Consequence of [[relationBetweenRange]].
    */
   val functionBetweenRange = Theorem(
-    f :: A -> B |- range(f) ⊆ B
+    functionBetween(f)(A)(B) |- range(f) ⊆ B
   ) {
     have(thesis) by Tautology.from(
       functionBetween.definition,
@@ -191,17 +198,17 @@ object BasicTheorems extends lisa.Main {
   val appDefinition = Theorem(
     (function(f), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f
   ) {
-    have(f :: A -> B |- ∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
-    thenHave((f :: A -> B, x ∈ A) |- ∃!(y, (x, y) ∈ f)) by InstantiateForall(x)
-    thenHave((f :: A -> B, x ∈ A) |- (ε(y, (x, y) ∈ f) === y) <=> (x, y) ∈ f) by Tautology.fromLastStep(
+    have(functionBetween(f)(A)(B) |- ∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
+    thenHave((functionBetween(f)(A)(B), x ∈ A) |- ∃!(y, (x, y) ∈ f)) by InstantiateForall(x)
+    thenHave((functionBetween(f)(A)(B), x ∈ A) |- (ε(y, (x, y) ∈ f) === y) <=> (x, y) ∈ f) by Tautology.fromLastStep(
       Quantifiers.existsOneEpsilonUniqueness of (P := λ(y, (x, y) ∈ f))
     )
-    thenHave((f :: A -> B, x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by Substitute(
+    thenHave((functionBetween(f)(A)(B), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by Substitute(
       app.definition,
       functionBetweenDomain
     )
-    thenHave((∃(B, f :: A -> B), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by LeftExists
-    thenHave((∃(A, ∃(B, f :: A -> B)), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by LeftExists
+    thenHave((∃(B, functionBetween(f)(A)(B)), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by LeftExists
+    thenHave((∃(A, ∃(B, functionBetween(f)(A)(B))), x ∈ dom(f)) |- (f(x) === y) <=> (x, y) ∈ f) by LeftExists
     thenHave(thesis) by Substitute(function.definition)
   }
 
@@ -226,9 +233,9 @@ object BasicTheorems extends lisa.Main {
    * Special case of [[appInRange]].
    */
   val appTyping = Theorem(
-    (f :: A -> B, x ∈ A) |- (f(x) ∈ B)
+    (functionBetween(f)(A)(B), x ∈ A) |- (f(x) ∈ B)
   ) {
-    assume(f :: A -> B)
+    assume(functionBetween(f)(A)(B))
     assume(x ∈ A)
     have(x ∈ dom(f)) by Congruence.from(functionBetweenDomain)
     thenHave(f(x) ∈ range(f)) by Tautology.fromLastStep(
@@ -251,8 +258,8 @@ object BasicTheorems extends lisa.Main {
     functionOn(f)(A) |- function(f)
   ) {
     assume(functionOn(f)(A))
-    thenHave(∃(B, f :: A -> B)) by Substitute(functionOn.definition)
-    thenHave(∃(A, ∃(B, f :: A -> B))) by RightExists
+    thenHave(∃(B, functionBetween(f)(A)(B))) by Substitute(functionOn.definition)
+    thenHave(∃(A, ∃(B, functionBetween(f)(A)(B)))) by RightExists
     thenHave(thesis) by Substitute(function.definition)
   }
 
@@ -264,7 +271,7 @@ object BasicTheorems extends lisa.Main {
   val functionOnDomain = Theorem(
     functionOn(f)(A) |- dom(f) === A
   ) {
-    have(∃(B, f :: A -> B) |- dom(f) === A) by LeftExists(functionBetweenDomain)
+    have(∃(B, functionBetween(f)(A)(B)) |- dom(f) === A) by LeftExists(functionBetweenDomain)
     thenHave(thesis) by Substitute(functionOn.definition)
   }
 
@@ -277,12 +284,12 @@ object BasicTheorems extends lisa.Main {
     val `==>` = have(functionOn(f)(A) |- function(f) /\ (dom(f) === A)) by RightAnd(functionOnIsFunction, functionOnDomain)
 
     val `<==` =
-      have((f :: C -> D, dom(f) === A) |- dom(f) === C) by Tautology.from(functionBetweenDomain of (A := C, B := D))
-      thenHave((f :: C -> D, dom(f) === A) |- (f :: A -> D)) by Congruence
-      thenHave((f :: C -> D, dom(f) === A) |- ∃(B, f :: A -> B)) by RightExists
-      thenHave((f :: C -> D, dom(f) === A) |- functionOn(f)(A)) by Substitute(functionOn.definition)
-      thenHave((∃(D, f :: C -> D), dom(f) === A) |- functionOn(f)(A)) by LeftExists
-      thenHave((∃(C, ∃(D, f :: C -> D)), dom(f) === A) |- functionOn(f)(A)) by LeftExists
+      have((functionBetween(f)(C)(D), dom(f) === A) |- dom(f) === C) by Tautology.from(functionBetweenDomain of (A := C, B := D))
+      thenHave((functionBetween(f)(C)(D), dom(f) === A) |- (functionBetween(f)(A)(D))) by Congruence
+      thenHave((functionBetween(f)(C)(D), dom(f) === A) |- ∃(B, functionBetween(f)(A)(B))) by RightExists
+      thenHave((functionBetween(f)(C)(D), dom(f) === A) |- functionOn(f)(A)) by Substitute(functionOn.definition)
+      thenHave((∃(D, functionBetween(f)(C)(D)), dom(f) === A) |- functionOn(f)(A)) by LeftExists
+      thenHave((∃(C, ∃(D, functionBetween(f)(C)(D))), dom(f) === A) |- functionOn(f)(A)) by LeftExists
       thenHave((function(f), dom(f) === A) |- functionOn(f)(A)) by Substitute(function.definition)
 
     have(thesis) by Tautology.from(`==>`, `<==`)
@@ -379,8 +386,8 @@ object BasicTheorems extends lisa.Main {
     assume(g ⊆ f)
 
     // First, we show that `g` is a relation
-    val `g is relation between dom(g) and range(g)` = have(f :: A -> B |- relationBetween(g)(dom(g))(range(g))) subproof {
-      assume(f :: A -> B)
+    val `g is relation between dom(g) and range(g)` = have(functionBetween(f)(A)(B) |- relationBetween(g)(dom(g))(range(g))) subproof {
+      assume(functionBetween(f)(A)(B))
       have(relationBetween(f)(A)(B)) by Tautology.from(functionBetween.definition)
       thenHave(relation(g)) by Tautology.fromLastStep(
         Relations.BasicTheorems.subsetIsRelationBetween of (R := f, S := g, X := A, Y := B),
@@ -432,30 +439,30 @@ object BasicTheorems extends lisa.Main {
 
     // Finally, since `f` is functional on `dom(f)` it is functional on `dom(g)` as well
     // We use the equivalence shown above to replace `(x, y) ∈ f` with `(x, y) ∈ g`.
-    have(f :: A -> B |- ∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
-    thenHave((f :: A -> B, x ∈ A) |- ∃!(y, (x, y) ∈ f)) by InstantiateForall(x)
-    thenHave((f :: A -> B, x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)) by Substitute(functionBetweenDomain)
-    thenHave((f :: A -> B, x ∈ dom(g)) |- ∃!(y, (x, y) ∈ f)) by Tautology.fromLastStep(
+    have(functionBetween(f)(A)(B) |- ∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
+    thenHave((functionBetween(f)(A)(B), x ∈ A) |- ∃!(y, (x, y) ∈ f)) by InstantiateForall(x)
+    thenHave((functionBetween(f)(A)(B), x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)) by Substitute(functionBetweenDomain)
+    thenHave((functionBetween(f)(A)(B), x ∈ dom(g)) |- ∃!(y, (x, y) ∈ f)) by Tautology.fromLastStep(
       domainMonotonic,
       Subset.membership of (z := x, x := dom(g), y := dom(f))
     )
-    thenHave(f :: A -> B |- x ∈ dom(g) ==> ∃!(y, (x, y) ∈ g)) by Tautology.fromLastStep(
+    thenHave(functionBetween(f)(A)(B) |- x ∈ dom(g) ==> ∃!(y, (x, y) ∈ g)) by Tautology.fromLastStep(
       equivalence,
       Quantifiers.uniqueExistentialEquivalenceDistribution of (P := λ(y, (x, y) ∈ f), Q := λ(y, (x, y) ∈ g))
     )
-    thenHave(f :: A -> B |- ∀(x ∈ dom(g), ∃!(y, (x, y) ∈ g))) by RightForall
+    thenHave(functionBetween(f)(A)(B) |- ∀(x ∈ dom(g), ∃!(y, (x, y) ∈ g))) by RightForall
 
     // We put everything together and show that `g : dom(g) -> range(g)`.
-    have(f :: A -> B |- (g :: dom(g) -> range(g))) by Tautology.from(
+    have(functionBetween(f)(A)(B) |- (functionBetween(g)(dom(g))(range(g)))) by Tautology.from(
       functionBetween.definition of (f := g, A := dom(g), B := range(g)),
       lastStep,
       `g is relation between dom(g) and range(g)`
     )
 
-    thenHave(f :: A -> B |- ∃(B, g :: dom(g) -> B)) by RightExists
-    thenHave(f :: A -> B |- ∃(A, ∃(B, g :: A -> B))) by RightExists
-    thenHave(∃(B, f :: A -> B) |- ∃(A, ∃(B, g :: A -> B))) by LeftExists
-    thenHave(∃(A, ∃(B, f :: A -> B)) |- ∃(A, ∃(B, g :: A -> B))) by LeftExists
+    thenHave(functionBetween(f)(A)(B) |- ∃(B, functionBetween(g)(dom(g))(B))) by RightExists
+    thenHave(functionBetween(f)(A)(B) |- ∃(A, ∃(B, functionBetween(g)(A)(B)))) by RightExists
+    thenHave(∃(B, functionBetween(f)(A)(B)) |- ∃(A, ∃(B, functionBetween(g)(A)(B)))) by LeftExists
+    thenHave(∃(A, ∃(B, functionBetween(f)(A)(B))) |- ∃(A, ∃(B, functionBetween(g)(A)(B)))) by LeftExists
     thenHave(thesis) by Substitute(function.definition, function.definition of (f := g))
   }
 
@@ -494,5 +501,104 @@ object BasicTheorems extends lisa.Main {
 
     sorry
   }
+
+
+  
+  
+  val functionalExtentionality = Theorem(((functionBetween(f)(A)(B)) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x)))) ==> (f === g)) {
+    val prem = have((functionBetween(f)(A)(B) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x)))) |- (f === g)) subproof {
+      assume(functionBetween(f)(A)(B) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x))))
+
+      val f_typed = have(functionBetween(f)(A)(B)) by Tautology
+      val g_typed = have(functionBetween(g)(A)(B)) by Tautology
+      val pointwise = have(forall(x, (x ∈ A) ==> (f(x) === g(x)))) by Tautology
+
+      val f_on_A = have(functionOn(f)(A)) by Tautology.from(
+        lisa.maths.SetTheory.Functions.BasicTheorems.functionBetweenIsFunctionOn of (f := f, A := A, B := B),
+        f_typed
+      )
+      val g_on_A = have(functionOn(g)(A)) by Tautology.from(
+        lisa.maths.SetTheory.Functions.BasicTheorems.functionBetweenIsFunctionOn of (f := g, A := A, B := B),
+        g_typed
+      )
+
+      val pointwise_bounded = have(∀(x ∈ A, f(x) === g(x))) by Restate.from(pointwise)
+
+      have(f === g) by Tautology.from(
+        lisa.maths.SetTheory.Functions.BasicTheorems.extensionality of (f := f, g := g, A := A),
+        f_on_A,
+        g_on_A,
+        pointwise_bounded
+      )
+    }
+
+    have(thesis) by RightImplies(prem)
+  }
+
+  val functionalExtentionality2 = Theorem({ forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))) |- abs(A)(Gf) === abs(A)(Hf)}) {
+    assume(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))))
+    val hyp = have(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x)))) by Hypothesis
+
+    val forward = have(z ∈ abs(A)(Gf) |- z ∈ abs(A)(Hf)) subproof {
+      assume(z ∈ abs(A)(Gf))
+
+      val in_setcomp = thenHave(z ∈ { (x, Gf(x)) | x ∈ A }) by Substitute(abs.definition of (T := A, e := Gf))
+      val ex = have(∃(x ∈ A, (x, Gf(x)) === z)) by Tautology.from(
+        in_setcomp,
+        Replacement.membership of (y := z, x := x, A := A, F := λ(x, (x, Gf(x))))
+      )
+
+      val witness_case = have((x ∈ A) /\ ((x, Gf(x)) === z) |- z ∈ abs(A)(Hf)) subproof {
+        assume((x ∈ A) /\ ((x, Gf(x)) === z))
+        val x_in_A = have(x ∈ A) by Tautology
+        val xG_eq_z = have((x, Gf(x)) === z) by Tautology
+
+        val hyp_inst = have(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x)))) by Hypothesis
+        val pointwise_imp = thenHave((x ∈ A) ==> (Gf(x) === Hf(x))) by InstantiateForall(x)
+        val Gx_eq_Hx = have(Gf(x) === Hf(x)) by Tautology.from(pointwise_imp, x_in_A)
+        val Hx_eq_Gx = have(Hf(x) === Gf(x)) by Tautology.from(Gx_eq_Hx)
+        val xH_eq_xG = have((x, Hf(x)) === (x, Gf(x))) by Congruence.from(Hx_eq_Gx)
+
+        val xG_eq_xH = have((x, Gf(x)) === (x, Hf(x))) by Tautology.from(xH_eq_xG)
+
+        val base_eq = have(((x, Gf(x)) === z, (x, Gf(x)) === (x, Hf(x))) |- (x, Gf(x)) === z) by Hypothesis
+        val xH_eq_z_from = have(((x, Gf(x)) === z, (x, Gf(x)) === (x, Hf(x))) |- (x, Hf(x)) === z) by RightSubstEq.withParametersSimple(
+          List(((x, Gf(x)), (x, Hf(x)))),
+          (Seq(e1), e1 === z)
+        )(base_eq)
+        val xH_eq_z = have((x, Hf(x)) === z) by Tautology.from(xH_eq_z_from, xG_eq_z, xG_eq_xH)
+
+        val z_eq_xH = have(z === (x, Hf(x))) by Tautology.from(xH_eq_z)
+
+        val xH_in_setcomp = have((x, Hf(x)) ∈ { (x, Hf(x)) | x ∈ A }) by Tautology.from(
+          Replacement.map of (x := x, A := A, F := λ(x, (x, Hf(x))))
+        )
+        val xH_in_abs = thenHave((x, Hf(x)) ∈ abs(A)(Hf)) by Substitute(abs.definition of (T := A, e := Hf))
+
+        val mem_base = have(((x, Hf(x)) ∈ abs(A)(Hf), (x, Hf(x)) === z) |- (x, Hf(x)) ∈ abs(A)(Hf)) by Hypothesis
+        val z_in_abs_from = have(((x, Hf(x)) ∈ abs(A)(Hf), (x, Hf(x)) === z) |- z ∈ abs(A)(Hf)) by RightSubstEq.withParametersSimple(
+          List(((x, Hf(x)), z)),
+          (Seq(e1), e1 ∈ abs(A)(Hf))
+        )(mem_base)
+
+        have(z ∈ abs(A)(Hf)) by Tautology.from(
+          z_in_abs_from,
+          xH_in_abs,
+          xH_eq_z
+        )
+      }
+
+      val ex_unbounded = have(∃(x, (x ∈ A) /\ ((x, Gf(x)) === z))) by Restate.from(ex)
+      val lifted = have(∃(x, (x ∈ A) /\ ((x, Gf(x)) === z)) |- z ∈ abs(A)(Hf)) by LeftExists(witness_case)
+      have(z ∈ abs(A)(Hf)) by Cut(ex_unbounded, lifted)
+    }
+
+    val backward = have(z ∈ abs(A)(Hf) |- z ∈ abs(A)(Gf)) by Tautology.from(forward of (Gf := Hf, Hf := Gf))
+
+    have(z ∈ abs(A)(Gf) <=> z ∈ abs(A)(Hf)) by Tautology.from(forward, backward)
+    thenHave(thesis) by Extensionality
+  }
+
+
 
 }

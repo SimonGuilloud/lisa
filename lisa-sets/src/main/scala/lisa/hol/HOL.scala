@@ -10,11 +10,18 @@ import SetTheoryLibrary.{given, _}
  * The parent trait of all theory files containing mathematical development
  */
 trait _HOL extends BasicMain {
-  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, typedvar, computeType, eqOne, computeContextOfFormulas, computeContext, fun}
-  export lisa.maths.SetTheory.Types.TypingHelpers.{->:, `*`, @@, ::, is}
+
+  
+  val F: lisa.utils.fol.FOL.type = lisa.utils.fol.FOL
+  export F.{=== as _, ≠ as _, *, given}
+  export lisa.maths.SetTheory.Functions.Predef.{*}
+  export lisa.maths.SetTheory.Types.TypingHelpers.{main => _, *, given}
+  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, typedvar, computeType, eqOne, computeContextOfFormulas, computeContext, fun,
+                                    eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, 
+                                    given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
+                                    given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
   export lisa.maths.SetTheory.Types.Tactics.Typecheck.*
   val library = SetTheoryLibrary
-  val F: lisa.utils.fol.FOL.type = lisa.utils.fol.FOL
 
 
 
@@ -27,7 +34,7 @@ trait _HOL extends BasicMain {
     s ++<< (ctx |- ())
 
 
-  def Theorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
+  def HOLTheorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
     val ctx = computeContext(statement.freeTermVars.toSet)
     SetTheoryLibrary.Theorem(statement ++<< (ctx |- ()))(computeProof)
 
@@ -36,6 +43,7 @@ trait _HOL extends BasicMain {
 
 trait HOL extends _HOL {
   //export lisa.hol.HOLSteps.*
+  export SetTheoryLibrary.{library => _, given, _}
   export lisa.utils.prooflib.BasicStepTactic.*
   export lisa.utils.prooflib.SimpleDeducedSteps.*
 

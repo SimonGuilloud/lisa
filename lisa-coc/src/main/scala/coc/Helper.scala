@@ -82,7 +82,7 @@ object Helper extends lisa.Main:
    *
    * Proves: (x = y ∧ y = z) ==> x = z
    */
-  val equalTransitivityApplication = Theorem(
+  val equalTransitivity = Theorem(
     ((x === y) /\ (y === z)) ==> (x === z)
   ) {
     have(thesis) by Tautology.from(equalTransitivity)
@@ -182,7 +182,7 @@ object Helper extends lisa.Main:
               thenHave(snd(x, T2(x)) === y) by Substitute(pairEq)
               val yEq = thenHave(y === T2(x)) by Tautology.fromLastStep(
                 Pair.pairSnd of (y := T2(x)),
-                equalTransitivityApplication of (x := y, y := snd(x, T2(x)), z := T2(x))
+                equalTransitivity of (x := y, y := snd(x, T2(x)), z := T2(x))
               )
               have(x ∈ A /\ (T2(x) === T2(x))) by Tautology
               thenHave(∃(a ∈ A, T2(a) === T2(x))) by RightExists

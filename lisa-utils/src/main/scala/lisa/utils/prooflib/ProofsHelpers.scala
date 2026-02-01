@@ -67,7 +67,7 @@ trait ProofsHelpers {
 
   def have(using line: sourcecode.Line, file: sourcecode.File)(using proof: library.Proof)(v: proof.Fact | proof.ProofTacticJudgement) = v match {
     case judg: proof.ProofTacticJudgement => judg.validate(line, file)
-    case fact: proof.Fact @unchecked => HaveSequent(proof.sequentOfFact(fact)).by(using proof, line, file)(Rewrite(using library, proof)(fact))
+    case fact: proof.Fact @unchecked => HaveSequent(proof.sequentOfFact(fact)).by(using proof, line, file)(Restate(using library, proof)(fact))
   }
 
   /**
@@ -322,7 +322,7 @@ trait ProofsHelpers {
             val freshX = Variable.unsafe(fresh, body1.sort)
             val right: Expr[Ind] = applyVars(leading.reverse, freshX).asInstanceOf[Expr[Ind]]
             var instRight: Expr[Ind] = applyVars(leading.reverse, body1).asInstanceOf[Expr[Ind]]
-            thenHave(appliedCst === instRight) by Rewrite
+            thenHave(appliedCst === instRight) by Restate
           case App(f, a: Variable[?]) => loop(expr, a :: leading)
           case _ => throw new Exception("Unreachable")
         }

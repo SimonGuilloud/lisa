@@ -1,27 +1,29 @@
-/*
+
 package lisa.hol
 import lisa.hol.HOLSteps.*
 import lisa.utils.prooflib.BasicStepTactic.* 
-import lisa.utils.prooflib.SimpleDeducedSteps.Restate
+import lisa.utils.fol.FOL as F
+import F.{Expr, Ind, Prop, >>:, variable, given}
 
 object HOLStepsTests extends lisa.HOL {
   
-  private val A = variable
-  private val B = variable
+  private val A = variable[Ind]
+  private val B = variable[Ind]
   private val v = typedvar(B)
   private val w = typedvar(A)
   private val x = typedvar(A)
   private val y = typedvar(A)
   private val z = typedvar(A) 
-  private val e = typedvar(A |=> A)
-  private val f = typedvar(A |=> B)
-  private val g = typedvar(A |=> B)
-  private val h = typedvar(B |=> A)
+  private val e = typedvar(A ->: A)
+  private val f = typedvar(A ->: B)
+  private val g = typedvar(A ->: B)
+  private val h = typedvar(B ->: A)
 
   private val p = typedvar(𝔹)
   private val q = typedvar(𝔹)
   private val r = typedvar(𝔹)
 
+  println("pretests")
 
   // REFL
 
@@ -34,7 +36,7 @@ object HOLStepsTests extends lisa.HOL {
 
   println("starting test1")
 
-  val test_trans_1 = Theorem((w =:= x, x =:= y, y =:= z) |- (w =:=z)) {
+  val test_trans_1 = HOLTheorem((w =:= x, x =:= y, y =:= z) |- (w =:=z)) {
     println("enters proof")
     val a1 = assume(w =:= x)
     val a2 = assume(x =:= y)
@@ -43,14 +45,19 @@ object HOLStepsTests extends lisa.HOL {
     have(_TRANS(s1, a3))
   }
 
+  
+/*
+
   println("starting mk_comb")
   // MK_COMB
 
-  val test_mkcomb_1 = Theorem((f =:= g, x =:= y) |- (f*x =:= g*y)) {
+  val test_mkcomb_1 = HOLTheorem((f =:= g, x =:= y) |- (f*x =:= g*y)) {
     val a1 = assume(f =:= g)
     val a2 = assume(x =:= y)
     have(MK_COMB(a1, a2))
   }
+
+
   // ABS
 
   val test_abs_1 = Theorem((y =:= z) |- (λ(x, y) =:= λ(x, z))) {
@@ -316,5 +323,5 @@ object HOLStepsTests extends lisa.HOL {
   }
 */
 
-}
 */
+}

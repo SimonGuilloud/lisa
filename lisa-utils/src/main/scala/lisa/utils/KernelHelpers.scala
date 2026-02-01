@@ -15,6 +15,7 @@ import scala.annotation.targetName
  * A helper file that provides various syntactic sugars for LISA's FOL and proofs at the Kernel level.
  */
 object KernelHelpers {
+  var maxProofLinesToShow: Int = 5
 
   def predicateType(arity: Int) = Range(0, arity).foldLeft(Prop: Sort)((acc, _) => Ind -> acc)
   def functionType(arity: Int) = Range(0, arity).foldLeft(Ind: Sort)((acc, _) => Ind -> acc)
@@ -611,8 +612,8 @@ object KernelHelpers {
             pretty("Subproof", sp.premises*) +: prettySCProofRecursive(sp.sp, level + 1, currentTree, (if (i == 0) topMostIndices else IndexedSeq.empty) :+ i)
           case other =>
             val line = other match {
-              case Restate(_, t1) => pretty("Rewrite", t1)
-              case RestateTrue(_) => pretty("RewriteTrue")
+              case Restate(_, t1) => pretty("Restate", t1)
+              case RestateTrue(_) => pretty("RestateTrue")
               case Hypothesis(_, _) => pretty("Hypo.")
               case Cut(_, t1, t2, _) => pretty("Cut", t1, t2)
               case LeftAnd(_, t1, _, _) => pretty("Left ∧", t1)
@@ -656,7 +657,9 @@ object KernelHelpers {
       }
       .mkString("\n") + (judgement match {
       case SCValidProof(_, _) => ""
-      case SCInvalidProof(proof, path, message) => s"\nProof checker has reported an error at line ${path.mkString(".")}: $message"
+      case SCInvalidProof(proof, path, message) =>
+        val msg = message.split("\n").takeRight(maxProofLinesToShow).mkString("\n")
+        s"\nProof checker has reported an error at line ${path.mkString(".")}: $msg"
     })
   }
 

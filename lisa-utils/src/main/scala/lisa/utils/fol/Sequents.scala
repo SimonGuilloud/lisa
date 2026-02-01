@@ -60,7 +60,7 @@ trait Sequents extends Predef {
      * The sequent must have a single universally quantified formula on the right side.
      */
     def instantiateForallWithProof(args: Seq[Expr[Ind]], index: Int): (Sequent, Seq[K.SCProofStep]) = {
-      if this.right.size != 1 then throw new IllegalArgumentException("Right side of sequent must be a single universally quantified formula")
+      if this.right.size != 1 then throw new IllegalArgumentException("Right side of sequent must be a single universally quantified formula; found " + this.right.size)
       this.right.head match {
         case r @ App(forall, Abs(x: Variable[Ind], f: Expr[Prop])) =>
           val t = args.head
@@ -74,7 +74,7 @@ trait Sequents extends Predef {
               case (s, p) => (s, Seq(s0, s1, s2) ++ p)
             }
 
-        case _ => throw new IllegalArgumentException("Right side of sequent must be a single universally quantified formula")
+        case _ => throw new IllegalArgumentException("Right side of sequent must be a single universally quantified formula; found " + this.right.head)
       }
 
     }

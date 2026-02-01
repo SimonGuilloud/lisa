@@ -2,11 +2,43 @@ package lisa.maths.SetTheory.Types
 import TypingHelpers.*
 import TypingTheorems.*
 import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Functions.Predef.{*}
+import lisa.maths.SetTheory.Functions.Predef.{*, given}
 import lisa.maths.SetTheory.Cardinal.Predef.{*}
 import lisa.maths.Quantifiers.*
 
 object TypingRules extends lisa.Main:
+  import lisa.maths.SetTheory.Functions.Predef.{app}
+  // Base term
+  private val e1, e2 = variable[Ind]
+
+  // Function
+  private val e = variable[Ind >>: Ind]
+
+  // Base type
+  private val T, T1 = variable[Ind]
+
+  // Dependent type
+  private val T2, T2p = variable[Ind >>: Ind]
+
+  // Proposition
+  private val Q, H = variable[Ind >>: Prop]
+
+  // Set functions
+  private val Gf, Hf = variable[Ind >>: Ind]
+
+  // Type Universe
+  private val U, U1, U2 = variable[Ind]
+
+  // Proposition
+  private val p = variable[Prop]
+  /**
+   *    x : T, T : U_l
+   *    ─────────────── (T-Var)
+   *        x : T
+   */
+  val TVar = Theorem((e1 ∈ T, T ∈ U) |- e1 ∈ T) {
+    have(thesis) by Hypothesis
+  }
 
   /**
    * Abs Application Characterization (Full Equivalence)
@@ -74,7 +106,7 @@ object TypingRules extends lisa.Main:
       thenHave((x, y) ∈ abs(T)(e) /\ (x, z) ∈ abs(T)(e) ==> (y === z)) by Tautology.fromLastStep(
         case1,
         absApplicationMembership of (y := z, T := T),
-        equalTransitivityApplication of (x := y, y := e(x), z := z)
+        equalTransitivity of (x := y, y := e(x), z := z)
       )
       thenHave(thesis) by Generalize
     }
@@ -83,25 +115,6 @@ object TypingRules extends lisa.Main:
     thenHave(x ∈ T ==> ∃!(y, (x, y) ∈ abs(T)(e))) by
       Substitute(existsOneAlternativeDefinition of (x := y, P := λ(y, (x, y) ∈ abs(T)(e))))
     thenHave(thesis) by RightForall
-  }
-
-  /**
-   * ────────────────(T-Sort)
-   * U_l : U_{l+1}
-   */
-  val TSort = Theorem(
-    U ∈ universeOf(U)
-  ) {
-    have(thesis) by Tautology.from(universeOfIsUniverse of (x := U))
-  }
-
-  /**
-   *    x : T, T : U_l
-   *    ─────────────── (T-Var)
-   *        x : T
-   */
-  val TVar = Theorem((e1 ∈ T, T ∈ U) |- e1 ∈ T) {
-    have(thesis) by Tautology
   }
 
   /**
@@ -169,7 +182,7 @@ object TypingRules extends lisa.Main:
     thenHave(abs(T1)(e) ∈ {
       f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) |
         (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))
-    }) by Substitute(pi_expansion of (e1 := abs(T1)(e)))
+    }) by Substitute(piExpansion of (e1 := abs(T1)(e)))
     thenHave(thesis) by Substitute(Pi.definition)
   }
 
@@ -180,7 +193,7 @@ object TypingRules extends lisa.Main:
    */
   val TApp = Theorem(
     (e1 ∈ Pi(T1)(T2), e2 ∈ T1)
-      |- app(e1)(e2) ∈ T2(e2)
+      |- e1(e2) ∈ T2(e2)
   ) {
     assumeAll
     have(e1 ∈ Pi(T1)(T2)) by Restate
@@ -193,7 +206,7 @@ object TypingRules extends lisa.Main:
     val stmt = have(
       e1 ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) /\
         (∀(x ∈ T1, ∃!(y, (x, y) ∈ e1))) /\ (∀(a, ∀(b, (a, b) ∈ e1 ==> (b ∈ T2(a)))))
-    ) by Tautology.from(pi_expansion, lastStep)
+    ) by Tautology.from(piExpansion, lastStep)
 
     have(∀(x ∈ T1, ∃!(y, (x, y) ∈ e1))) by Weakening(stmt)
     thenHave(x ∈ T1 ==> ∃!(y, (x, y) ∈ e1)) by InstantiateForall(x)
@@ -207,27 +220,39 @@ object TypingRules extends lisa.Main:
   }
 
   /**
-   *    e1: T,  T === T'
-   * ──────────────────── (T-Conv)
-   *       e1 : T'
+   * Beta Reduction(β-reduction):
+   *
+   *  (λx:T. e(x))(e2) --> e(e2)
+   *
+   *  e2: T ==> app(abs(T)(e))(e2) === e(e2)
    */
-  val TConv = Theorem(
-    (e1 ∈ T, T === T1) |- e1 ∈ T1
+  val BetaReduction = Theorem(
+    e2 ∈ T |- app(abs(T)(e))(e2) === e(e2)
   ) {
-    assumeAll
-    have(thesis) by Tautology.from(localSubstitute of (P := λ(x, e1 ∈ x), x := T, y := T1))
+    assume(e2 ∈ T)
+    have(e(e2) === e(e2)) by RightRefl
+    val stmt1 = thenHave((e2, e(e2)) ∈ abs(T)(e)) by
+      Tautology.fromLastStep(absApplicationMembership of (x := e2, y := e(e2), T := T))
+    have(e2 ∈ T ==> ∃!(y, (e2, y) ∈ abs(T)(e))) by InstantiateForall(e2)(absApplicationFunctionality)
+    have(e(e2) === ε(y, (e2, y) ∈ abs(T)(e))) by Tautology.from(
+      stmt1,
+      lastStep,
+      existsOneEpsilonUniqueness of (x := y, y := e(e2), P := λ(x, (e2, x) ∈ abs(T)(e)))
+    )
+    thenHave(thesis) by Tautology.fromLastStep(
+      app.definition of (x := e2, f := abs(T)(e)),
+      equalTransitivity of (x := abs(T)(e)(e2), y := ε(y, (e2, y) ∈ abs(T)(e)), z := e(e2))
+    )
   }
 
   /**
-   *    e1: T,  T <= T'
-   * ──────────────────── (T-ConvAdv)
-   *       e1 : T'
+   * ────────────────(T-Sort)
+   * U_l : U_{l+1}
    */
-  val TConvAdv = Theorem(
-    (e1 ∈ T, T ⊆ T1) |- e1 ∈ T1
+  val TSort = Theorem(
+    U ∈ universeOf(U)
   ) {
-    assumeAll
-    have(thesis) by Tautology.from(Subset.membership of (z := e1, x := T, y := T1))
+    have(thesis) by Tautology.from(universeOfIsUniverse of (x := U))
   }
 
   /**
@@ -264,7 +289,7 @@ object TypingRules extends lisa.Main:
       val unionEq = have((U1 ∪ U2) === U1) by Tautology.from(
         unionAbsorb of (A := U2, B := U1),
         Union.commutativity of (x := U1, y := U2),
-        equalTransitivityApplication of (x := (U1 ∪ U2), y := (U2 ∪ U1), z := U1)
+        equalTransitivity of (x := (U1 ∪ U2), y := (U2 ∪ U1), z := U1)
       )
       have(piTerm ∈ U1) by Tautology.from(
         universeHierarchyPiClosureRight
@@ -275,27 +300,28 @@ object TypingRules extends lisa.Main:
   }
 
   /**
-   * Beta Reduction(β-reduction):
-   *
-   *  (λx:T. e(x))(e2) --> e(e2)
-   *
-   *  e2: T ==> app(abs(T)(e))(e2) === e(e2)
+   *    e1: T,  T === T'
+   * ──────────────────── (T-Conv)
+   *       e1 : T'
    */
-  val BetaReduction = Theorem(
-    e2 ∈ T |- app(abs(T)(e))(e2) === e(e2)
+  val TConv = Theorem(
+    (e1 ∈ T, T === T1) |- e1 ∈ T1
   ) {
-    assume(e2 ∈ T)
-    have(e(e2) === e(e2)) by RightRefl
-    val stmt1 = thenHave((e2, e(e2)) ∈ abs(T)(e)) by
-      Tautology.fromLastStep(absApplicationMembership of (x := e2, y := e(e2), T := T))
-    have(e2 ∈ T ==> ∃!(y, (e2, y) ∈ abs(T)(e))) by InstantiateForall(e2)(absApplicationFunctionality)
-    have(e(e2) === ε(y, (e2, y) ∈ abs(T)(e))) by Tautology.from(
-      stmt1,
-      lastStep,
-      existsOneEpsilonUniqueness of (x := y, y := e(e2), P := λ(x, (e2, x) ∈ abs(T)(e)))
-    )
-    thenHave(thesis) by Tautology.fromLastStep(
-      app.definition of (x := e2, f := abs(T)(e)),
-      equalTransitivityApplication of (x := app(abs(T)(e))(e2), y := ε(y, (e2, y) ∈ abs(T)(e)), z := e(e2))
-    )
+    assumeAll
+    have(thesis) by Tautology.from(localSubstitute of (P := λ(x, e1 ∈ x), x := T, y := T1))
   }
+
+  /**
+   *    e1: T,  T <= T'
+   * ──────────────────── (T-ConvAdv)
+   *       e1 : T'
+   */
+  val TConvAdv = Theorem(
+    (e1 ∈ T, T ⊆ T1) |- e1 ∈ T1
+  ) {
+    assumeAll
+    have(thesis) by Tautology.from(Subset.membership of (z := e1, x := T, y := T1))
+  }
+
+
+
