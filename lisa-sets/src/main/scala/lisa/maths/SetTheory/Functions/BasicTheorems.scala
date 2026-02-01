@@ -378,11 +378,63 @@ object BasicTheorems extends lisa.Main {
   section("Subsets, extensions")
 
   /**
+   * Lemma --- If `f` is a function then `f` is a relation.
+   */
+  val functionIsRelation = Theorem(
+    function(f) |- relation(f)
+  ) {
+    have(functionBetween(f)(A)(B) |- relation(f)) by Tautology.from(
+      functionBetween.definition,
+      Relations.BasicTheorems.relationBetweenIsRelation of (R := f, X := A, Y := B)
+    )
+    thenHave(∃(B, functionBetween(f)(A)(B)) |- relation(f)) by LeftExists
+    thenHave(∃(A, ∃(B, functionBetween(f)(A)(B))) |- relation(f)) by LeftExists
+    thenHave(thesis) by Substitute(function.definition)
+  }
+
+  /**
+   * Lemma --- If `f` is a function then `f ⊆ dom(f) × range(f)`.
+   */
+  val functionBetweenDomainRange = Theorem(
+    function(f) |- relationBetween(f)(dom(f))(range(f))
+  ) {
+    have(thesis) by Tautology.from(
+      functionIsRelation,
+      Relations.BasicTheorems.relationBetweenDomainRange of (R := f)
+    )
+  }
+
+  /**
+   * Lemma --- If `f` is a function and `x ∈ dom(f)`, then there is a unique `y` such that `(x, y) ∈ f`.
+   */
+  val functionUniqueAtDomain = Theorem(
+    (function(f), x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)
+  ) {
+    val local = have((functionBetween(f)(A)(B), x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)) subproof {
+      assume(functionBetween(f)(A)(B))
+      assume(x ∈ dom(f))
+
+      val dom_eq = have(dom(f) === A) by Tautology.from(functionBetweenDomain)
+      val x_in_dom = have(x ∈ dom(f)) by Hypothesis
+      val x_in_A = have(x ∈ A) by Congruence.from(x_in_dom, dom_eq)
+
+      have(∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
+      thenHave(x ∈ A |- ∃!(y, (x, y) ∈ f)) by InstantiateForall(x)
+      have(thesis) by Cut(x_in_A, lastStep)
+    }
+
+    have((∃(B, functionBetween(f)(A)(B)), x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)) by LeftExists(local)
+    thenHave((∃(A, ∃(B, functionBetween(f)(A)(B))), x ∈ dom(f)) |- ∃!(y, (x, y) ∈ f)) by LeftExists
+    thenHave(thesis) by Substitute(function.definition)
+  }
+
+  /**
    * Theorem --- If `f` is a function and `g ⊆ f` then `g` is also a function.
    */
   val subset = Theorem(
     (function(f), g ⊆ f) |- function(g)
   ) {
+    assume(function(f))
     assume(g ⊆ f)
 
     // First, we show that `g` is a relation
@@ -409,26 +461,53 @@ object BasicTheorems extends lisa.Main {
         thenHave(x ∈ dom(g) <=> ∃(z ∈ g, fst(z) === x)) by Substitute(dom.definition of (R := g))
         thenHave(∃(z ∈ g, fst(z) === x)) by Tautology
 
-        /*
-        // Since `z ∈ g` implies that `z` is a pair, we have `z = (x, snd(z))`
-        have(z ∈ g |- (z === (fst(z), snd(z)))) by Tautology.from(
-          inversion,
-          functionBetweenIsFunction,
-          Subset.membership of (x := g, y := f)
-        )
-        val eq1 = thenHave((z ∈ g, fst(z) === x) |- (z === (x, snd(z)))) by Congruence
+        val ex_z_bounded = thenHave(∃(z ∈ g, fst(z) === x)) by Tautology
+        val ex_z = have(∃(z, (z ∈ g) /\ (fst(z) === x))) by Restate.from(ex_z_bounded)
 
-        have((z ∈ g, fst(z) === x) |- (x, snd(z)) ∈ f) by Congruence.from(
-          lastStep,
-          Subset.membership of (x := g, y := f)
-        )
+        val witness_case = have((z ∈ g) /\ (fst(z) === x) |- (x, y) ∈ g) subproof {
+          assume((z ∈ g) /\ (fst(z) === x))
+          val z_in_g = have(z ∈ g) by Tautology
+          val fstz_eq_x = have(fst(z) === x) by Tautology
 
-        // Since `(x, snd(z)) ∈ f` and `(x, y) ∈ f` and `f` is functional, we must have
-        // `y = snd(z)`, i.e., `z = (x, y)`. Hence `(x, y) ∈ g`.
-        // have((z ∈ g, fst(z) === x) |- (y === snd(z)))
-         */
+          val z_in_f = have(z ∈ f) by Tautology.from(
+            Subset.membership of (z := z, x := g, y := f),
+            z_in_g
+          )
 
-        sorry
+          val z_pair = have(z === (fst(z), snd(z))) by Tautology.from(
+            inversion of (f := f, z := z),
+            z_in_f
+          )
+          val z_eq_xsnd = have(z === (x, snd(z))) by Congruence.from(z_pair, fstz_eq_x)
+
+          val xsnd_in_g = have((x, snd(z)) ∈ g) by Congruence.from(z_in_g, z_eq_xsnd)
+          val xsnd_in_f = have((x, snd(z)) ∈ f) by Tautology.from(
+            Subset.membership of (z := (x, snd(z)), x := g, y := f),
+            xsnd_in_g
+          )
+
+          val xy_in_f = have((x, y) ∈ f) by Hypothesis
+          val x_in_dom_f = have(x ∈ dom(f)) by Tautology.from(domainMembership of (f := f, x := x, y := y), xy_in_f)
+
+          val fx_eq_y = have(f(x) === y) by Tautology.from(
+            appDefinition of (f := f, x := x, y := y),
+            x_in_dom_f,
+            xy_in_f
+          )
+
+          val fx_eq_snd = have(f(x) === snd(z)) by Tautology.from(
+            appDefinition of (f := f, x := x, y := snd(z)),
+            x_in_dom_f,
+            xsnd_in_f
+          )
+
+          val y_eq_snd = have(y === snd(z)) by Congruence.from(fx_eq_y, fx_eq_snd)
+          val xy_eq_xsnd = have((x, y) === (x, snd(z))) by Congruence.from(y_eq_snd)
+          have((x, y) ∈ g) by Congruence.from(xsnd_in_g, xy_eq_xsnd)
+        }
+
+        val lifted = have(∃(z, (z ∈ g) /\ (fst(z) === x)) |- (x, y) ∈ g) by LeftExists(witness_case)
+        have((x, y) ∈ g) by Cut(ex_z, lifted)
       }
 
       val `<==` = have((x, y) ∈ g |- (x, y) ∈ f) by Tautology.from(Subset.membership of (z := (x, y), x := g, y := f))
@@ -499,7 +578,196 @@ object BasicTheorems extends lisa.Main {
     assume(function(f))
     assume(x ∉ dom(f))
 
-    sorry
+    val x_not_dom = have(x ∉ dom(f)) by Hypothesis
+
+    val Rext = f ∪ singleton((x, y))
+
+    // 1) R is a relation between Aext and Bext
+    val rel_between = have(relationBetween(Rext)(dom(f) ∪ singleton(x))(range(f) ∪ singleton(y))) subproof {
+      val f_rel_between = have(relationBetween(f)(dom(f))(range(f))) by Tautology.from(functionBetweenDomainRange)
+      val f_subset_domrange = thenHave(f ⊆ (dom(f) × range(f))) by Substitute(relationBetween.definition of (R := f, X := dom(f), Y := range(f)))
+
+      val dom_sub = have(dom(f) ⊆ (dom(f) ∪ singleton(x))) by Tautology.from(Union.leftSubset of (x := dom(f), y := singleton(x)))
+      val ran_sub = have(range(f) ⊆ (range(f) ∪ singleton(y))) by Tautology.from(Union.leftSubset of (x := range(f), y := singleton(y)))
+
+      val prod_sub = have((dom(f) × range(f)) ⊆ ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))) by Tautology.from(
+        CartesianProduct.monotonic of (A := dom(f), B := range(f), C := (dom(f) ∪ singleton(x)), D := (range(f) ∪ singleton(y))),
+        dom_sub,
+        ran_sub
+      )
+
+      val f_subset_ext_prod = have(f ⊆ ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))) by Tautology.from(
+        Subset.transitivity of (x := f, y := (dom(f) × range(f)), z := ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))),
+        f_subset_domrange,
+        prod_sub
+      )
+
+      val x_in_Aext = have(x ∈ (dom(f) ∪ singleton(x))) by Tautology.from(
+        Singleton.membership of (x := x, y := x),
+        Subset.membership of (x := singleton(x), y := (dom(f) ∪ singleton(x)), z := x),
+        Union.rightSubset of (x := dom(f), y := singleton(x))
+      )
+      val y_in_Bext = have(y ∈ (range(f) ∪ singleton(y))) by Tautology.from(
+        Singleton.membership of (x := y, y := y),
+        Subset.membership of (x := singleton(y), y := (range(f) ∪ singleton(y)), z := y),
+        Union.rightSubset of (x := range(f), y := singleton(y))
+      )
+
+      val xy_in_ext_prod = have((x, y) ∈ ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))) by Tautology.from(
+        CartesianProduct.membershipSufficientCondition of (A := (dom(f) ∪ singleton(x)), B := (range(f) ∪ singleton(y)), x := x, y := y),
+        x_in_Aext,
+        y_in_Bext
+      )
+
+      val singleton_subset_ext_prod = have(singleton((x, y)) ⊆ ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))) by Tautology.from(
+        Subset.leftSingleton of (x := (x, y), y := ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))),
+        xy_in_ext_prod
+      )
+
+      val R_subset_ext_prod = have(Rext ⊆ ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))) by Tautology.from(
+        Union.leftUnionSubset of (x := f, y := singleton((x, y)), z := ((dom(f) ∪ singleton(x)) × (range(f) ∪ singleton(y)))),
+        f_subset_ext_prod,
+        singleton_subset_ext_prod
+      )
+
+      have(thesis) by Tautology.from(
+        relationBetween.definition of (R := Rext, X := (dom(f) ∪ singleton(x)), Y := (range(f) ∪ singleton(y))),
+        R_subset_ext_prod
+      )
+    }
+
+    // 2) R is functional on Aext
+    val functional = have(∀(e1, e1 ∈ (dom(f) ∪ singleton(x)) ==> ∃!(e2, (e1, e2) ∈ Rext))) subproof {
+      have(e1 ∈ (dom(f) ∪ singleton(x)) ==> ∃!(e2, (e1, e2) ∈ Rext)) subproof {
+        // Fix an arbitrary e1 ∈ dom(f) ∪ {x}
+        assume(e1 ∈ (dom(f) ∪ singleton(x)))
+        val in_dom_or_singleton = have((e1 ∈ dom(f)) \/ (e1 ∈ singleton(x))) by Tautology.from(
+          Union.membership of (x := dom(f), y := singleton(x), z := e1)
+        )
+
+        val dom_case = have(e1 ∈ dom(f) |- ∃!(e2, (e1, e2) ∈ Rext)) subproof {
+          assume(e1 ∈ dom(f))
+
+          val f_subset_R = have(f ⊆ Rext) by Tautology.from(Union.leftSubset of (x := f, y := singleton((x, y))))
+          val forward = have((e1, e2) ∈ f |- (e1, e2) ∈ Rext) by Tautology.from(
+            Subset.membership of (x := f, y := Rext, z := (e1, e2)),
+            f_subset_R
+          )
+
+          val not_in_singleton = have((e1, e2) ∈ singleton((x, y)) |- ()) subproof {
+            assume((e1, e2) ∈ singleton((x, y)))
+            val pair_eq = have((e1, e2) === (x, y)) by Tautology.from(Singleton.membership of (x := (x, y), y := (e1, e2)))
+            val parts = have((e1 === x) /\ (e2 === y)) by Tautology.from(Pair.extensionality of (a := e1, b := e2, c := x, d := y), pair_eq)
+            val e1_eq_x = have(e1 === x) by Tautology.from(parts)
+            val e1_in_dom = have(e1 ∈ dom(f)) by Hypothesis
+            val x_in_dom_f = have(x ∈ dom(f)) by Congruence.from(e1_in_dom, e1_eq_x)
+            have(thesis) by Tautology.from(x_in_dom_f)
+          }
+
+          val backward = have((e1, e2) ∈ Rext |- (e1, e2) ∈ f) subproof {
+            assume((e1, e2) ∈ Rext)
+            have(((e1, e2) ∈ f) \/ ((e1, e2) ∈ singleton((x, y)))) by Tautology.from(
+              Union.membership of (x := f, y := singleton((x, y)), z := (e1, e2))
+            )
+            have((e1, e2) ∈ f) by Tautology.from(lastStep, not_in_singleton)
+          }
+
+          have((e1, e2) ∈ f <=> (e1, e2) ∈ Rext) by Tautology.from(forward, backward)
+          val equiv_forall = thenHave(∀(e2, (e1, e2) ∈ f <=> (e1, e2) ∈ Rext)) by RightForall
+
+          val unique_in_f0 = have(∃!(y, (e1, y) ∈ f)) by Tautology.from(functionUniqueAtDomain of (x := e1))
+          val unique_in_f = have(∃!(e2, (e1, e2) ∈ f)) by Restate.from(unique_in_f0)
+
+          val uniq_equiv = have(∃!(e2, (e1, e2) ∈ f) <=> ∃!(e2, (e1, e2) ∈ Rext)) by Tautology.from(
+            Quantifiers.uniqueExistentialEquivalenceDistribution of (P := λ(e2, (e1, e2) ∈ f), Q := λ(e2, (e1, e2) ∈ Rext)),
+            equiv_forall
+          )
+          have(∃!(e2, (e1, e2) ∈ Rext)) by Tautology.from(uniq_equiv, unique_in_f)
+        }
+
+        val singleton_case = have(e1 ∈ singleton(x) |- ∃!(e2, (e1, e2) ∈ Rext)) subproof {
+          assume(e1 ∈ singleton(x))
+          val e1_eq_x = have(e1 === x) by Tautology.from(Singleton.membership of (x := x, y := e1))
+
+          // Existence for x
+          val xy_in_singleton = have((x, y) ∈ singleton((x, y))) by Tautology.from(Singleton.membership of (x := (x, y), y := (x, y)))
+          val xy_in_R = have((x, y) ∈ Rext) by Tautology.from(
+            Union.membership of (x := f, y := singleton((x, y)), z := (x, y)),
+            xy_in_singleton
+          )
+          val existence = have(∃(e2, (x, e2) ∈ Rext)) subproof {
+            have((x, y) ∈ Rext) by Restate.from(xy_in_R)
+            thenHave(thesis) by RightExists
+          }
+
+          // Uniqueness for x
+          val uniqueness = have(∀(e2, ∀(T, ((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext) ==> (e2 === T)))) subproof {
+            have(((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext) ==> (e2 === T)) subproof {
+              assume(((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext))
+              val xe2_in_R = have((x, e2) ∈ Rext) by Tautology
+              val xT_in_R = have((x, T) ∈ Rext) by Tautology
+
+              val xe2_disj = have(((x, e2) ∈ f) \/ ((x, e2) ∈ singleton((x, y)))) by Tautology.from(
+                Union.membership of (x := f, y := singleton((x, y)), z := (x, e2)),
+                xe2_in_R
+              )
+              val xT_disj = have(((x, T) ∈ f) \/ ((x, T) ∈ singleton((x, y)))) by Tautology.from(
+                Union.membership of (x := f, y := singleton((x, y)), z := (x, T)),
+                xT_in_R
+              )
+
+              val not_in_f_1 = have((x, e2) ∈ f |- ()) by Tautology.from(
+                domainMembership of (f := f, x := x, y := e2),
+                x_not_dom
+              )
+              val not_in_f_2 = have((x, T) ∈ f |- ()) by Tautology.from(
+                domainMembership of (f := f, x := x, y := T),
+                x_not_dom
+              )
+
+              val xe2_in_singleton = have((x, e2) ∈ singleton((x, y))) by Tautology.from(xe2_disj, not_in_f_1)
+              val xT_in_singleton = have((x, T) ∈ singleton((x, y))) by Tautology.from(xT_disj, not_in_f_2)
+
+              val xe2_eq = have((x, e2) === (x, y)) by Tautology.from(Singleton.membership of (x := (x, y), y := (x, e2)), xe2_in_singleton)
+              val xT_eq = have((x, T) === (x, y)) by Tautology.from(Singleton.membership of (x := (x, y), y := (x, T)), xT_in_singleton)
+
+              val e2_eq_y = have(e2 === y) by Tautology.from(Pair.extensionality of (a := x, b := e2, c := x, d := y), xe2_eq)
+              val T_eq_y = have(T === y) by Tautology.from(Pair.extensionality of (a := x, b := T, c := x, d := y), xT_eq)
+              val y_eq_T = have(y === T) by Tautology.from(T_eq_y)
+              have(e2 === T) by Congruence.from(e2_eq_y, y_eq_T)
+          }
+          thenHave(thesis) by Generalize
+        }
+
+        val conj = have(∃(e2, (x, e2) ∈ Rext) /\ ∀(e2, ∀(T, ((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext) ==> (e2 === T)))) by RightAnd(existence, uniqueness)
+        val unique_x = thenHave(∃!(e2, (x, e2) ∈ Rext)) by Substitute(Quantifiers.existsOneAlternativeDefinition of (x := e2, P := λ(e2, (x, e2) ∈ Rext)))
+
+        // Transport back to e1 using e1 = x
+        val x_eq_e1 = have(x === e1) by Tautology.from(e1_eq_x)
+        val base = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (x, e2) ∈ Rext)) by Hypothesis
+        val transported = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (e1, e2) ∈ Rext)) by RightSubstEq.withParametersSimple(
+          List((x, e1)),
+          (Seq(T), ∃!(e2, (T, e2) ∈ Rext))
+        )(base)
+        have(∃!(e2, (e1, e2) ∈ Rext)) by Tautology.from(transported, x_eq_e1, unique_x)
+        }
+
+        val by_cases = have(((e1 ∈ dom(f)) \/ (e1 ∈ singleton(x))) |- ∃!(e2, (e1, e2) ∈ Rext)) by LeftOr(dom_case, singleton_case)
+        have(∃!(e2, (e1, e2) ∈ Rext)) by Cut(in_dom_or_singleton, by_cases)
+      }
+
+      thenHave(thesis) by RightForall
+    }
+
+    // Assemble functionBetween and conclude
+    val R_is_function_between = have(functionBetween(Rext)(dom(f) ∪ singleton(x))(range(f) ∪ singleton(y))) by Tautology.from(
+      functionBetween.definition of (f := Rext, A := (dom(f) ∪ singleton(x)), B := (range(f) ∪ singleton(y))),
+      rel_between,
+      functional
+    )
+
+    thenHave(∃(B, functionBetween(Rext)(dom(f) ∪ singleton(x))(B))) by RightExists
+    thenHave(thesis) by Substitute(functionOn.definition of (f := Rext, A := (dom(f) ∪ singleton(x))))
   }
 
 
