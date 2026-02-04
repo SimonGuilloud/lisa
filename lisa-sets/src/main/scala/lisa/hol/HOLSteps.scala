@@ -674,40 +674,18 @@ object HOLSteps extends lisa._HOL {
 
   }
 
-/*
   object INST extends ProofTactic {
     def apply(using proof: Proof)(inst: Seq[(TypedVar, Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
 
-      val h0 = prem.of(inst.map(_ := _): _*)
+      val h0 = prem.of(inst.map(_ := _)*)
       val h1 = inst.foldLeft(h0: ip.Fact)((acc, p) => 
         have( Discharge(have( HOLProofType(p._2) ))(acc) ) 
       )
-      have(DEF_RED.THM(h1))
-      /*
-      h0.statement.right.head match
-        case eqOne(r) =>
-          val def_red_r = have(DEF_RED(r)) // r === r2
-          def_red_r.statement.right.head match {
-            case `r` === r2 =>
-              val s0 = have((h1.statement.left ++ def_red_r.statement.left) |- eqOne(r)) by Weakening(h1)
-              val s1 = have((h1.statement.left ++ def_red_r.statement.left + (r === r2)) |- eqOne(r2)) by RightSubstEq.withParameters(List(r -> r2), F.lambda(x, eqOne(x)))(s0)
-              val s2 = have((h1.statement.left ++ def_red_r.statement.left) |- eqOne(r2)) by Cut(def_red_r, s1)
-              have(Clean.all(s2))
-            case fail === _ =>
-              throw new Exception(s"Was expecting an equation with left hand side $r but got $fail")
-            case _ =>
-              throw new Exception(s"Was expecting an equation as return of DEF_RED but got ${def_red_r.statement.right.head}")
-          }
-
-        case _ => 
-          throw new Exception(s"Was expecting an r === One but got ${h0.statement.right.head}")*/
-
-
-    }
-      
-        
+    }  
   }
 
+
+/*
   object INST_TYPE extends ProofTactic {
 
     def apply(using proof: Proof)(x: F.Variable, t:Expr[Ind], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{

@@ -216,7 +216,6 @@ object HOLStepsTests extends lisa.HOL {
     have(DEDUCT_ANTISYM_RULE(s1, s2))
   }
   
-/*
   
   println("start inst tests")
 
@@ -224,7 +223,6 @@ object HOLStepsTests extends lisa.HOL {
     have(p) by Sorry
     have(INST(Seq((p, q)), lastStep))
   }
-
   val test_inst_2 = HOLTheorem(q) {
     have(q) by Sorry
     have(INST(Seq((p, p=:=p)), lastStep))
@@ -249,7 +247,6 @@ object HOLStepsTests extends lisa.HOL {
     have(BETA(fun(x, y)*x))
     have(INST(Seq((x, z)), lastStep))
   }
-
   val test_inst_7 = HOLTheorem(fun(x, x)*z =:= z){
     have(fun(x, x)*x =:= x) by Sorry
     have(INST(Seq((x, z)), lastStep))
@@ -289,6 +286,7 @@ object HOLStepsTests extends lisa.HOL {
   }
 
 
+/*
   val test_inst_14 = HOLTheorem(fun(x, f*z) =:= fun(x, f*z)){
     val s0 = have(REFL(fun(x, v)))
     val s1 = have(INST(Seq((v, f*z)), s0))
@@ -297,6 +295,7 @@ object HOLStepsTests extends lisa.HOL {
 
   }
 
+*/
 
   // Those don't hold because they require alpha equivalence to conclude the proof.
 /*
@@ -311,7 +310,6 @@ object HOLStepsTests extends lisa.HOL {
     have(BETA(fun(x, fun(y, x))*x))
     have(INST(Seq((x, y)), lastStep))
   }
-*/
 
 */
 }
