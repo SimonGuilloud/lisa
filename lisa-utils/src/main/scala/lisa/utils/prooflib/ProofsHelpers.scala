@@ -67,7 +67,7 @@ trait ProofsHelpers {
 
   def have(using line: sourcecode.Line, file: sourcecode.File)(using proof: library.Proof)(v: proof.Fact | proof.ProofTacticJudgement) = v match {
     case judg: proof.ProofTacticJudgement => judg.validate(line, file)
-    case fact: proof.Fact @unchecked => HaveSequent(proof.sequentOfFact(fact)).by(using proof, line, file)(Restate(using library, proof)(fact))
+    case fact: proof.Fact @unchecked => HaveSequent(proof.sequentOfFact(fact)).by(using proof, line, file)(Weakening(using library, proof)(fact))
   }
 
   /**

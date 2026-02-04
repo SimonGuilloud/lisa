@@ -398,13 +398,12 @@ object VarsAndFunctions extends lisa.Main :
       given SetTheoryLibrary.type = SetTheoryLibrary
       val r = if false then apply2(t) else t match 
         case t: HOLTerm => 
-          t.getTypThmOrElseUpdate {
+          val thm = t.getTypThmOrElseUpdate {
             have(apply2(t))
           }
+          have(thm.statement) by Weakening(thm)
         case _ => 
-          apply2(t)
-      val r1 = have(r)
-      val r2 = have(r1.statement) by lisa.utils.prooflib.BasicStepTactic.Weakening(r1)
+          have(apply2(t))
     }
   }
 

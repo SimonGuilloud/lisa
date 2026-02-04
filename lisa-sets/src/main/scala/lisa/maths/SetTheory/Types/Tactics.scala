@@ -13,33 +13,33 @@ import lisa.maths.SetTheory.Base.Subset.{reflexivity, transitivity, doubleInclus
 import lisa.maths.SetTheory.Base.Union.{commutativity, leftUnionSubset}
 import lisa.maths.SetTheory.Cardinal.Predef.{isUniverse, universeOf, universeOfIsUniverse}
 import lisa.maths.SetTheory.Functions.Predef.*
-import TypingHelpers.*
+import TypingHelpers.{*}
 import TypingTheorems.{universeHierarchyPiClosureLeft, universeHierarchyPiClosureRight, subsetOfUniverse, piCovariance}
 import lisa.utils.prooflib.BasicStepTactic.*
 import lisa.automation.*
 
 object Tactics:
-  val x, y, z, A, B, C = variable[Ind]
+  val x, y, z, A, B, C: Variable[Ind] = variable[Ind]
   // Base term
-  private val e1, e2 = variable[Ind]
+  private val e1, e2: Variable[Ind] = variable[Ind]
 
   // Function
   private val e = variable[Ind >>: Ind]
 
   // Base type
-  private val T, T1 = variable[Ind]
+  private val T, T1: Variable[Ind] = variable[Ind]
 
   // Dependent type
-  private val T2, T2p = variable[Ind >>: Ind]
+  private val T2, T2p: Variable[Ind >>: Ind] = variable[Ind >>: Ind]
 
   // Proposition
-  private val Q, H = variable[Ind >>: Prop]
+  private val Q, H: Variable[Ind >>: Prop] = variable[Ind >>: Prop]
 
   // Type Universe
-  private val U, U1, U2 = variable[Ind]
+  private val U, U1, U2: Variable[Ind] = variable[Ind]
 
   // Proposition
-  private val p = variable[Prop]
+  private val p: Variable[Prop] = variable[Prop]
 
 
   object Typecheck extends ProofTactic:
@@ -81,7 +81,8 @@ object Tactics:
     def inferProof(using lib: SetTheoryLibrary.type, proof: lib.Proof)(localContext: Set[Expr[Prop]], tm: Expr[Ind]): proof.ProofTacticJudgement =
       import lib.*
       // println("Infer term:" + tm.toString())
-      TacticSubproof {
+      TacticSubproof { ip ?=>
+        ip.cleanAssumptions
         tm match
           // e1: Π(x:T1).T2, e2: T1 => e1(e2): T2(e2)
           case Sapp(func: Expr[Ind], tm2: Expr[Ind]) =>
@@ -158,7 +159,6 @@ object Tactics:
                 if tcf.arity != args.size then 
                   throw new IllegalArgumentException("computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments.")
                 val subst = (tcf.typ.args zip args).map((v, a) => (v := a))
-                println(tcf.justif.statement)
                 have(tm ∈ tcf.typ.outTyp.substitute(subst*) ++<< (() |- localContext)) by Tautology.from(tcf.justif.of(args*))
                 tcf.typ.outTyp.substitute(subst*)
             

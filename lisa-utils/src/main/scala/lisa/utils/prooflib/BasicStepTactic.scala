@@ -97,7 +97,7 @@ object BasicStepTactic {
       lazy val intersectedCutSet = rightSequent.left intersect leftSequent.right
 
       if (!cutSet.isEmpty)
-        if (cutSet.tail.isEmpty)
+        if (cutSet.tail.forall(F.isSame(_, cutSet.head)))
           Cut.withParameters(cutSet.head)(prem1, prem2)(bot)
         else
           proof.InvalidProofTactic("Inferred cut pivot is not a singleton set.")
@@ -799,7 +799,7 @@ object BasicStepTactic {
       lazy val quantified = K.forall(xK, phiK)
 
       if ((botK.left union botK.right).exists(_.freeVariables.contains(xK)))
-        proof.InvalidProofTactic("The variable x is free in the resulting sequent.")
+        proof.InvalidProofTactic(s"The variable `$xK` is free in the resulting sequent.")
       else if (!K.isSameSet(botK.left, premiseSequent.left))
         proof.InvalidProofTactic("Left-hand side of conclusion is not the same as left-hand side of premise.")
       else if (!K.isSameSet(botK.right + phiK, premiseSequent.right + quantified))

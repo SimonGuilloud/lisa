@@ -84,7 +84,14 @@ object TypingHelpers:
   // Type/Term abstraction λx:T.e <=> abs(T)(λx.e)
   
   private class TypeAssign_[+T <: Expr[Ind]](val x: T, val typ: Expr[Ind]) extends App[Ind, Prop](∈(x), typ)
-  opaque type TypeAssign[+T <: Expr[Ind]] <: (Expr[Prop] & {val x: T; val typ: Expr[Ind]}) = TypeAssign_[T]
+  opaque type TypeAssign[+T <: Expr[Ind]] <: Expr[Prop] = TypeAssign_[T]
+
+  extension [T <: Expr[Ind]] (vta: TypeAssign[T]) {
+    def vari: T = vta.x
+    def typ: Expr[Ind] = vta.typ
+  }
+
+
   object TypeAssign {
     def apply[T <: Expr[Ind]](x: T, typ: Expr[Ind]): TypeAssign[T] = new TypeAssign_(x, typ)
     def unapply[T](e:Expr[Prop]): Option[(Expr[Ind], Expr[Ind])] = 

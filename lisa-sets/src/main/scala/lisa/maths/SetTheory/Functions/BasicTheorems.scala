@@ -20,6 +20,8 @@ object BasicTheorems extends lisa.Main {
   private val e1, e2 = variable[Ind]
   private val S = variable[Ind]
   private val T, T1 = variable[Ind]
+  private val t, u = variable[Ind >>: Ind]
+  private val T2 = variable[Ind >>: Ind]
   private val P, Q = variable[Ind >>: Prop]
   // Function
   private val e = variable[Ind >>: Ind]
@@ -735,21 +737,21 @@ object BasicTheorems extends lisa.Main {
               val T_eq_y = have(T === y) by Tautology.from(Pair.extensionality of (a := x, b := T, c := x, d := y), xT_eq)
               val y_eq_T = have(y === T) by Tautology.from(T_eq_y)
               have(e2 === T) by Congruence.from(e2_eq_y, y_eq_T)
+            }
+            thenHave(thesis) by Generalize
           }
-          thenHave(thesis) by Generalize
-        }
 
-        val conj = have(∃(e2, (x, e2) ∈ Rext) /\ ∀(e2, ∀(T, ((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext) ==> (e2 === T)))) by RightAnd(existence, uniqueness)
-        val unique_x = thenHave(∃!(e2, (x, e2) ∈ Rext)) by Substitute(Quantifiers.existsOneAlternativeDefinition of (x := e2, P := λ(e2, (x, e2) ∈ Rext)))
+          val conj = have(∃(e2, (x, e2) ∈ Rext) /\ ∀(e2, ∀(T, ((x, e2) ∈ Rext) /\ ((x, T) ∈ Rext) ==> (e2 === T)))) by RightAnd(existence, uniqueness)
+          val unique_x = thenHave(∃!(e2, (x, e2) ∈ Rext)) by Substitute(Quantifiers.existsOneAlternativeDefinition of (x := e2, P := λ(e2, (x, e2) ∈ Rext)))
 
-        // Transport back to e1 using e1 = x
-        val x_eq_e1 = have(x === e1) by Tautology.from(e1_eq_x)
-        val base = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (x, e2) ∈ Rext)) by Hypothesis
-        val transported = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (e1, e2) ∈ Rext)) by RightSubstEq.withParametersSimple(
-          List((x, e1)),
-          (Seq(T), ∃!(e2, (T, e2) ∈ Rext))
-        )(base)
-        have(∃!(e2, (e1, e2) ∈ Rext)) by Tautology.from(transported, x_eq_e1, unique_x)
+          // Transport back to e1 using e1 = x
+          val x_eq_e1 = have(x === e1) by Tautology.from(e1_eq_x)
+          val base = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (x, e2) ∈ Rext)) by Hypothesis
+          val transported = have((x === e1, ∃!(e2, (x, e2) ∈ Rext)) |- ∃!(e2, (e1, e2) ∈ Rext)) by RightSubstEq.withParameters(
+            List((x, e1)),
+            (Seq(T), ∃!(e2, (T, e2) ∈ Rext))
+          )(base)
+          have(∃!(e2, (e1, e2) ∈ Rext)) by Tautology.from(transported, x_eq_e1, unique_x)
         }
 
         val by_cases = have(((e1 ∈ dom(f)) \/ (e1 ∈ singleton(x))) |- ∃!(e2, (e1, e2) ∈ Rext)) by LeftOr(dom_case, singleton_case)
@@ -803,7 +805,7 @@ object BasicTheorems extends lisa.Main {
     have(thesis) by RightImplies(prem)
   }
 
-  val functionalExtentionality2 = Theorem({ forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))) |- abs(A)(Gf) === abs(A)(Hf)}) {
+  val absBodyEq = Theorem({ forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))) |- abs(A)(Gf) === abs(A)(Hf)}) {
     assume(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))))
     val hyp = have(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x)))) by Hypothesis
 
@@ -830,7 +832,7 @@ object BasicTheorems extends lisa.Main {
         val xG_eq_xH = have((x, Gf(x)) === (x, Hf(x))) by Tautology.from(xH_eq_xG)
 
         val base_eq = have(((x, Gf(x)) === z, (x, Gf(x)) === (x, Hf(x))) |- (x, Gf(x)) === z) by Hypothesis
-        val xH_eq_z_from = have(((x, Gf(x)) === z, (x, Gf(x)) === (x, Hf(x))) |- (x, Hf(x)) === z) by RightSubstEq.withParametersSimple(
+        val xH_eq_z_from = have(((x, Gf(x)) === z, (x, Gf(x)) === (x, Hf(x))) |- (x, Hf(x)) === z) by RightSubstEq.withParameters(
           List(((x, Gf(x)), (x, Hf(x)))),
           (Seq(e1), e1 === z)
         )(base_eq)
@@ -844,7 +846,7 @@ object BasicTheorems extends lisa.Main {
         val xH_in_abs = thenHave((x, Hf(x)) ∈ abs(A)(Hf)) by Substitute(abs.definition of (T := A, e := Hf))
 
         val mem_base = have(((x, Hf(x)) ∈ abs(A)(Hf), (x, Hf(x)) === z) |- (x, Hf(x)) ∈ abs(A)(Hf)) by Hypothesis
-        val z_in_abs_from = have(((x, Hf(x)) ∈ abs(A)(Hf), (x, Hf(x)) === z) |- z ∈ abs(A)(Hf)) by RightSubstEq.withParametersSimple(
+        val z_in_abs_from = have(((x, Hf(x)) ∈ abs(A)(Hf), (x, Hf(x)) === z) |- z ∈ abs(A)(Hf)) by RightSubstEq.withParameters(
           List(((x, Hf(x)), z)),
           (Seq(e1), e1 ∈ abs(A)(Hf))
         )(mem_base)
@@ -866,6 +868,187 @@ object BasicTheorems extends lisa.Main {
     have(z ∈ abs(A)(Gf) <=> z ∈ abs(A)(Hf)) by Tautology.from(forward, backward)
     thenHave(thesis) by Extensionality
   }
+
+
+  val funcBetweenEqInFuncSpace = Theorem(functionBetween(f)(A)(B) <=> f ∈ (A ->: B)) {
+    val boundSet = 𝒫(A × ⋃({ (λ(e1, B))(a) | a ∈ A }))
+    val piPred = λ(
+      f,
+      (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
+        (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ (λ(e1, B))(a)))))
+    )
+    val piSet = { f ∈ boundSet | piPred(f) }
+
+    val piExpansionStep = have(
+      f ∈ piSet <=> f ∈ boundSet /\ piPred(f)
+    ) by Tautology.from(
+      lisa.maths.SetTheory.Base.Comprehension.membership of (x := f, y := boundSet, φ := piPred)
+    )
+
+    val `==>` = have(functionBetween(f)(A)(B) |- f ∈ (A ->: B)) subproof {
+      assume(functionBetween(f)(A)(B))
+
+      val functionalOnA = have(∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Tautology.from(functionBetween.definition)
+      val relBetween = have(relationBetween(f)(A)(B)) by Tautology.from(functionBetween.definition)
+      val fSubsetAxB = thenHave(f ⊆ (A × B)) by Substitute(relationBetween.definition of (R := f, X := A, Y := B))
+
+      val typingCheck = have(∀(e1, ∀(e2, (e1, e2) ∈ f ==> (e2 ∈ B)))) subproof {
+        have((e1, e2) ∈ f ==> (e2 ∈ B)) subproof {
+          assume((e1, e2) ∈ f)
+          val inAxB = have((e1, e2) ∈ (A × B)) by Tautology.from(
+            Subset.membership of (x := f, y := (A × B), z := (e1, e2)),
+            fSubsetAxB
+          )
+          have(e2 ∈ B) by Tautology.from(CartesianProduct.pairMembership of (x := e1, y := e2, A := A, B := B), inAxB)
+        }
+        thenHave(thesis) by Generalize
+      }
+
+      val AxBsubsetAxU = have((A × B) ⊆ (A × ⋃({ B | e1 ∈ A }))) subproof {
+        have(z ∈ (A × B) ==> z ∈ (A × ⋃({ B | e1 ∈ A }))) subproof {
+          assume(z ∈ (A × B))
+
+          val ex = have(∃(e1, ∃(e2, e1 ∈ A /\ (e2 ∈ B) /\ ((e1, e2) === z)))) by Tautology.from(
+            CartesianProduct.membershipNecessaryCondition of (A := A, B := B)
+          )
+
+          val witnessCase = have(e1 ∈ A /\ (e2 ∈ B) /\ ((e1, e2) === z) |- z ∈ (A × ⋃({ B | e1 ∈ A }))) subproof {
+            assume(e1 ∈ A /\ (e2 ∈ B) /\ ((e1, e2) === z))
+            val e1InA = have(e1 ∈ A) by Tautology
+            val e2InB = have(e2 ∈ B) by Tautology
+            val pairEq = have((e1, e2) === z) by Tautology
+
+            val BInFam = have(B ∈ { B | e1 ∈ A }) by Tautology.from(
+              Replacement.map of (x := e1, A := A, F := λ(e1, B)),
+              e1InA
+            )
+
+            val conj = have((e2 ∈ B) /\ (B ∈ { B | e1 ∈ A })) by RightAnd(e2InB, BInFam)
+            val exFam = thenHave(∃(T, (e2 ∈ T) /\ (T ∈ { B | e1 ∈ A }))) by RightExists
+            val e2InU = have(e2 ∈ ⋃({ B | e1 ∈ A })) by Tautology.from(unionAxiom of (x := { B | e1 ∈ A }, z := e2), exFam)
+
+            val pairInAxU = have((e1, e2) ∈ (A × ⋃({ B | e1 ∈ A }))) by Tautology.from(
+              CartesianProduct.membershipSufficientCondition of (A := A, B := ⋃({ B | e1 ∈ A }), x := e1, y := e2),
+              e1InA,
+              e2InU
+            )
+            have(z ∈ (A × ⋃({ B | e1 ∈ A }))) by Congruence.from(pairInAxU, pairEq)
+          }
+
+          val lifted1 = have(∃(e2, e1 ∈ A /\ (e2 ∈ B) /\ ((e1, e2) === z)) |- z ∈ (A × ⋃({ B | e1 ∈ A }))) by LeftExists(witnessCase)
+          val lifted = have(∃(e1, ∃(e2, e1 ∈ A /\ (e2 ∈ B) /\ ((e1, e2) === z))) |- z ∈ (A × ⋃({ B | e1 ∈ A }))) by LeftExists(lifted1)
+          have(z ∈ (A × ⋃({ B | e1 ∈ A }))) by Cut(ex, lifted)
+        }
+        thenHave(∀(z, z ∈ (A × B) ==> z ∈ (A × ⋃({ B | e1 ∈ A })))) by RightForall
+        thenHave(thesis) by Substitute(⊆.definition of (x := (A × B), y := (A × ⋃({ B | e1 ∈ A }))))
+      }
+
+      val fSubsetAxU = have(f ⊆ (A × ⋃({ B | e1 ∈ A }))) by Tautology.from(
+        Subset.transitivity of (x := f, y := (A × B), z := (A × ⋃({ B | e1 ∈ A }))),
+        fSubsetAxB,
+        AxBsubsetAxU
+      )
+
+      val boundaryCheck = have(f ∈ 𝒫(A × ⋃({ B | e1 ∈ A }))) by Tautology.from(
+        PowerSet.membership of (x := f, y := (A × ⋃({ B | e1 ∈ A }))),
+        fSubsetAxU
+      )
+
+      val expanded = have(
+        f ∈ 𝒫(A × ⋃({ B | e1 ∈ A })) /\
+          (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
+          (∀(e1, ∀(e2, (e1, e2) ∈ f ==> (e2 ∈ B))))
+      ) by Tautology.from(boundaryCheck, functionalOnA, typingCheck)
+
+      val expandedAbs = have(
+        f ∈ boundSet /\
+          (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
+          (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ (λ(e1, B))(a)))))
+      ) by Restate.from(expanded)
+
+      have(f ∈ piSet) by Tautology.from(expandedAbs, piExpansionStep)
+
+      thenHave(thesis) by Substitute(Pi.definition of (T1 := A, T2 := λ(e1, B)))
+    }
+
+    val `<==` = have(f ∈ (A ->: B) |- functionBetween(f)(A)(B)) subproof {
+      assume(f ∈ (A ->: B))
+      thenHave(f ∈ piSet) by Substitute(Pi.definition of (T1 := A, T2 := λ(e1, B)))
+ 
+      val expandedAbs = have(
+        f ∈ boundSet /\
+          (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
+          (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ (λ(e1, B))(a)))))
+      ) by Tautology.from(
+        piExpansionStep,
+        lastStep
+      )
+
+      val expanded = have(
+        f ∈ 𝒫(A × ⋃({ B | e1 ∈ A })) /\
+          (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
+          (∀(e1, ∀(e2, (e1, e2) ∈ f ==> (e2 ∈ B))))
+      ) by Restate.from(expandedAbs)
+
+      val boundaryCheckAbs = have(f ∈ 𝒫(A × ⋃({ (λ(e1, B))(a) | a ∈ A }))) by Weakening(expandedAbs)
+      val functionalOnA = have(∀(x ∈ A, ∃!(y, (x, y) ∈ f))) by Weakening(expanded)
+      val typingCheck = have(∀(e1, ∀(e2, (e1, e2) ∈ f ==> (e2 ∈ B)))) by Weakening(expanded)
+
+      val fSubsetAxU = have(f ⊆ (A × ⋃({ (λ(e1, B))(a) | a ∈ A }))) by Tautology.from(
+        PowerSet.membership of (x := f, y := (A × ⋃({ (λ(e1, B))(a) | a ∈ A }))),
+        boundaryCheckAbs
+      )
+
+      val fSubsetAxB = have(f ⊆ (A × B)) subproof {
+        have(z ∈ f ==> z ∈ (A × B)) subproof {
+          assume(z ∈ f)
+          val zInF = have(z ∈ f) by Hypothesis
+          val zInAxU = have(z ∈ (A × ⋃({ (λ(e1, B))(a) | a ∈ A }))) by Tautology.from(
+            Subset.membership of (x := f, y := (A × ⋃({ (λ(e1, B))(a) | a ∈ A })), z := z),
+            fSubsetAxU
+          )
+
+          val inv = have(∃(e1, ∃(e2, e1 ∈ A /\ (e2 ∈ ⋃({ (λ(e1, B))(a) | a ∈ A })) /\ ((e1, e2) === z)))) by Tautology.from(
+            CartesianProduct.membershipNecessaryCondition of (A := A, B := ⋃({ (λ(e1, B))(a) | a ∈ A })),
+            zInAxU
+          )
+
+          val witnessCase = have(e1 ∈ A /\ (e2 ∈ ⋃({ (λ(e1, B))(a) | a ∈ A })) /\ ((e1, e2) === z) |- z ∈ (A × B)) subproof {
+            assume(e1 ∈ A /\ (e2 ∈ ⋃({ (λ(e1, B))(a) | a ∈ A })) /\ ((e1, e2) === z))
+            val e1InA = have(e1 ∈ A) by Tautology
+            val pairEq = have((e1, e2) === z) by Tautology
+
+            val pairInF = have((e1, e2) ∈ f) by Congruence.from(zInF, pairEq)
+            val imp1 = have(∀(e2, (e1, e2) ∈ f ==> (e2 ∈ B))) by InstantiateForall(e1)(typingCheck)
+            val imp2 = thenHave((e1, e2) ∈ f ==> (e2 ∈ B)) by InstantiateForall(e2)
+            val e2InB = have(e2 ∈ B) by Tautology.from(imp2, pairInF)
+
+            val pairInAxB = have((e1, e2) ∈ (A × B)) by Tautology.from(
+              CartesianProduct.membershipSufficientCondition of (A := A, B := B, x := e1, y := e2),
+              e1InA,
+              e2InB
+            )
+            have(z ∈ (A × B)) by Congruence.from(pairInAxB, pairEq)
+          }
+
+          val lifted1 = have(∃(e2, e1 ∈ A /\ (e2 ∈ ⋃({ (λ(e1, B))(a) | a ∈ A })) /\ ((e1, e2) === z)) |- z ∈ (A × B)) by LeftExists(witnessCase)
+          val lifted = have(∃(e1, ∃(e2, e1 ∈ A /\ (e2 ∈ ⋃({ (λ(e1, B))(a) | a ∈ A })) /\ ((e1, e2) === z))) |- z ∈ (A × B)) by LeftExists(lifted1)
+          have(z ∈ (A × B)) by Cut(inv, lifted)
+        }
+
+        thenHave(∀(z, z ∈ f ==> z ∈ (A × B))) by RightForall
+        thenHave(thesis) by Substitute(⊆.definition of (x := f, y := (A × B)))
+      }
+
+      val relBetween = have(relationBetween(f)(A)(B)) by Tautology.from(
+        fSubsetAxB,
+        relationBetween.definition of (R := f, X := A, Y := B)
+      )
+      have(thesis) by Tautology.from(functionBetween.definition, functionalOnA, relBetween)
+    }
+
+    have(thesis) by Tautology.from(`==>`, `<==`)
+  } 
 
 
 
