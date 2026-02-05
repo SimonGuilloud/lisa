@@ -98,7 +98,9 @@ object TypingHelpers:
       if e.isInstanceOf[TypeAssign_[Expr[Ind]]] then 
         val vta = e.asInstanceOf[TypeAssign_[Expr[Ind]]]
         Some((vta.x, vta.typ))
-      else None
+        else e match
+          case x ∈ typ => Some((x.asInstanceOf[Expr[Ind]], typ))
+          case _ => None
   }
   object VarTypeAssign:
     def unapply(e:Expr[Prop]): Option[(Variable[Ind], Expr[Ind])] = e match

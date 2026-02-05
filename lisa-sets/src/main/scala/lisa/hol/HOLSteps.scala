@@ -262,7 +262,7 @@ object HOLSteps extends lisa._HOL {
     )
   }
 
-  val etaConv = Theorem((f :: (A ->: B)) |- holeq(A ->: B) * (abs(A)(λ(x, f*x))) * f) {
+  val etaConv = Theorem((f :: (A ->: B)) |- holeq(A ->: B) * (fun(x, f*x)) * f) {
     val lam = λ(x, f*x)
     assume(f :: (A ->: B))
     
@@ -334,6 +334,12 @@ object HOLSteps extends lisa._HOL {
             if isSame(aa, ab) then
               (s1.left ++ s2.left).foreach(assume(_))
               val p0 = have(s1) by Weakening(t1)
+              println("\n")
+              println(s"ta: $ta")
+              println(s"s: $s")
+              println(s"u: $u")
+              computeType(ta)
+              computeType(u)
               val r0 = have(((s :: aa), (ta :: aa), (u :: aa), (ta =:= u) === One) |- (s =:= u) === One) by Cut(p0, eqTrans of (x := s, y := ta, z := u, A := aa))
               val r1 = have(((s :: aa), (ta :: aa), (u :: aa)) |- (s =:= u) === One) by Cut(t2, r0)
               val r2 = have(Discharge(have(HOLProofType(s)))(r1))
@@ -497,7 +503,7 @@ object HOLSteps extends lisa._HOL {
           val typ2 = computeType(tin)
           val T = variable[Ind]
           val vx = TypedVar(xx.id, typ1)
-          val s1 = have((r :: typ1, tforall(vx, tt::typ2)) |- (holeq(typ2)*(abs(typ1)(λ(vx, tt)) * r)*tt.substitute(vx := r))) by Weakening(betaConv of (A := typ1, B := typ2, t := λ(vx, tt), x := r))
+          val s1 = have((r :: typ1, tforall(vx, tt::typ2)) |- (holeq(typ2)*(fun(vx, tt) * r)*tt.substitute(vx := r))) by Weakening(betaConv of (A := typ1, B := typ2, t := λ(vx, tt), x := r))
           val ttyp = have(HOLProofType(tt))
           thenHave(lastStep.statement.left.filterNot(isSame(_, vx::typ1)) |- (vx :: typ1) ==> (tt::typ2)) by Weakening
           thenHave(lastStep.statement.left |- tforall(vx, tt::typ2)) by RightForall
@@ -676,7 +682,6 @@ object HOLSteps extends lisa._HOL {
 
   object INST extends ProofTactic {
     def apply(using proof: Proof)(inst: Seq[(TypedVar, Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
-
       val h0 = prem.of(inst.map(_ := _)*)
       val h1 = inst.foldLeft(h0: ip.Fact)((acc, p) => 
         have( Discharge(have( HOLProofType(p._2) ))(acc) ) 

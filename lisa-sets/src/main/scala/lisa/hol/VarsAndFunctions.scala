@@ -127,6 +127,9 @@ object VarsAndFunctions extends lisa.Main :
       case funcType => throw new IllegalArgumentException("Function " + func + " expected to have function type A ->: B, but has type " + funcType + ". ")
     }
 
+    override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): HOLApplication = 
+      new HOLApplication(func.substituteUnsafe(m), arg.substituteUnsafe(m))
+
   }
 
   class TypedVar( id: Identifier, val typ: Typ ) extends Variable[Ind](id) with TypedHOLTerm {
@@ -148,6 +151,14 @@ object VarsAndFunctions extends lisa.Main :
 
   class HOLAbstraction(x: TypedVar, body: Expr[Ind]) extends App[Ind >>: Ind, Ind](abs(x.typ), (λ(x, body))) with TypedHOLTerm {
     val typ = x.typ ->: computeType(body)
+
+    override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): HOLAbstraction = 
+      lazy val frees = m.values.flatMap(_.freeVars).toSet
+      if m.keySet.contains(x) || frees.contains(x) then
+        // rename
+        val v1: TypedVar = TypedVar(freshId(frees.map(_.id), x.id), x.typ)
+        new HOLAbstraction(v1, body.substituteUnsafe(m.updated(x, v1)))
+      else new HOLAbstraction(x, body.substituteUnsafe(m))
   }
 
   def fun(v: TypedVar, b: Expr[Ind]): Expr[Ind] = HOLAbstraction(v, b)
@@ -157,13 +168,32 @@ object VarsAndFunctions extends lisa.Main :
     val r = t match 
       case tv: TypedVar => tv.typ
       case tc: TypedConstant => tc.typ
-      case #@[Ind >>: Ind, Ind](#@[Ind, (Ind >>: Ind) >>: Ind](`abs`, base), Abs(v: TypedVar, b)) => 
-        v.typ ->: computeType(b)
+      case #@[Ind >>: Ind, Ind](#@[Ind, (Ind >>: Ind) >>: Ind](`abs`, base), Abs(v, b)) => 
+        base ->: computeType(b)
       case App(App(`app`, func), arg) => 
         computeType(func) match 
           case dom ->: codom => 
-            if computeType(arg) == dom then codom
-            else throw new IllegalArgumentException("In application " + t + ", argument " + arg + " has type " + computeType(arg) + " instead of expected " + dom + ".")
+            if isSame(computeType(arg), dom) then codom
+            else 
+              val atype = computeType(arg)
+              println(dom.structuralToString)
+              println(atype.structuralToString)
+              println("atype == dom: " + (atype == dom))
+              println("atype class: " + atype.getClass)
+              println("dom class: " + dom.getClass)
+              val atypeA = atype.asInstanceOf[App[?, ?]]
+              val domA = dom.asInstanceOf[App[?, ?]]
+              val atype_f = atypeA.f
+              val dom_f = domA.f
+              val atype_arg = atypeA.arg
+              val dom_arg = domA.arg
+              println(s"atype f: ${atype_f.structuralToString}")
+              println(s"dom f: ${dom_f.structuralToString}")
+              println(s"atype arg: ${atype_arg.structuralToString}")
+              println(s"dom arg: ${dom_arg.structuralToString}")
+
+              
+              throw new IllegalArgumentException("In application " + t + ", argument " + arg + " has type " + computeType(arg) + " instead of expected " + dom + ".")
           case funcType => throw new IllegalArgumentException("In application " + t + ", function " + func + " expected to have function type A ->: B, but has type " + funcType + ". ")
       case Multiapp(func, args: List[Expr[Ind]] @unchecked) => 
         func match
@@ -256,9 +286,10 @@ object VarsAndFunctions extends lisa.Main :
           var vartypes = List.empty[TypeAssign[Variable[Ind]]]
           var prems = Set.empty[Expr[Ind]]
           s.left.foreach {a => a match 
-            case TypeAssign[Variable[Ind]](_, _)  => vartypes = a.asInstanceOf[TypeAssign[Variable[Ind]]] :: vartypes
+            case TypeAssign[Variable[Ind]](v: TypedVar, typ)  => v :: vartypes
+            case TypeAssign[Variable[Ind]](v: Variable[Ind], typ)  => TypedVar(v.id, typ) :: vartypes
             case eqOne(t) => prems = prems + t
-            case _ => throw new IllegalArgumentException("Premises must be of the form t === One, be a type assignment or an abstraction definition.")
+            case _ => throw new IllegalArgumentException("Premises must be of the form t === One or be a type assignment. violating: " + a)
           }
           new HOLSequent(prems.toSet, t, vartypes.toSet)
         case _ => 
@@ -302,6 +333,8 @@ object VarsAndFunctions extends lisa.Main :
   def tforall(v: TypedVar, prop: Expr[Prop]): TypedForall = TypedForall(v, prop)
   inline given Conversion[TypedForall, Expr[Prop]] with
     def apply(tf: TypedForall): Expr[Prop] = tf
+
+
 
 
 

@@ -25,8 +25,8 @@ object HOLStepsTests extends lisa.HOL {
 
   println("pretests")
 
-  // REFL
 
+  // REFL
 
   // _TRANS
 
@@ -227,7 +227,7 @@ object HOLStepsTests extends lisa.HOL {
     have(q) by Sorry
     have(INST(Seq((p, p=:=p)), lastStep))
   }
-  
+
   val test_inst_3 = HOLTheorem(p =:= p){
     have(p =:= q) by Sorry
     have(INST(Seq((q, p)), lastStep))
@@ -261,7 +261,8 @@ object HOLStepsTests extends lisa.HOL {
     have(BETA(fun(x, fun(y, x))*x))
     have(INST(Seq((x, z)), lastStep))
   }
-  
+
+
   val test_inst_10 = HOLTheorem(fun(x, fun(y, y) =:= fun(y, x))*z =:= (fun(y, y) =:= fun(y, z))){
     have(BETA(fun(x, fun(y, y) =:= fun(y, x))*x))
     have(INST(Seq((x, z)), lastStep))
@@ -286,7 +287,6 @@ object HOLStepsTests extends lisa.HOL {
   }
 
 
-/*
   val test_inst_14 = HOLTheorem(fun(x, f*z) =:= fun(x, f*z)){
     val s0 = have(REFL(fun(x, v)))
     val s1 = have(INST(Seq((v, f*z)), s0))
@@ -295,7 +295,7 @@ object HOLStepsTests extends lisa.HOL {
 
   }
 
-*/
+
 
   // Those don't hold because they require alpha equivalence to conclude the proof.
 /*
