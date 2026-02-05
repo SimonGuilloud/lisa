@@ -16,12 +16,12 @@ trait _HOL extends BasicMain {
   export F.{=== as _, ≠ as _, *, given}
   export lisa.maths.SetTheory.Functions.Predef.{*}
   export lisa.maths.SetTheory.Types.TypingHelpers.{main => _, *, given}
-  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, typedvar, computeType, eqOne, computeContextOfFormulas, computeContext, fun,
+  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, computeType, eqOne, computeContextOfFormulas, contextToMap, TypingContext, relevantContext,
                                     eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, 
                                     given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
                                     given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
   export lisa.maths.SetTheory.Types.Tactics.Typecheck.*
-  val library = SetTheoryLibrary
+  val library: SetTheoryLibrary.type = SetTheoryLibrary
 
 
 
@@ -33,9 +33,9 @@ trait _HOL extends BasicMain {
     val ctx = computeContextOfFormulas(s.left ++ s.right).toSet
     s ++<< (ctx |- ())
 
-
-  def HOLTheorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
-    val ctx = computeContext(statement.freeTermVars.toSet)
+  // HOLTheorem is now just an alias for regular Theorem since types are managed externally
+  def HOLTheorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File, context: TypingContext)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
+    val ctx = relevantContext(statement, context)
     SetTheoryLibrary.Theorem(statement ++<< (ctx |- ()))(computeProof)
 
 }
@@ -43,7 +43,7 @@ trait _HOL extends BasicMain {
 
 trait HOL extends _HOL {
   //export lisa.hol.HOLSteps.*
-  export SetTheoryLibrary.{library => _, given, _}
+  export SetTheoryLibrary.{library => _, have => _, given, _}
   export lisa.utils.prooflib.BasicStepTactic.*
   export lisa.utils.prooflib.SimpleDeducedSteps.*
 
@@ -51,6 +51,22 @@ trait HOL extends _HOL {
   export lisa.automation.Substitution
   export lisa.automation.Tableau
 
+  def HOLassume(using proof: library.Proof, context: TypingContext)(t: Expr[Ind]): proof.ProofStep =
+    val f = eqOne(t)
+    library.assume(f)
+    val ctx = relevantContext(t, context)
+    //ctx.foreach(ta => assume(ta))
+    library.have((ctx |- f) +<<  f) by Restate
+
+
+  def have(using proof: library.Proof, context: TypingContext)(res: Sequent): HaveSequent = 
+    val ctx = relevantContext(res, context)
+    HaveSequent(res ++<< (ctx |- ()))
+
+  def have(using line: sourcecode.Line, file: sourcecode.File)(using proof: library.Proof)(v: proof.Fact | proof.ProofTacticJudgement) = v match {
+    case judg: proof.ProofTacticJudgement => judg.validate(line, file)
+    case fact: proof.Fact @unchecked => HaveSequent(proof.sequentOfFact(fact)).by(using proof, line, file)(Weakening(using library, proof)(fact))
+  }
 
 
 }

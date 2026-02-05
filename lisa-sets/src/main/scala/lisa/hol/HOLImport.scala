@@ -211,7 +211,8 @@ object HOLImport extends lisa.HOL {
             val tpe = toLisaType(typ)
             val freeTypes = tpe.freeVariables.toSeq
             // TODO: special case freeTypes.isEmpty
-            val context = computeContext(Set(term))
+            // Context is now empty - types are managed through explicit declarations
+            val context = (Set.empty[TypeAssign[Variable[Ind]]], Set.empty)
             // we need to check the set of declared abstractions in this term, and totally order and quantify over them
             val orderedAbstractions: List[Variable] =
               val abstractions = context._2
