@@ -6,7 +6,6 @@ In this project, we develop arithmetic in the Lisa proof assistant, based on set
 - Every other folder of the project is off limits and must be left untouched.
 
 We are using the library of Isabelle/HOL as a reference for our arithmetic development. The Isabelle/HOL library is located at: `IsabelleHOL/`.
-We are using the library of Isabelle/HOL as a reference for our arithmetic development. The Isabelle/HOL library is located at: [IsabelleHOL/].
 
 Reference policy:
 - Use Isabelle/FOL for definition of arithmetic and the basic 'API'.
