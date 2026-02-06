@@ -10,17 +10,16 @@ import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 import lisa.SetTheoryLibrary
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
 import lisa.maths.SetTheory.Types.TypingHelpers.{*}
-//import lisa.hol.VarsAndFunctions.HOLSequent.toHOLSequent
 import lisa.maths.SetTheory.Base.Predef.{pair, ∅, singleton, unorderedPair, ∈ }
 import lisa.maths.SetTheory.Base.CartesianProduct.cartesianProduct
 import lisa.maths.SetTheory.Base.Pair.{snd}
 import lisa.maths.SetTheory.Functions.Predef.{*, given}
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
-
 import scala.annotation.targetName
-//import lisa.utils.unification.UnificationUtils.matchTerm
 
 object VarsAndFunctions extends lisa.Main :
+  
+  import HOLHelperTheorems.{Bool, `0 : 𝔹`, `1 : 𝔹`, Zero, One, zero_in_B, boolNonEmpty, 𝔹}
 
   // import TypeSystem.*
 
@@ -28,46 +27,7 @@ object VarsAndFunctions extends lisa.Main :
   val x, y, z = variable[Ind]
   val a = variable[Ind]
   val A, B = variable[Ind]
-  val any = DEF(λ(x, ⊤))
   val G, H = variable[Ind >>: Ind]
-
-
-  // A ->: B is the set of functions from A to B
-  private val Bool: Constant[Ind] = {
-    val 𝔹 = DEF(unorderedPair(∅, singleton(∅)))
-    𝔹
-  }
-
-  val `0 : 𝔹` = Theorem(∅ :: Bool) {
-    have(∅ :: unorderedPair(∅, singleton(∅))) by Tautology.from(pairAxiom of (z := ∅, x := ∅, y := singleton(∅)))
-    thenHave(thesis) by Substitute(Bool.definition)
-  }
-
-  val `1 : 𝔹` = Theorem(singleton(∅) :: Bool) {
-    have(singleton(∅) :: unorderedPair(∅, singleton(∅))) by Tautology.from(pairAxiom of (z := singleton(∅), x := ∅, y := singleton(∅)))
-    thenHave(thesis) by Substitute(Bool.definition)
-  }
-
-  val Zero: TypedConstant = {
-    val Zero = DEF(∅)
-    val Zero_in_B = Theorem(Zero :: Bool) {
-      have(thesis) by Substitute(Zero.definition)(`0 : 𝔹`)
-    }
-    Zero.typedWith(Bool)(Zero_in_B)
-  }
-
-  val One: TypedConstant = {
-    val One = DEF(singleton(∅))
-    val One_in_B = Theorem(One :: Bool) {
-      have(thesis) by Substitute(One.definition)(`1 : 𝔹`)
-    }
-    One.typedWith(Bool)(One_in_B)
-  }
-
-  val zero_in_B = Theorem(Zero :: Bool) {
-    have(Zero :: Bool) by Typecheck.prove
-  }
-
 
 
 
@@ -82,65 +42,49 @@ object VarsAndFunctions extends lisa.Main :
     Identifier("$λ", counter)
   }
 
-  class HOLConstant(id: Identifier, override val typ: Expr[Ind], val thm: JUSTIFICATION) extends TypedConstant(id, typ, thm)
 
-  type HOLTerm = TypedConstant
+  class TypeVariable(id: Identifier) extends Variable[Ind](id)
+  def typevar(using name: sourcecode.Name): TypeVariable = TypeVariable(K.Identifier(name.value))
+  class HOLConstantType(id: Identifier, val nonEmptyThm: JUSTIFICATION) extends Constant[Ind](id)
+  class HOLConstant(id: Identifier, override val typ: Expr[Ind], val thm: JUSTIFICATION) extends TypedConstant(id, typ, thm)
+  class TypedVariable(id: Identifier, val typ: Expr[Ind]) extends Variable[Ind](id) {
+    override def toString: String = s"${id.name}:${typ}"
+    override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): Expr[Ind] = 
+      if m.contains(this) then
+        m(this).asInstanceOf[Expr[Ind]]
+      else 
+        val newtyp = typ.substituteUnsafe(m)
+        TypedVariable(id, newtyp).asInstanceOf[Expr[Ind]]
+  }
+  def typedvar(typ: Expr[Ind])(using name: sourcecode.Name): TypedVariable = TypedVariable(name.value, typ)
 
   def fun(v: TypeAssign[Variable[Ind]], b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.vari, b))
 
-  type TypingContext = Map[Variable[Ind], Typ]
-  type TypevarContext = Set[Variable[Ind]]
-
-  def relevantTypeContext(t: LisaObject, context: TypingContext): Set[TypeAssign[Variable[Ind]]] = 
-    val varsInT = t.freeVars
-    context.filter((v, _) => varsInT.contains(v)).map((v, typ) => TypeAssign(v, typ)).toSet
-
-  def relevantTypevarContext(lo: LisaObject, typevars: TypevarContext): Set[Variable[Ind]] =
-    val varsInT = lo.freeVars
-    typevars.filter(tv => varsInT.contains(tv))
-
-  def relevantContext(t: LisaObject, context: TypingContext, typevars: TypevarContext): Set[Expr[Prop]] = 
-    relevantTypeContext(t, context) ++ relevantTypevarContext(t, typevars).map(tv => 
-      val v = Variable[Ind](K.Identifier("x", tv.id.no+1))
-      exists(v, v ∈ tv)
-    )
-  
-  def relevantAssumptions(lo: LisaObject)(using context: TypingContext, typevars: TypevarContext): Set[Expr[Prop]] = 
-    relevantContext(lo, context, typevars) ++ relevantTypeContext(lo, context).map(ta => ta.vari :: ta.typ)
-
-  def typeVarsFromType(typ: Typ): Set[Variable[Ind]] = 
-    typ match 
-      case v: Variable[Ind] => Set(v)
-      case A ->: B => typeVarsFromType(A) ++ typeVarsFromType(B)
-      case _ => Set.empty
+  def getContext(lo: LisaObject): Set[Expr[Prop]] = 
+    val frees = lo.freeVars
+    frees.flatMap {
+      case v: TypedVariable => Set(v is v.typ)
+      case v: TypeVariable => 
+        val vv = if v.id.name == "x" then Variable[Ind](K.Identifier("x", v.id.no+1)) else Variable[Ind]("x")
+        Set(exists(vv, vv ∈ v))
+      case v => Set.empty
+    }
 
   def nonEmpty(typ: Variable[Ind]): Expr[Prop] = 
     val v = if typ.id.name == "x" then Variable[Ind](K.Identifier("x", typ.id.no+1)) else Variable[Ind]("x")
-    exists(v, v ∈ typ)
-/*
-  def getTypes(t: Expr[Ind]): Set[Expr[Ind]] = t match 
-    case v: Variable[Ind] => Set()
-    case tc: TypedConstant => Set(tc.typ)
-    case #@[Ind >>: Ind, Ind](#@[Ind, (Ind >>: Ind) >>: Ind](`abs`, base), Abs(v, b)) => 
-      getTypes(b) + base
-    case App(App(`app`, func), arg) => 
-      getTypes(func) ++ getTypes(arg)
-    case Multiapp(func, args: List[Expr[Ind]] @unchecked) => 
-      args.toSet
-    case _ => throw new IllegalArgumentException("computeTypes only support fully typed terms. " + t + " is not fully typed.")
-*/   
+    exists(v, v ∈ typ)  
 
-  def computeType(t: Expr[Ind], context: TypingContext): Typ = 
+  def computeType(t: Expr[Ind]): Typ = 
     val r = t match 
-      case v: Variable[Ind] => 
-        context.getOrElse(v, throw new IllegalArgumentException(s"Variable $v not found in typing context"))
+      case tv: TypedVariable => 
+        tv.typ
       case tc: TypedConstant => tc.typ
       case #@[Ind >>: Ind, Ind](#@[Ind, (Ind >>: Ind) >>: Ind](`abs`, base), Abs(v, b)) => 
-        base ->: computeType(b, context.updated(v, base))
+        base ->: computeType(b)
       case App(App(`app`, func), arg) => 
-        computeType(func, context) match 
+        computeType(func) match 
           case dom ->: codom => 
-            val argType = computeType(arg, context)
+            val argType = computeType(arg)
             if isSame(argType, dom) then codom
             else 
               throw new IllegalArgumentException("In application " + t + ", argument " + arg + " has type " + argType + " instead of expected " + dom + ".")
@@ -152,7 +96,7 @@ object VarsAndFunctions extends lisa.Main :
               throw new IllegalArgumentException("computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments.")
             if args.zip(tcf.typ.inTyp).forall((arg, inType) => inType match
               case Some(value) => 
-                val argType = computeType(arg, context)
+                val argType = computeType(arg)
                 lisa.utils.fol.FOL.isSame(optype(inType, arg), (arg is argType))
               case None => true
             ) then
@@ -160,7 +104,7 @@ object VarsAndFunctions extends lisa.Main :
               tcf.typ.outTyp.substitute(subst*)
             else
               val argsTypes = args.map(arg =>
-                computeType(arg, context)
+                computeType(arg)
               )
               throw new IllegalArgumentException("Function " + tcf + " has type " + tcf.typ + " but was applied to arguments " + args + " of types " + argsTypes + ".")
           case _ => throw new IllegalArgumentException("computeType can only handle typed constant functionals. " + func + " is not a typed constant functional.")
@@ -168,11 +112,22 @@ object VarsAndFunctions extends lisa.Main :
     r
 
 
-  def computeContextOfFormulas(formulas: Set[Expr[Prop]], known: Set[Variable[Ind]] = Set()): (Set[TypeAssign[Variable[Ind]]] ) = 
-    formulas.collect {
-      case TypeAssign(v: Variable[Ind], typ) if !known.contains(v) => TypeAssign(v, typ)
-    }
+  def computeContext(terms: Set[Expr[Ind]]): Set[TypeAssign[Variable[Ind]]] = computeContextKnown(terms, Set.empty)
 
+  def computeContextKnown(terms: Set[Expr[Ind]], known: Set[Variable[Ind]]): Set[TypeAssign[Variable[Ind]]] = 
+    val frees = terms.flatMap(_.freeVars) -- known
+    val r1 = frees.foldLeft(List.empty[TypeAssign[Variable[Ind]]]) {
+      case (acc1, v: TypedVariable) => 
+        (v is v.typ) :: acc1
+      case (acc1, v) => 
+        acc1
+    }
+    r1.toSet
+
+  def computeContextOfFormulas(formulas: Set[Expr[Prop]], known: Set[Variable[Ind]] = Set()): (Set[TypeAssign[Variable[Ind]]]) = 
+    val vars = formulas.flatMap(_.freeVars) -- known
+    computeContextKnown(vars.filter(_.sort == K.Ind).toSet.asInstanceOf[Set[Expr[Ind]]], Set.empty)
+    
   def contextToMap(typeAssigns: Set[TypeAssign[Variable[Ind]]]): Map[Variable[Ind], Typ] =
     typeAssigns.map(ta => ta.vari -> ta.typ).toMap
 
@@ -275,17 +230,6 @@ object VarsAndFunctions extends lisa.Main :
 
 
 
-
-
-
-
-
-  val boolNonEmpty = Theorem(exists(x, (x ∈ Bool))) {
-    have(thesis) by RightExists(One.justif)
-  }
-  val 𝔹 = ConstantTypeTerm("𝔹", boolNonEmpty)
-
-
   val =:= : TypedConstantFunctional[Ind >>: Ind] ={
     val =:= =  Constant[Ind >>: Ind]("=:=").printInfix()
     addSymbol(=:=)
@@ -293,9 +237,9 @@ object VarsAndFunctions extends lisa.Main :
     TypedConstantFunctional[Ind >>: Ind]("=:=", FunctionalClass(List(None), List(A), (A ->: (A ->: 𝔹))), typing_of_eq)
   }
   lazy val eqDefin = {
-    val x = variable[Ind]
-    val y = variable[Ind]
-    val eqDefin = Axiom(((x::A) /\ (y::A)) ==> ((x =:= y)(using Map(x -> A, y -> A))===One) <=> (x===y))
+    val x = typedvar(A)
+    val y = typedvar(A)
+    val eqDefin = Axiom(((x::A) /\ (y::A)) ==> ((x =:= y)===One) <=> (x===y))
     eqDefin
   }
 
@@ -314,9 +258,9 @@ object VarsAndFunctions extends lisa.Main :
   given Conversion[Expr[Ind], F.Expr[Prop]] = t => eqOne(t)
 
   extension (t1:Expr[Ind]) {
-    def =:=(t2:Expr[Ind])(using context: TypingContext): Expr[Ind] = 
-      val A = computeType(t1, context)
-      val B = computeType(t2, context)
+    def =:=(t2:Expr[Ind]): Expr[Ind] = 
+      val A = computeType(t1)
+      val B = computeType(t2)
       if isSame(A, B) then
         holeq(A)*(t1)*(t2) 
       else 
@@ -335,7 +279,7 @@ object VarsAndFunctions extends lisa.Main :
     
     def apply(using proof: Proof)(typ: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       typ match {
-        case ctt: ConstantTypeTerm => have(ctt.nonEmptyThm)
+        case ctt: HOLConstantType => have(ctt.nonEmptyThm)
         case v: Variable[Ind] => 
           val x = Variable.fresh[Ind](Set(v), "x")
           val ax = assume(exists(x, x ∈ v))
@@ -349,7 +293,6 @@ object VarsAndFunctions extends lisa.Main :
     }
   }
 
-  class ConstantTypeTerm(id: Identifier, val nonEmptyThm: JUSTIFICATION) extends Constant[Ind](id)
 
 
 
@@ -358,33 +301,31 @@ object VarsAndFunctions extends lisa.Main :
     have(thesis) by RightExists(boolNonEmpty)
   }
 
-  def TypingTheorem(using om: lisa.utils.prooflib.OutputManager, name: sourcecode.FullName)(assignment: Expr[Prop])(using context: TypingContext): THM = 
-    val contextAssigns = context.map((v, typ) => v :: typ).toSet
+  def TypingTheorem(using om: lisa.utils.prooflib.OutputManager, name: sourcecode.FullName)(assignment: Expr[Prop]): THM = 
+    val contextAssigns = getContext(assignment)
     Theorem(using om, name)(contextAssigns |- assignment) {
       have(thesis) by Typecheck.prove
     }
 
 
   object HOLProofType extends ProofTactic {
-    def apply2(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind], context: TypingContext): proof.ProofTacticJudgement =
-      val contextAssigns: Set[Expr[Prop]] = context.map((v, typ) => v is typ).toSet
+    def apply2(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind]): proof.ProofTacticJudgement =
+      val contextAssigns: Set[Expr[Prop]] =  getContext(t)
       Typecheck.inferProof(contextAssigns, t)
 
-    def apply(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind], context: TypingContext): proof.ProofTacticJudgement = TacticSubproof {
+    def apply(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
       given SetTheoryLibrary.type = SetTheoryLibrary
       t match 
         case tc: TypedConstant => 
           have(tc.justif.statement) by Weakening(tc.justif)
         case _ => 
-          have(apply2(t, context))
+          have(apply2(t))
     }
   }
 
 
   given termToSetConv[T <: Expr[Ind]]: FormulaSetConverter[T] = t => Set(eqOne(t))
   given setTermToSetConv[T <: Iterable[Expr[Ind]]]: FormulaSetConverter[T] = _.map(eqOne(_)).toSet
-
-
   given Conversion[Expr[Ind], HOLSequent] = HOLSequent(Set(), _)
 
 

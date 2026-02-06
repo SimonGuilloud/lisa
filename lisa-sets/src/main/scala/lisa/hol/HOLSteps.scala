@@ -14,10 +14,12 @@ import lisa.maths.SetTheory.Functions.BasicTheorems.{absBodyEq, functionalExtent
 import lisa.maths.SetTheory.Base.Singleton
 import Singleton.singleton
 
-import lisa.hol.VarsAndFunctions.{computeType, contextToMap, eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, nonEmptyTypeExists, TypeNonEmptyProof,
-          given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent, relevantAssumptions,
+import lisa.hol.VarsAndFunctions.{computeType, contextToMap, eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, nonEmptyTypeExists, TypeNonEmptyProof, TypedVariable,
+          given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
           given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
 import lisa.utils.prooflib.BasicStepTactic.*
+
+import HOLHelperTheorems.{Bool, `0 : 𝔹`, `1 : 𝔹`, Zero, One, zero_in_B}
 
 
 /**
@@ -27,8 +29,8 @@ object HOLSteps extends lisa._HOL {
   import lisa.SetTheoryLibrary.{*, given}
 
   // Helper to extract typing context from a sequent
-  def extractContext(s: F.Sequent): Map[Variable[Ind], Typ] =
-    contextToMap(computeContextOfFormulas(s.left ++ s.right))
+  @deprecated
+  def extractContext(s: F.Sequent): Map[Variable[Ind], Typ] = ???
 
   //draft()
   
@@ -64,7 +66,6 @@ object HOLSteps extends lisa._HOL {
   private val r = variable[Ind]
 
 
-  given typeVars: TypevarContext = Set(A, B)
 
   given ctx: Map[Variable[Ind], Typ] = Map(
     v -> B,
@@ -296,9 +297,9 @@ object HOLSteps extends lisa._HOL {
    *     |- t = t
    */
   object REFL extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{
+    def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{
       // Extract typing context from current proof assumptions
-      val s1 = have(HOLProofType(t, context)) //t::A
+      val s1 = have(HOLProofType(t)) //t::A
       val typ = s1.statement.right.head match
         case _ ∈ typ => typ
         case _ => return proof.InvalidProofTactic(s"Could not compute type of $t")
@@ -313,7 +314,7 @@ object HOLSteps extends lisa._HOL {
    *        |- s = u
    */
   object _TRANS extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
+    def apply(using proof: Proof)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       val s1 = t1.statement
       val s2 = t2.statement
       (s1, s2) match {
@@ -324,9 +325,9 @@ object HOLSteps extends lisa._HOL {
               val p0 = have(s1) by Weakening(t1)
               val r0 = have(((s :: aa), (ta :: aa), (u :: aa), (ta =:= u) === One) |- (s =:= u) === One) by Cut(p0, eqTrans of (x := s, y := ta, z := u, A := aa))
               val r1 = have(((s :: aa), (ta :: aa), (u :: aa)) |- (s =:= u) === One) by Cut(t2, r0)
-              val r2 = have(Discharge(have(HOLProofType(s, context)))(r1))
-              val r3 = have(Discharge(have(HOLProofType(ta, context)))(r2))
-              val r4 = have(Discharge(have(HOLProofType(u, context)))(r3))
+              val r2 = have(Discharge(have(HOLProofType(s)))(r1))
+              val r3 = have(Discharge(have(HOLProofType(ta)))(r2))
+              val r4 = have(Discharge(have(HOLProofType(u)))(r3))
               have(Clean.all(r4))
             else 
               return proof.InvalidProofTactic(s"Types don't agree: $aa and $ab")
@@ -352,7 +353,7 @@ object HOLSteps extends lisa._HOL {
    * Apply transitivity of equality, but with alpha equivalence.
    */
   object TRANS extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = 
+    def apply(using proof: Proof)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = 
       val s1 = t1.statement
       val s2 = t2.statement
 
@@ -390,10 +391,6 @@ object HOLSteps extends lisa._HOL {
     val typ2 = A
     val vx = variable[Ind]
     val vf = variable[Ind]
-    //given localCtx: Map[Variable[Ind], Typ] = ctx + (vx -> typ2) + (vf -> typ1)
-    given localCtx: Map[Variable[Ind], Typ] = Map(x -> typ2, y -> typ2, f -> typ1, g -> typ1, vx -> typ2, vf -> typ1)
-    
-    
     assume(f::(A ->: B))
     assume(g::(A ->: B))
     assume(x::A)
@@ -401,7 +398,7 @@ object HOLSteps extends lisa._HOL {
     assume(f =:= g)
     assume(x =:= y)
     println(s"eqrefl: ${(eqRefl of (HOLSteps.x := f*x, A := B)).statement}")
-    val p0 = have(HOLProofType(f*x, localCtx)) 
+    val p0 = have(HOLProofType(f*x)) 
     val p1 = have(f*x :: B |- f*x =:= f*x) by Tautology.from(eqRefl of (HOLSteps.x := f*x, A := B))
     val s1 = have(f*x =:= f*x) by Cut(p0, p1)
     val s2 = have((f :: typ1, g::typ1) |- (f===g)) by Tautology.from(eqCorrect of (HOLSteps.x := f, HOLSteps.y := g, A := typ1))
@@ -420,7 +417,7 @@ object HOLSteps extends lisa._HOL {
    *        |- f x = g y
    */
   object MK_COMB extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(f1: proof.Fact, f2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof {
+    def apply(using proof: Proof)(f1: proof.Fact, f2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof {
       val fg = f1.statement
       val xy = f2.statement
       (fg, xy) match {
@@ -431,10 +428,10 @@ object HOLSteps extends lisa._HOL {
             val s1 = have((xx :: typ2, yy::typ2, ff :: typ1, gg::typ1, ff =:= gg, xx =:= yy) |- (ff*xx =:= gg*yy)) by Weakening(mk_comTHM of (f := ff, g := gg, x := xx, y := yy))
             val d1 = have( Discharge(f1)(lastStep) )
             val d2 = have( Discharge(f2)(d1) )
-            val d3 = have( Discharge(have(HOLProofType(xx, context)))(d2) )
-            val d4 = have( Discharge(have(HOLProofType(yy, context)))(d3) )
-            val d5 = have( Discharge(have(HOLProofType(ff, context)))(d4) )
-            val d6 = have( Discharge(have(HOLProofType(gg, context)))(d5) )
+            val d3 = have( Discharge(have(HOLProofType(xx)))(d2) )
+            val d4 = have( Discharge(have(HOLProofType(yy)))(d3) )
+            val d5 = have( Discharge(have(HOLProofType(ff)))(d4) )
+            val d6 = have( Discharge(have(HOLProofType(gg)))(d5) )
             have(Clean.all(lastStep))
 
           case _ => 
@@ -454,7 +451,7 @@ object HOLSteps extends lisa._HOL {
     * 
     */
   object ABS extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(x: Variable[Ind], xTyp: Typ)(prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
+    def apply(using proof: Proof)(x: Variable[Ind], xTyp: Typ)(prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
       val s1 = prem.statement
       s1 match {
         case HOLSequent(left, (=:= #@ typ1)*tt*uu) => 
@@ -471,11 +468,11 @@ object HOLSteps extends lisa._HOL {
           val h1 = thenHave((tforall(xta, tt::typ1), tforall(xta, uu::typ1)) |- forall(x, (x :: xTyp) ==> (holeq(typ1)*(tt)*(uu) === One))) by RightForall
           have((tforall(xta, tt::typ1), tforall(xta, uu::typ1), tforall(xta, holeq(typ1)*(tt)*(uu) === One)) |- (holeq(xTyp ->: typ1)*lt*lu === One)) by Weakening(absTHM of (t := λ(x, tt), u := λ(x, uu), A := xTyp, B := typ1))
           val h2 = have( Discharge(h1)(lastStep))
-          have(HOLProofType(tt, context))
+          have(HOLProofType(tt))
           thenHave(lastStep.statement.left.filterNot(isSame(_, x::xTyp)) |- (x :: xTyp) ==> (tt::typ1)) by Weakening
 
           val h3 = thenHave(lastStep.statement.left |- tforall(xta, tt::typ1)) by RightForall
-          have(HOLProofType(uu, context))
+          have(HOLProofType(uu))
           thenHave(lastStep.statement.left.filterNot(isSame(_, x::xTyp)) |- (x :: xTyp) ==> (uu::typ1)) by Weakening
           val h4 = thenHave(lastStep.statement.left |- tforall(xta, uu::typ1)) by RightForall
           val h5 = have( h2.statement -<? (h3.statement.right.head) ++<< h3.statement) by Cut(h3, h2)
@@ -495,20 +492,20 @@ object HOLSteps extends lisa._HOL {
    * BETA_CONV((λx. t) u) produces |- (λx. t) u =:= t[x := u] 
    */
   object BETA_CONV extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(tin: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
+    def apply(using proof: Proof)(tin: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       tin match
         case Sabs(typ1, Abs(xx, tt))*(r: Expr[Ind]) => 
           // val betaConv = Theorem(((x :: A), tforall(x :: A, t(x)::B))|- holeq(B)*(abs(A)(t) * x) *t(x))
-          val typ2 = computeType(tin, context)
+          val typ2 = computeType(tin)
           val T = variable[Ind]
           val vx = xx
           val s1 = have((r :: typ1, tforall(vx :: typ1, tt::typ2)) |- (holeq(typ2)*(fun(vx :: typ1, tt) * r)*tt.substitute(vx := r))) by Weakening(betaConv of (A := typ1, B := typ2, t := λ(vx, tt), x := r))
           // Prove typing for tt: build tforall (may have free variable assumptions)
-          val ttPre = have(HOLProofType(tt, context))
+          val ttPre = have(HOLProofType(tt))
           val ttImp = have(ttPre.statement.left.filterNot(isSame(_, vx::typ1)) |- (vx :: typ1) ==> (tt::typ2)) by Weakening(ttPre)
           val ttypForall = have(ttImp.statement.left |- tforall(vx :: typ1, tt::typ2)) by RightForall(ttImp)
           val h1 = have( Discharge(ttypForall)(s1) )
-          val h2 = have( Discharge(have(HOLProofType(r, context)))(h1) )
+          val h2 = have( Discharge(have(HOLProofType(r)))(h1) )
           have(Clean.all(h2))
         case _ => 
           return proof.InvalidProofTactic(s"The Expr[Ind] should be of the form (λx. t) v")  
@@ -519,7 +516,7 @@ object HOLSteps extends lisa._HOL {
    * BETA((λx. t) x) produces |- (λx. t) x =:= t 
    */
   object BETA extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{
+    def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{
       t match
         case Sabs(typ1, tt)*(r: Variable[Ind]) => 
           // assure the right shape is present, and pass to the general case
@@ -532,7 +529,7 @@ object HOLSteps extends lisa._HOL {
 
   /*
   object BETA_PRIM extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=> 
+    def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=> 
       t match
         case (l:Abstraction)*(r: TypedVar) if l.bound == r => 
           val b = l.BETA
@@ -556,7 +553,7 @@ object HOLSteps extends lisa._HOL {
 
   // λ(x, t*x) === t
   object ETA_PRIM extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(x: TypedVar, t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=> 
+    def apply(using proof: Proof)(x: TypedVar, t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=> 
       if t.freeVariables.contains(x) then
       return proof.InvalidProofTactic(s"Variable $x is free in the Expr[Ind] $t")
       val lxtx = λ(x, t*x)
@@ -579,16 +576,15 @@ object HOLSteps extends lisa._HOL {
 
   // λ(x, t*x) =:= t
   object ETA extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(x: Variable[Ind], t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
+    def apply(using proof: Proof)(x: TypedVariable, t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       
       if t.freeVars.contains(x) then
       return proof.InvalidProofTactic(s"Variable $x is free in the Expr[Ind] $t")
-      val xTyp = context(x)
       val lxtx = λ(x, t*x)
-      val ttype_step = have(HOLProofType(t, context))
-      val restype = computeType(t*x, context)
-      val ttype = xTyp ->: restype
-      val s1 = have((t :: ttype, x :: xTyp) |- holeq(ttype) * (fun(x :: xTyp, t*x)) * t) by Weakening(etaConv of (HOLSteps.x := x, f := t, A := xTyp, B := restype))
+      val ttype_step = have(HOLProofType(t))
+      val restype = computeType(t*x)
+      val ttype = x.typ ->: restype
+      val s1 = have((t :: ttype, x :: x.typ) |- holeq(ttype) * (fun(x :: x.typ, t*x)) * t) by Weakening(etaConv of (HOLSteps.x := x, f := t, A := x.typ, B := restype))
       have(Discharge(ttype_step)(s1))
       have(Clean.all(lastStep))
     }
@@ -601,8 +597,8 @@ object HOLSteps extends lisa._HOL {
     *     t |- t
     */
   object ASSUME extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t:Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
-      val typ = computeType(t, context)
+    def apply(using proof: Proof)(t:Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
+      val typ = computeType(t)
       if typ == 𝔹 then
         have(t |- t) by Restate
         have(Clean.all(lastStep))
@@ -619,7 +615,7 @@ object HOLSteps extends lisa._HOL {
     *       |- u
     */
   object EQ_MP extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(eq: proof.Fact, p: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
+    def apply(using proof: Proof)(eq: proof.Fact, p: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       if eq.statement.right.size != 1 then
         return proof.InvalidProofTactic(s"The first premise should be of the form (t =:= u) === One")
       eq.statement match
@@ -634,9 +630,9 @@ object HOLSteps extends lisa._HOL {
               val h1 = have((assumptions + (t :: 𝔹) + (u :: 𝔹)) |- t === u) by Tautology.from(eqCorrect of (x := t, y := u, A := 𝔹), eq)
               val hc = have((assumptions + (t :: 𝔹) + (u :: 𝔹) + (t === u)) |- (u === One)) by RightSubstEq.withParameters(List((t, u)), (Seq(vt), vt === One))(hp)
               val h2 = have((assumptions + (t :: 𝔹) + (u :: 𝔹)) |- (u === One)) by Cut(h1, hc)
-              val pt = have(HOLProofType(t, context))
+              val pt = have(HOLProofType(t))
               val h3 = have(Discharge(pt)(h2))
-              val h4 = have(Discharge(have(HOLProofType(u, context)))(h3))
+              val h4 = have(Discharge(have(HOLProofType(u)))(h3))
               have(Clean.all(h4))
     
             case _ =>
@@ -655,7 +651,7 @@ object HOLSteps extends lisa._HOL {
     *   A - p, B - q |- p = q
     */
   object DEDUCT_ANTISYM_RULE extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{
+    def apply(using proof: Proof)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{
       if t1.statement.right.size != 1 || t2.statement.right.size != 1 then
         return proof.InvalidProofTactic(s"The premises should be of the form p === One and q === One")
       val left1 = t1.statement.left
@@ -671,8 +667,8 @@ object HOLSteps extends lisa._HOL {
           val h0 = have((p :: 𝔹, q :: 𝔹) |- (p === q)) by Cut.withParameters((q === One) <=> (p === One))(pivot, propExt of (HOLSteps.p -> p, HOLSteps.q -> q))
           val h1 = have((p :: 𝔹, q :: 𝔹, p === q) |- (p =:= q === One)) by Weakening(eqCorrect of (A -> 𝔹, x -> p, y -> q))
           val h2 = have((p :: 𝔹, q :: 𝔹) |- (p =:= q === One)) by Cut(h0, h1)
-          val h3 = have(Discharge(have(HOLProofType(p, context)))(h2))
-          val h4 = have(Discharge(have(HOLProofType(q, context)))(h3))
+          val h3 = have(Discharge(have(HOLProofType(p)))(h2))
+          val h4 = have(Discharge(have(HOLProofType(q)))(h3))
           have(Clean.all(h4))
 
         
@@ -683,18 +679,21 @@ object HOLSteps extends lisa._HOL {
   }
 
   object INST extends ProofTactic {
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
+    def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       val k = prem.of(inst.map(_ := _)*)
       val h0 = have(k.statement) by Restate.from(k)
       val fv = prem.statement.freeVars 
-      if inst.exists((v, t) => fv.contains(v) && context(v) != computeType(t, context)) then
-        val mismatch = inst.find((v, t) => fv.contains(v) && context(v) != computeType(t, context)).get
-        return proof.InvalidProofTactic(s"Type mismatch in instantiation: ${mismatch._1} has type ${context(mismatch._1)} but term ${mismatch._2} has type ${computeType(mismatch._2, context)}")
+      val violating = inst.collectFirst {
+        case (v: TypedVariable, t) if fv.contains(v) && (v.asInstanceOf[TypedVariable].typ != computeType(t)) => (v, t)
+      }
+      violating match
+        case Some((v, t)) => return proof.InvalidProofTactic(s"Type mismatch in instantiation: ${v} has type ${v.typ} but term ${t} has type ${computeType(t)}")
+        case None => ()
       val instWithProofs = inst.flatMap((v, t) => 
         if !fv.contains(v) then
           None // no need to discharge if the variable isn't free in the statement
         else 
-          val typProof = have(HOLProofType(t, context))
+          val typProof = have(HOLProofType(t))
           Some((v, t, typProof))
       )
       instWithProofs.foldLeft(h0:ip.Fact) {
@@ -709,17 +708,26 @@ object HOLSteps extends lisa._HOL {
   }
 
 
-/*
+
   object INST_TYPE extends ProofTactic {
 
-    def apply(using proof: Proof, context: TypingContext, typeVars: TypevarContext)(x: F.Variable, t:Expr[Ind], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{
-      val r = prem of (x := t)
-      val s0 = have(r.statement) by Restate.from(r)
-      have(DEF_RED.THM(s0))
+    def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{
+      val fv = prem.statement.freeVars
+      
+      val instWithProofs = inst.flatMap((v, t) => 
+        if !fv.contains(v) then
+          None // no need to discharge if the variable isn't free in the statement
+        else 
+          val typProof = have(TypeNonEmptyProof(t))
+          Some((v, t, typProof))
+      )
+      val k = prem.of(inst.map(_ := _)*)
+      val h0 = have(k.statement) by Restate.from(k)
+      have(Clean.all(h0))
     }
 
   }
-
+/*
   object SYM extends ProofTactic {
     def apply(using proof: Proof)(p: proof.Fact): proof.ProofTacticJudgement = TacticSubproof {
       val stmt = p.statement
@@ -1204,8 +1212,7 @@ object HOLSteps extends lisa._HOL {
       ip.cleanAssumptions
       val h1 = have(Clean.allVariables(prem))
       val h2 = have(Clean.allTypeVars(h1))
-      val ra = relevantAssumptions(h2.statement)
-      have(h2.statement ++<? (ra |- ())) by Weakening(h2)
+      have(withCTX(h2.statement)) by Weakening(h2)
     }
   }
   /*

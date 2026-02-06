@@ -7,45 +7,25 @@ import F.{Expr, Ind, Prop, >>:, variable, given}
 
 object HOLStepsTests extends lisa.HOL {
   
-  private val A = variable[Ind]
-  private val B = variable[Ind]
-  private val C = variable[Ind]
-  private val D = variable[Ind]
-  private val v = variable[Ind]
-  private val w = variable[Ind]
-  private val x = variable[Ind]
-  private val y = variable[Ind]
-  private val z = variable[Ind]
-  private val d = variable[Ind]
-  private val e = variable[Ind]
-  private val f = variable[Ind]
-  private val g = variable[Ind]
-  private val h = variable[Ind]
-  private val i = variable[Ind]
-
-  private val p = variable[Ind]
-  private val q = variable[Ind]
-  private val r = variable[Ind]
-  private val b = variable[Ind]
-
-  given typeVars: TypevarContext = Set(A, B)
-  given ctx: Map[Variable[Ind], Typ] = Map(
-    v -> A,
-    w -> A,
-    x -> A,
-    y -> A,
-    z -> A,
-    d -> B,
-    e -> (A ->: A),
-    f -> (A ->: B),
-    g -> (A ->: B),
-    h -> (B ->: A),
-    i -> (A ->: A),
-    p -> 𝔹,
-    q -> 𝔹,
-    r -> 𝔹,
-    b -> 𝔹
-  )
+  private val A = typevar
+  private val B = typevar
+  private val C = typevar
+  private val D = typevar
+  private val v = typedvar(A)
+  private val w = typedvar(A)
+  private val x = typedvar(A)
+  private val y = typedvar(A)
+  private val z = typedvar(A)
+  private val d = typedvar(B)
+  private val e = typedvar(A ->: A)
+  private val f = typedvar(A ->: B)
+  private val g = typedvar(A ->: B)
+  private val h = typedvar(B ->: A)
+  private val i = typedvar(A ->: A)
+  private val p = typedvar(𝔹)
+  private val q = typedvar(𝔹)
+  private val r = typedvar(𝔹)
+  private val b = typedvar(𝔹)
 
   println("pretests")
 
@@ -239,7 +219,6 @@ object HOLStepsTests extends lisa.HOL {
   
   val (a3, a4) = (fun(x::A, p) =:= fun(x::A, p), fun(p::𝔹, q)*p)
   val test_eqmp_2 = HOLTheorem(((a3 =:= a4), a3) |- a4) {
-    given Map[Variable[Ind], Typ] = Map(x -> A, p -> 𝔹, q -> 𝔹)
     val s1 = HOLassume(a3 =:= a4)
     val s2 = HOLassume(a3)
     have(EQ_MP(s1, s2))
@@ -350,18 +329,18 @@ object HOLStepsTests extends lisa.HOL {
 
 
   // Those don't hold because they require alpha equivalence to conclude the proof.
-/*
+
   println("Starting test 15")
-  val test_inst_15 = HOLTheorem(fun(q, p)*p){
-    have(fun(p, r)*p) by Sorry
+  val test_inst_15 = HOLTheorem(fun(q::𝔹, p)*p){
+    have(fun(p::𝔹, r)*p) by Sorry
     have(INST(Seq((r, p)), lastStep))
   }
 
   println("Starting test 16")
-  val test_inst_16 = HOLTheorem(fun(x, fun(y, x))*y =:= fun(z, y)){
-    have(BETA(fun(x, fun(y, x))*x))
+  val test_inst_16 = HOLTheorem(fun(x::A, fun(y::A, x))*y =:= fun(z::A, y)){
+    have(BETA(fun(x::A, fun(y::A, x))*x))
     have(INST(Seq((x, y)), lastStep))
   }
 
-*/
+
 }
