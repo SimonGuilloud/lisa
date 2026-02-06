@@ -89,10 +89,46 @@ object VarsAndFunctions extends lisa.Main :
   def fun(v: TypeAssign[Variable[Ind]], b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.vari, b))
 
   type TypingContext = Map[Variable[Ind], Typ]
+  type TypevarContext = Set[Variable[Ind]]
 
-  def relevantContext(t: LisaObject, context: TypingContext): Set[TypeAssign[Variable[Ind]]] = 
+  def relevantTypeContext(t: LisaObject, context: TypingContext): Set[TypeAssign[Variable[Ind]]] = 
     val varsInT = t.freeVars
     context.filter((v, _) => varsInT.contains(v)).map((v, typ) => TypeAssign(v, typ)).toSet
+
+  def relevantTypevarContext(lo: LisaObject, typevars: TypevarContext): Set[Variable[Ind]] =
+    val varsInT = lo.freeVars
+    typevars.filter(tv => varsInT.contains(tv))
+
+  def relevantContext(t: LisaObject, context: TypingContext, typevars: TypevarContext): Set[Expr[Prop]] = 
+    relevantTypeContext(t, context) ++ relevantTypevarContext(t, typevars).map(tv => 
+      val v = Variable[Ind](K.Identifier("x", tv.id.no+1))
+      exists(v, v ∈ tv)
+    )
+  
+  def relevantAssumptions(lo: LisaObject)(using context: TypingContext, typevars: TypevarContext): Set[Expr[Prop]] = 
+    relevantContext(lo, context, typevars) ++ relevantTypeContext(lo, context).map(ta => ta.vari :: ta.typ)
+
+  def typeVarsFromType(typ: Typ): Set[Variable[Ind]] = 
+    typ match 
+      case v: Variable[Ind] => Set(v)
+      case A ->: B => typeVarsFromType(A) ++ typeVarsFromType(B)
+      case _ => Set.empty
+
+  def nonEmpty(typ: Variable[Ind]): Expr[Prop] = 
+    val v = if typ.id.name == "x" then Variable[Ind](K.Identifier("x", typ.id.no+1)) else Variable[Ind]("x")
+    exists(v, v ∈ typ)
+/*
+  def getTypes(t: Expr[Ind]): Set[Expr[Ind]] = t match 
+    case v: Variable[Ind] => Set()
+    case tc: TypedConstant => Set(tc.typ)
+    case #@[Ind >>: Ind, Ind](#@[Ind, (Ind >>: Ind) >>: Ind](`abs`, base), Abs(v, b)) => 
+      getTypes(b) + base
+    case App(App(`app`, func), arg) => 
+      getTypes(func) ++ getTypes(arg)
+    case Multiapp(func, args: List[Expr[Ind]] @unchecked) => 
+      args.toSet
+    case _ => throw new IllegalArgumentException("computeTypes only support fully typed terms. " + t + " is not fully typed.")
+*/   
 
   def computeType(t: Expr[Ind], context: TypingContext): Typ = 
     val r = t match 
@@ -144,27 +180,28 @@ object VarsAndFunctions extends lisa.Main :
   class HOLSequent(
     val premises: Set[Expr[Ind]],
     val conclusion: Expr[Ind],
-    val varTypes: Set[TypeAssign[Variable[Ind]]]
-    ) extends F.Sequent(premises.map(_ === One) ++ varTypes, Set(conclusion === One)) {
+    val typeAssigns: Set[TypeAssign[Variable[Ind]]],
+    val typeVarsNonEmpty: Set[Expr[Prop]]
+    ) extends F.Sequent(premises.map(_ === One) ++ typeAssigns, Set(conclusion === One)) {
       
-      infix def +<<(t: Expr[Ind]): HOLSequent = HOLSequent(this.premises + t, conclusion, varTypes)
-      infix def -<<(t: Expr[Ind]): HOLSequent = HOLSequent(this.premises - t, conclusion, varTypes)
+      infix def +<<(t: Expr[Ind]): HOLSequent = HOLSequent(this.premises + t, conclusion, typeAssigns)
+      infix def -<<(t: Expr[Ind]): HOLSequent = HOLSequent(this.premises - t, conclusion, typeAssigns)
 
       override infix def +<<(f: Expr[Prop]): F.Sequent = 
         f match 
           case ===(t, One) => +<<(t)
           case ===(One, t) => +<<(t)
-          case TypeAssign(v: Variable[Ind], typ) => new HOLSequent(premises, conclusion, varTypes + TypeAssign(v, typ))
+          case TypeAssign(v: Variable[Ind], typ) => new HOLSequent(premises, conclusion, typeAssigns + TypeAssign(v, typ), typeVarsNonEmpty)
           case _ => super.+<<(f)
       override infix def -<<(f: Expr[Prop]): F.Sequent = 
         f match 
           case ===(t, One) => -<<(t)
           case ===(One, t) => -<<(t)
-          case TypeAssign(v: Variable[Ind], typ) => new HOLSequent(premises, conclusion, varTypes - TypeAssign(v, typ))
+          case TypeAssign(v: Variable[Ind], typ) => new HOLSequent(premises, conclusion, typeAssigns - TypeAssign(v, typ), typeVarsNonEmpty)
           case _ => super.-<<(f)
 
-      infix def ++<<(s1: HOLSequent): HOLSequent = HOLSequent(this.premises ++ s1.premises, conclusion, varTypes ++ s1.varTypes)
-      infix def --<<(s1: HOLSequent): HOLSequent = HOLSequent(this.premises -- s1.premises, conclusion, varTypes -- s1.varTypes)
+      infix def ++<<(s1: HOLSequent): HOLSequent = HOLSequent(this.premises ++ s1.premises, conclusion, typeAssigns ++ s1.typeAssigns)
+      infix def --<<(s1: HOLSequent): HOLSequent = HOLSequent(this.premises -- s1.premises, conclusion, typeAssigns -- s1.typeAssigns)
 
       override infix def ++<<(s1: F.Sequent): F.Sequent = 
         s1 match 
@@ -177,12 +214,9 @@ object VarsAndFunctions extends lisa.Main :
   }
 
   object HOLSequent {
-    def apply(premises: Set[Expr[Ind]], conclusion: Expr[Ind]): HOLSequent = {
-      apply(premises, conclusion, Set.empty)
-    }
 
-    def apply(premises: Set[Expr[Ind]], conclusion: Expr[Ind], varTypes: Set[TypeAssign[Variable[Ind]]]): HOLSequent = {
-      new HOLSequent(premises, conclusion, varTypes)
+    def apply(premises: Set[Expr[Ind]], conclusion: Expr[Ind], typeAssigns: Set[TypeAssign[Variable[Ind]]] = Set.empty, typeVarsNonEmpty: Set[Expr[Prop]] = Set.empty): HOLSequent = {
+      new HOLSequent(premises, conclusion, typeAssigns, typeVarsNonEmpty)
     }
 
     def fromFOLSequent(s: F.Sequent): HOLSequent = 
@@ -194,13 +228,15 @@ object VarsAndFunctions extends lisa.Main :
       r match 
         case eqOne(t) => 
           var vartypes = Set.empty[TypeAssign[Variable[Ind]]]
+          var typeVarsNonEmpty = Set.empty[Expr[Prop]]
           var prems = Set.empty[Expr[Ind]]
           s.left.foreach {a => a match 
-            case TypeAssign(v: Variable[Ind], typ)  => vartypes = vartypes + TypeAssign(v, typ)
-            case eqOne(t) => prems = prems + t
+            case TypeAssign(v: Variable[Ind], typ)  => vartypes += TypeAssign(v, typ)
+            case exists(v1: Variable[Ind], v2 ∈ (typ: Variable[Ind])) if v1 == v2 => typeVarsNonEmpty += a
+            case eqOne(t) => prems += t
             case _ => throw new IllegalArgumentException("Premises must be of the form t === One or be a type assignment. violating: " + a)
           }
-          new HOLSequent(prems, t, vartypes)
+          new HOLSequent(prems, t, vartypes, typeVarsNonEmpty)
         case _ => 
           throw new IllegalArgumentException("Conclusion must be of the form t === One.")
 

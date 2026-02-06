@@ -16,26 +16,31 @@ object HOLStepsTests extends lisa.HOL {
   private val x = variable[Ind]
   private val y = variable[Ind]
   private val z = variable[Ind]
+  private val d = variable[Ind]
   private val e = variable[Ind]
   private val f = variable[Ind]
   private val g = variable[Ind]
   private val h = variable[Ind]
+  private val i = variable[Ind]
 
   private val p = variable[Ind]
   private val q = variable[Ind]
   private val r = variable[Ind]
   private val b = variable[Ind]
 
+  given typeVars: TypevarContext = Set(A, B)
   given ctx: Map[Variable[Ind], Typ] = Map(
     v -> A,
     w -> A,
     x -> A,
     y -> A,
     z -> A,
+    d -> B,
     e -> (A ->: A),
     f -> (A ->: B),
     g -> (A ->: B),
     h -> (B ->: A),
+    i -> (A ->: A),
     p -> 𝔹,
     q -> 𝔹,
     r -> 𝔹,
@@ -47,6 +52,18 @@ object HOLStepsTests extends lisa.HOL {
 
   // REFL
 
+  val test_refl_1 = HOLTheorem(x =:= x) {
+    have(REFL(x))
+  }
+
+  val test_refl_2 = HOLTheorem(fun(x::A, x) =:= fun(x::A, x)) {
+    have(REFL(fun(x::A, x)))
+  }
+
+  val test_refl_3 = HOLTheorem(fun(f:: A ->: B, fun(y::A, f*y))*g =:= fun(f:: A ->: B, fun(y::A, f*y))*g) {
+    have(REFL(fun(f:: A ->: B, fun(y::A, f*y))*g))
+  }
+
   // _TRANS
 
   println("Starting tests")
@@ -56,12 +73,17 @@ object HOLStepsTests extends lisa.HOL {
   println("starting test1")
 
   val test_trans_1 = HOLTheorem((w =:= x, x =:= y, y =:= z) |- (w =:=z)) {
-    println("enters proof")
     val a1 = HOLassume(w =:= x)
     val a2 = HOLassume(x =:= y)
     val a3 = HOLassume(y =:= z)
     val s1 = have(_TRANS(a1, a2))
     have(_TRANS(s1, a3))
+  }
+
+    val test_trans_2 = HOLTheorem((x =:=z)) {
+    val a1 = have(x =:= y) by Sorry
+    val a2 = have(y =:= z) by Sorry
+    val s1 = have(_TRANS(a1, a2))
   }
 
   
@@ -107,7 +129,9 @@ object HOLStepsTests extends lisa.HOL {
   // BETA
   val test_beta_1 = HOLTheorem( fun(x::A, x)*x =:= x) {
     // Don't HOLassume x::A since we're abstracting over x
+    println(s"thesis: $thesis")
     have(BETA(fun(x::A, x)*x))
+    println(s"proof: ${lastStep.statement}")
   }
 
   val test_beta_2 = HOLTheorem(fun(x::A, x)*x =:= (x)) {
@@ -153,39 +177,33 @@ object HOLStepsTests extends lisa.HOL {
   println("starting eta")
   // ETA
 
-  // ETA tests commented out due to variable type conflicts in module-level initialization
-  // The ETA tactic has been successfully updated to accept context parameters
-  // Uncomment and fix these tests individually as needed
-  /*
-  val test_eta_1 = HOLTheorem((x::A, f::(A ->: B)) |- fun(x::A, f*x) =:= f) {
-    given Map[Variable[Ind], Typ] = Map(x -> A, f -> (A ->: B))
-    have(ETA(x, A, f))
+  val test_eta_1 = HOLTheorem(fun(x::A, f*x) =:= f) {
+    have(ETA(x, f))
   }
 
   val f2 = fun(y::A, y)
-  val test_eta_2 = HOLTheorem((x::B, y::A) |- fun(x::B, f2*x) =:= f2) {
-    given Map[Variable[Ind], Typ] = Map(x -> B, y -> B)
-    have(ETA(x, B, f2))
+  val test_eta_2 = HOLTheorem(fun(x::A, f2*x) =:= f2) {
+    have(ETA(x, f2))
   }
 
-  val f3 = fun(y::A, y =:= z) 
-  val test_eta_3 = HOLTheorem((x::A, y::A, z::A) |- fun(x::A, f3*x) =:= f3) {
-    given Map[Variable[Ind], Typ] = Map(x -> A, y -> A, z -> A)
-    have(ETA(x, A, f3))
+
+  val f3 = fun(y::A, fun(z::A, y))
+  val test_eta_3 = HOLTheorem(fun(x::A, f3*x) =:= f3) {
+    have(ETA(x, f3))
   }
 
   val f4 = fun(y::A, fun(z::A, f*y))
-  val test_eta_4 = HOLTheorem((x::B, y::A, z::A, f::(B ->: D)) |- fun(x::B, f4*x) =:= f4) {
-    given Map[Variable[Ind], Typ] = Map(x -> B, y -> B, z -> C, f -> (B ->: D))
-    have(ETA(x, B, f4))
+  val test_eta_4 = HOLTheorem(fun(x::A, f4*x) =:= f4) {
+    have(ETA(x, f4))
   }
 
-  val f5 = f2
-  val test_eta_5 = HOLTheorem((y::A) |- fun(y::A, f5*y) =:= f5) {
-    given Map[Variable[Ind], Typ] = Map(y -> B)
-    have(ETA(y, B, f5))
+
+  val f5 = fun(y::A, y)
+  val test_eta_5 = HOLTheorem(fun(y::A, f5*y) =:= f5) {
+    have(ETA(y, f5))
   }
-  */
+
+
 
 
 
@@ -204,13 +222,11 @@ object HOLStepsTests extends lisa.HOL {
   }
 
   // test_HOLassume_4 commented out due to variable type conflicts
-  /*
-  val expr = fun(f::(A ->: A), fun(x::A, f*x =:= f*(h*x)))*fun(y::A, f*y)*y
-  val test_HOLassume_4 = HOLTheorem((f::(A ->: A), x::A, y::A, h::(A ->: A), expr) |- expr ){
-    given Map[Variable[Ind], Typ] = Map(f -> (A ->: A), x -> A, y -> A, h -> (A ->: A))
+
+  val expr = fun(i::(A ->: A), fun(x::A, i*x =:= h*(f*x)))*fun(y::A, i*y)*y
+  val test_HOLassume_4 = HOLTheorem(expr |- expr ){
     have(ASSUME(expr))
   }
-  */
   
 
   val (a1, a2) = (p, q)
@@ -244,11 +260,10 @@ object HOLStepsTests extends lisa.HOL {
     have(EQ_MP(s1, s2))
   }
 
-  /*
 
   val test_deductantisymrule_1 = HOLTheorem(((p === One) ==> (q === One), (q === One) ==> (p === One)) |- ((p =:= q) === One)){
-    HOLassume((p === One) ==> (q === One))
-    HOLassume((q === One) ==> (p === One))
+    assume((p === One) ==> (q === One))
+    assume((q === One) ==> (p === One))
     val s1 = have(q |- p) by Restate
     val s2 = have(p |- q) by Restate
     have(DEDUCT_ANTISYM_RULE(s1, s2))
@@ -272,9 +287,6 @@ object HOLStepsTests extends lisa.HOL {
   }
   
   val test_inst_4 = HOLTheorem(p =:= q) {
-    given Map[Variable[Ind], Typ] = Map(p -> 𝔹, q -> 𝔹)
-    HOLassume(p::𝔹)
-    HOLassume(q::𝔹)
     have(p) by Sorry
     have(INST(Seq((p, p=:=q)), lastStep))
   }
@@ -329,13 +341,12 @@ object HOLStepsTests extends lisa.HOL {
 
 
   val test_inst_14 = HOLTheorem(fun(x::A, f*z) =:= fun(x::A, f*z)){
-    val s0 = have(REFL(fun(x::A, v)))
-    val s1 = have(INST(Seq((v, f*z)), s0))
+    val s0 = have(REFL(fun(x::A, d)))
+    val s1 = have(INST(Seq((d, f*z)), s0))
     val s2 = have(REFL(fun(x::A, f*z) ))
     have(_TRANS(s1, s2))
 
   }
-*/
 
 
   // Those don't hold because they require alpha equivalence to conclude the proof.

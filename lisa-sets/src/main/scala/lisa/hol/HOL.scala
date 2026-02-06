@@ -16,7 +16,7 @@ trait _HOL extends BasicMain {
   export F.{=== as _, ≠ as _, *, given}
   export lisa.maths.SetTheory.Functions.Predef.{*}
   export lisa.maths.SetTheory.Types.TypingHelpers.{main => _, *, given}
-  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, computeType, eqOne, computeContextOfFormulas, contextToMap, TypingContext, relevantContext,
+  export lisa.hol.VarsAndFunctions.{𝔹, Zero, One, computeType, eqOne, computeContextOfFormulas, contextToMap, TypingContext, TypevarContext, relevantContext,
                                     eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, 
                                     given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
                                     given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
@@ -34,8 +34,8 @@ trait _HOL extends BasicMain {
     s ++<< (ctx |- ())
 
   // HOLTheorem is now just an alias for regular Theorem since types are managed externally
-  def HOLTheorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File, context: TypingContext)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
-    val ctx = relevantContext(statement, context)
+  def HOLTheorem(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File, context: TypingContext, typeVars: TypevarContext)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = 
+    val ctx = relevantContext(statement, context, typeVars)
     SetTheoryLibrary.Theorem(statement ++<< (ctx |- ()))(computeProof)
 
 }
@@ -51,16 +51,16 @@ trait HOL extends _HOL {
   export lisa.automation.Substitution
   export lisa.automation.Tableau
 
-  def HOLassume(using proof: library.Proof, context: TypingContext)(t: Expr[Ind]): proof.ProofStep =
+  def HOLassume(using proof: library.Proof, context: TypingContext, typeVars: TypevarContext)(t: Expr[Ind]): proof.ProofStep =
     val f = eqOne(t)
     library.assume(f)
-    val ctx = relevantContext(t, context)
+    val ctx = relevantContext(t, context, typeVars)
     //ctx.foreach(ta => assume(ta))
     library.have((ctx |- f) +<<  f) by Restate
 
 
-  def have(using proof: library.Proof, context: TypingContext)(res: Sequent): HaveSequent = 
-    val ctx = relevantContext(res, context)
+  def have(using proof: library.Proof, context: TypingContext, typeVars: TypevarContext)(res: Sequent): HaveSequent = 
+    val ctx = relevantContext(res, context, typeVars)
     HaveSequent(res ++<< (ctx |- ()))
 
   def have(using line: sourcecode.Line, file: sourcecode.File)(using proof: library.Proof)(v: proof.Fact | proof.ProofTacticJudgement) = v match {
