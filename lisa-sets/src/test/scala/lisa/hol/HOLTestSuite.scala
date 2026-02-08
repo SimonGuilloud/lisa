@@ -1,7 +1,7 @@
 package lisa.hol
 
-import org.scalatest.funsuite.AnyFunSuite
 import lisa.hol.VarsAndFunctions._
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Test suite for HOL expression construction and type-checking,

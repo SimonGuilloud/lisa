@@ -1,22 +1,13 @@
 package lisa.tptp
 
 import leo.modules.input.TPTPParser
-
-
 import lisa.tptp.ProofParser
 import lisa.utils.K
-
-
-
-
-
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.File
 
-
 import ProofParser._
-
 import K.SCProofChecker
 
 class LVL2Test extends AnyFunSuite {

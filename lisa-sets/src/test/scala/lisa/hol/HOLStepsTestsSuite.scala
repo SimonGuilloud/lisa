@@ -1,10 +1,8 @@
 package lisa.hol
 
 import lisa.hol.HOLSteps._
-
-
-import org.scalatest.funsuite.AnyFunSuite
 import lisa.utils.prooflib.OutputManager
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Test suite for HOL deduction rules (REFL, TRANS, MK_COMB, ABS, BETA, ETA,

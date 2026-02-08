@@ -1,7 +1,7 @@
 package lisa.hol
+import lisa.hol.VarsAndFunctions
 import lisa.utils.prooflib.OutputManager
 import org.scalatest.funsuite.AnyFunSuite
-import lisa.hol.VarsAndFunctions
 
 trait HOLTestMain extends AnyFunSuite with lisa.HOL {
   this: AnyFunSuite =>
