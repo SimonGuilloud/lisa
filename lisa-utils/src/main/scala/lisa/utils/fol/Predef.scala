@@ -5,7 +5,6 @@ import lisa.utils.fol.ExprOps
 
 import scala.annotation.showAsInfix
 
-import K.given
 
 trait Predef extends ExprOps {
 

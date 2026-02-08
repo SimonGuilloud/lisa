@@ -5,8 +5,6 @@ import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Relations.Predef._
 import lisa.maths.SetTheory.Relations.Relation
 
-import scala.annotation.targetName
-
 /**
  * A function `f : A -> B` is a relation `f ⊆ A × B` such that for any
  * `x ∈ A` there is a unique `y ∈ B` such that `(x, y) ∈ f`.
@@ -16,15 +14,11 @@ object Function extends lisa.Main {
   private val T, T1 = variable[Ind]
   private val e = variable[Ind >>: Ind]
 
-
-
-
   /**
    * Definition --- `f : A -> B` is a function between `A` and `B` if `f ⊆ A × B`
    * such that for all `x ∈ A` there is a unique `y ∈ B` such that `(x, y) ∈ f`.
    */
   val functionBetween = DEF(λ(f, λ(A, λ(B, relationBetween(f)(A)(B) /\ ∀(x ∈ A, ∃!(y, (x, y) ∈ f))))))
-
 
   /**
    * Definition --- `f` is a function on `A` if the domain of `f` is `A`.
@@ -50,7 +44,6 @@ object Function extends lisa.Main {
    * @see [[Relation.dom]]
    */
   export Relation.range
-  
 
   /**
    * Function application --- For any `x`, we denote by `f(x)` the application
@@ -64,7 +57,7 @@ object Function extends lisa.Main {
     s"$f($x)"
   })
 
-/*
+  /*
 //TODO revisit later
   /**
    * Computes the list of consecutively applied arguments of an expression, including through the small `app`.
@@ -97,7 +90,7 @@ object Function extends lisa.Main {
     app.printAs(args => appPrint(args))
   }
 
-*/
+   */
 
   /**
    * Implicit conversion enabling the function application syntax `f(x)` for set-theoretic terms.
@@ -134,7 +127,6 @@ object Function extends lisa.Main {
    */
   val bijective = DEF(λ(f, λ(A, λ(B, (functionBetween(f)(A)(B)) /\ injective(f)(A) /\ surjective(f)(B)))))
 
-
   val abs: Constant[Ind >>: (Ind >>: Ind) >>: Ind] = DEF(λ(T, λ(e, { (x, e(x)) | x ∈ T })))
     .printAs(args =>
       val typ = args(0)
@@ -153,6 +145,5 @@ object Function extends lisa.Main {
         case App(App(`abs`, typ), body) =>
           Some((typ.asInstanceOf[Expr[Ind]], body.asInstanceOf[Expr[Ind >>: Ind]]))
         case _ => None
-
 
 }

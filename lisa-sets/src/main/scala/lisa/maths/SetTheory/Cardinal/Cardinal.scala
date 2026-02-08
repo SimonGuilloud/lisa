@@ -1,10 +1,8 @@
 package lisa.maths.SetTheory.Cardinal
 
-import lisa.maths.Quantifiers.*
-import lisa.maths.SetTheory.Ordinals.Ordinal.*
-import lisa.maths.SetTheory.Functions.Predef.*
-import lisa.utils.prooflib.BasicStepTactic.Hypothesis
 import lisa.maths.SetTheory.Functions.Function.injective
+import lisa.maths.SetTheory.Functions.Predef._
+import lisa.maths.SetTheory.Ordinals.Ordinal._
 
 object Cardinal extends lisa.Main:
   private val x, y, z, a = variable[Ind]

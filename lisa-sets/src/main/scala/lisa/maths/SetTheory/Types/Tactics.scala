@@ -1,22 +1,24 @@
 package lisa.maths.SetTheory.Types
 
-import lisa.utils.prooflib.*
-import lisa.utils.prooflib.ProofTacticLib.*
-import lisa.utils.prooflib.Library
-import lisa.utils.fol.{FOL => F}
-import F.{∀ as _, *}
-import scala.collection.Set
 import lisa.SetTheoryLibrary
-import TypingRules.{TVar, TAbs, TApp, TSort, TConvAdv}
-import lisa.maths.SetTheory.Base.Predef.∪
-import lisa.maths.SetTheory.Base.Subset.{reflexivity, transitivity, doubleInclusion}
-import lisa.maths.SetTheory.Base.Union.{commutativity, leftUnionSubset}
-import lisa.maths.SetTheory.Cardinal.Predef.{isUniverse, universeOf, universeOfIsUniverse}
-import lisa.maths.SetTheory.Functions.Predef.*
-import TypingHelpers.{*}
+import lisa.automation._
+import lisa.maths.SetTheory.Base.Subset.doubleInclusion
+import lisa.maths.SetTheory.Base.Subset.reflexivity
+import lisa.maths.SetTheory.Base.Subset.transitivity
+import lisa.maths.SetTheory.Cardinal.Predef.isUniverse
+import lisa.maths.SetTheory.Cardinal.Predef.universeOf
+import lisa.maths.SetTheory.Cardinal.Predef.universeOfIsUniverse
+import lisa.maths.SetTheory.Functions.Predef._
+import lisa.utils.fol.{FOL => F}
+import lisa.utils.prooflib.BasicStepTactic._
+import lisa.utils.prooflib.ProofTacticLib._
+
+import scala.collection.Set
+
+import F.{∀ => _, _}
+import TypingRules.{TAbs, TApp, TSort, TConvAdv}
+import TypingHelpers._
 import TypingTheorems.{universeHierarchyPiClosureLeft, universeHierarchyPiClosureRight, subsetOfUniverse, piCovariance}
-import lisa.utils.prooflib.BasicStepTactic.*
-import lisa.automation.*
 
 object Tactics:
   val x, y, z, A, B, C: Variable[Ind] = variable[Ind]
@@ -40,7 +42,6 @@ object Tactics:
 
   // Proposition
   private val p: Variable[Prop] = variable[Prop]
-
 
   object Typecheck extends ProofTactic:
     // Helper function: get universe level
@@ -156,13 +157,15 @@ object Tactics:
           case Multiapp(func, args: List[Expr[Ind]] @unchecked) if args.forall(_.sort == K.Ind) =>
             func match
               case tcf: TypedConstantFunctional[?] =>
-                if tcf.arity != args.size then 
-                  throw new IllegalArgumentException("computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments.")
+                if tcf.arity != args.size then
+                  throw new IllegalArgumentException(
+                    "computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments."
+                  )
                 val subst = (tcf.typ.args zip args).map((v, a) => (v := a))
                 have(tm ∈ tcf.typ.outTyp.substitute(subst*) ++<< (() |- localContext)) by Tautology.from(tcf.justif.of(args*))
                 tcf.typ.outTyp.substitute(subst*)
-            
-              case _ => 
+
+              case _ =>
                 val tyOpt: Option[Expr[Ind]] = localContext.collectFirst { case typeOf(t1, t2) if t1 == tm => t2 }
                 tyOpt match
                   case Some(ty) => have(tm ∈ ty |- tm ∈ ty) by Hypothesis

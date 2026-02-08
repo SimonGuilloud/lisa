@@ -26,6 +26,4 @@ trait Main extends BasicMain {
   knownDefs.update(𝒫, Some(powerSetAxiom))
   knownDefs.update(⊆, Some(subsetAxiom))
 
-  
-
 }

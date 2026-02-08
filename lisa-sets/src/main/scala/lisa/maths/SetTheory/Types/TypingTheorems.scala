@@ -1,13 +1,12 @@
 package lisa.maths.SetTheory.Types
-import TypingHelpers.*
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Functions.Predef.{*}
-import lisa.maths.SetTheory.Cardinal.Predef.{*}
-import lisa.maths.SetTheory.Functions.Predef.*
-import lisa.maths.Quantifiers.*
+import lisa.maths.Quantifiers._
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
+
+import TypingHelpers._
 
 object TypingTheorems extends lisa.Main:
-  import lisa.maths.SetTheory.Functions.Predef.{app}
+
   // Base term
   private val e1, e2 = variable[Ind]
 
@@ -32,12 +31,10 @@ object TypingTheorems extends lisa.Main:
   import lisa.maths.SetTheory.Cardinal.Predef.{*}
 
   val Next = DEF(λ(U, universeOf(U)))
-    def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
-      if (n == 1) then base
-      else universeOf(getUniverse(n - 1, base))
-    }
-  
-
+  def getUniverse(n: Int, base: Expr[Ind]): Expr[Ind] = {
+    if (n == 1) then base
+    else universeOf(getUniverse(n - 1, base))
+  }
 
   // ============================================================================
   // Useful Theorems and Lemmas for Typing Rules
@@ -48,7 +45,7 @@ object TypingTheorems extends lisa.Main:
    *
    * Proves: e1 ∈ {f ∈ S | P(f)} <=> e1 ∈ S ∧ P(e1)
    */
-  val piExpansion  = Lemma(
+  val piExpansion = Lemma(
     e1 ∈ {
       f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) |
         (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))
@@ -414,7 +411,7 @@ object TypingTheorems extends lisa.Main:
       have(f ∈ Π(x :: T, T2(x))) by Hypothesis
       thenHave(f ∈ Π(x :: T1, T2(x))) by Substitute(equalFormula)
       thenHave(f ∈ { f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) | (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a))))) }) by Substitute(Pi.definition)
-      val stmt = thenHave(f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) /\ (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))) by Tautology.fromLastStep(piExpansion  of (e1 := f))
+      val stmt = thenHave(f ∈ 𝒫(T1 × ⋃({ T2(a) | a ∈ T1 })) /\ (∀(x ∈ T1, ∃!(y, (x, y) ∈ f))) /\ (∀(a, ∀(b, (a, b) ∈ f ==> (b ∈ T2(a)))))) by Tautology.fromLastStep(piExpansion of (e1 := f))
 
       have(∀(x ∈ T, T2(x) ⊆ T2p(x))) by Tautology
       thenHave(x ∈ T ==> T2(x) ⊆ T2p(x)) by InstantiateForall(x)
@@ -496,7 +493,7 @@ object TypingTheorems extends lisa.Main:
         cond1,
         cond2,
         cond3,
-        piExpansion  of (e1 := f, T2 := T2p)
+        piExpansion of (e1 := f, T2 := T2p)
       )
       thenHave(f ∈ Π(x :: T1, T2p(x))) by Substitute(Pi.definition of (T2 := T2p))
     }

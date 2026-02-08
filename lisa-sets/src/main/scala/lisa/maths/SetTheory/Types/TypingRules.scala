@@ -1,10 +1,11 @@
 package lisa.maths.SetTheory.Types
-import TypingHelpers.*
-import TypingTheorems.*
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Functions.Predef.{*, given}
-import lisa.maths.SetTheory.Cardinal.Predef.{*}
-import lisa.maths.Quantifiers.*
+import lisa.maths.Quantifiers._
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Cardinal.Predef._
+import lisa.maths.SetTheory.Functions.Predef.{_, given}
+
+import TypingHelpers._
+import TypingTheorems._
 
 object TypingRules extends lisa.Main:
   import lisa.maths.SetTheory.Functions.Predef.{app}
@@ -31,6 +32,7 @@ object TypingRules extends lisa.Main:
 
   // Proposition
   private val p = variable[Prop]
+
   /**
    *    x : T, T : U_l
    *    ─────────────── (T-Var)
@@ -322,6 +324,3 @@ object TypingRules extends lisa.Main:
     assumeAll
     have(thesis) by Tautology.from(Subset.membership of (z := e1, x := T, y := T1))
   }
-
-
-

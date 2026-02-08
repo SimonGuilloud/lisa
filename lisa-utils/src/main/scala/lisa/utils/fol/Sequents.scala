@@ -1,12 +1,8 @@
 package lisa.utils.fol
 
 import lisa.utils.K
-import lisa.utils.prooflib.BasicStepTactic
-import lisa.utils.prooflib.Library
 import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 
-import scala.annotation.showAsInfix
-import scala.annotation.targetName
 
 trait Sequents extends Predef {
 

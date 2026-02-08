@@ -5,10 +5,8 @@ import lisa.utils.K.Identifier
 import lisa.utils.K.given_Conversion_String_Identifier
 import lisa.utils.KernelHelpers.freshId
 
-import scala.annotation.nowarn
 import scala.annotation.showAsInfix
 import scala.annotation.targetName
-import scala.util.Sorting
 
 trait Syntax {
 

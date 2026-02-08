@@ -30,7 +30,6 @@ val commonSettings3 = commonSettings ++ Seq(
   scalaVersion := scala3,
   scalacOptions ++= Seq(
     "-language:implicitConversions",
-    "-Wunused:imports",
     "-Wconf:msg=.*is not declared infix*:silent",
     "-Wconf:msg=.*trait or object is defined in the compilation unit.*:silent",
     "-language:experimental.modularity"

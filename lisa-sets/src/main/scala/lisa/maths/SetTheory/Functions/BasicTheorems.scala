@@ -2,12 +2,12 @@ package lisa.maths.SetTheory.Functions
 
 import lisa.maths.Quantifiers
 import lisa.maths.Quantifiers.∃!
-import lisa.maths.SetTheory.Base.Predef.{*, given}
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Relations
 import lisa.maths.SetTheory.Relations.Predef._
 
-import Function.{*, given}
-import Pi.{*, given}
+import Function._
+import Pi._
 
 /**
  * This file contains proofs of basic properties about functions.
@@ -772,9 +772,6 @@ object BasicTheorems extends lisa.Main {
     thenHave(thesis) by Substitute(functionOn.definition of (f := Rext, A := (dom(f) ∪ singleton(x))))
   }
 
-
-  
-  
   val functionalExtentionality = Theorem(((functionBetween(f)(A)(B)) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x)))) ==> (f === g)) {
     val prem = have((functionBetween(f)(A)(B) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x)))) |- (f === g)) subproof {
       assume(functionBetween(f)(A)(B) /\ functionBetween(g)(A)(B) /\ forall(x, (x ∈ A) ==> (f(x) === g(x))))
@@ -805,7 +802,7 @@ object BasicTheorems extends lisa.Main {
     have(thesis) by RightImplies(prem)
   }
 
-  val absBodyEq = Theorem({ forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))) |- abs(A)(Gf) === abs(A)(Hf)}) {
+  val absBodyEq = Theorem({ forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))) |- abs(A)(Gf) === abs(A)(Hf) }) {
     assume(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x))))
     val hyp = have(forall(x, (x ∈ A) ==> (Gf(x) === Hf(x)))) by Hypothesis
 
@@ -868,7 +865,6 @@ object BasicTheorems extends lisa.Main {
     have(z ∈ abs(A)(Gf) <=> z ∈ abs(A)(Hf)) by Tautology.from(forward, backward)
     thenHave(thesis) by Extensionality
   }
-
 
   val funcBetweenEqInFuncSpace = Theorem(functionBetween(f)(A)(B) <=> f ∈ (A ->: B)) {
     val boundSet = 𝒫(A × ⋃({ (λ(e1, B))(a) | a ∈ A }))
@@ -974,7 +970,7 @@ object BasicTheorems extends lisa.Main {
     val `<==` = have(f ∈ (A ->: B) |- functionBetween(f)(A)(B)) subproof {
       assume(f ∈ (A ->: B))
       thenHave(f ∈ piSet) by Substitute(Pi.definition of (T1 := A, T2 := λ(e1, B)))
- 
+
       val expandedAbs = have(
         f ∈ boundSet /\
           (∀(x ∈ A, ∃!(y, (x, y) ∈ f))) /\
@@ -1048,8 +1044,6 @@ object BasicTheorems extends lisa.Main {
     }
 
     have(thesis) by Tautology.from(`==>`, `<==`)
-  } 
-
-
+  }
 
 }

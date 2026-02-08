@@ -1,10 +1,10 @@
 package lisa.maths.SetTheory.Cardinal
 
-import lisa.maths.SetTheory.Ordinals.Ordinal.*
-import lisa.maths.SetTheory.Base.Predef.{*, given}
-import lisa.maths.SetTheory.Functions.Predef.*
-import lisa.maths.Quantifiers.*
-import Cardinal.*
+import lisa.maths.Quantifiers._
+import lisa.maths.SetTheory.Base.Predef.{_, given}
+import lisa.maths.SetTheory.Functions.Predef._
+
+import Cardinal._
 
 object Universe extends lisa.Main:
   private val U, U1, G, I = variable[Ind]

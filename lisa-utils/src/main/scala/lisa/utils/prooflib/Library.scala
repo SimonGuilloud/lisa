@@ -1,13 +1,10 @@
 package lisa.utils.prooflib
 
 import lisa.kernel.proof.RunningTheory
-import lisa.kernel.proof.SCProofChecker
-import lisa.kernel.proof.SCProofCheckerJudgement
 import lisa.kernel.proof.SequentCalculus
-import lisa.utils.KernelHelpers.{_, given}
-import lisa.utils.{_, given}
+import lisa.utils.KernelHelpers._
+import lisa.utils._
 
-import scala.collection.mutable.{Stack => stack}
 
 /**
  * A class abstracting a [[lisa.kernel.proof.RunningTheory]] providing utility functions and a convenient syntax
@@ -25,7 +22,6 @@ abstract class Library extends lisa.utils.prooflib.WithTheorems with lisa.utils.
   val K = lisa.utils.K
   val SC: SequentCalculus.type = K.SC
   private[prooflib] val F = lisa.utils.fol.FOL
-  import F.{given}
 
   var last: Option[JUSTIFICATION] = None
 

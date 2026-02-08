@@ -49,7 +49,7 @@ object HOLImport extends lisa.HOL {
       case _ => throw ExpectedVariableException
     
 
-  private def toLisaTerm__(term: HOLL.Term): Term = 
+  private def toLisaTerm__(term: HOLL.Term): Term =
     term match
       case HOLL.Variable(name, typ) => typedvar(using name)(toLisaType(typ))
       // special case equality
@@ -74,7 +74,7 @@ object HOLImport extends lisa.HOL {
     private val illegalChars = "}]`)[{(,;?_."
     private val subst = illegalChars.zipWithIndex.toMap.view.mapValues(c => (9312 + c).toChar)
 
-    def sanitizeName(name: String): String = 
+    def sanitizeName(name: String): String =
       name.map(c => if subst.contains(c) then subst(c) else c)
 
     private val constants = scala.collection.mutable.HashMap.empty[String, LabelStore]
@@ -101,7 +101,7 @@ object HOLImport extends lisa.HOL {
     def getDefinition(name: String): JUSTIFICATION =
       constants("HOL@" + sanitizeName(name)) match
         case JustConstant(c) => c.definition
-        case Functional(_, _, _, innerDef) => 
+        case Functional(_, _, _, innerDef) =>
           // the definition, instantiated into a usable form at time of construction
           innerDef
           
@@ -124,18 +124,18 @@ object HOLImport extends lisa.HOL {
     def transformed: ctx.ProofTacticJudgement =
       proof match
         case HOLL.REFL(term) => REFL(toLisaTerm(term))
-        case HOLL.TRANS(left, right) => 
+        case HOLL.TRANS(left, right) =>
           val l = rec(left)
           val r = rec(right)
           TRANS(l, r)
-        case HOLL.MK_COMB(left, right) => 
+        case HOLL.MK_COMB(left, right) =>
           val l = rec(left)
           val r = rec(right)
           MK_COMB(l, r)
-        case HOLL.ABS(absVar, from) => 
+        case HOLL.ABS(absVar, from) =>
           val pf = rec(from)
           ABS(asVar(toLisaTerm(absVar)))(pf)
-        case HOLL.BETA(term) => 
+        case HOLL.BETA(term) =>
           val inp = toLisaTerm(term)
           val fin = BETA(inp)
           fin
@@ -144,30 +144,30 @@ object HOLImport extends lisa.HOL {
           val pf = rec(left)
           EQ_MP(rec(left), rec(right))
         case HOLL.DEDUCT_ANTISYM_RULE(left, right) => DEDUCT_ANTISYM_RULE(rec(left), rec(right))
-        case HOLL.INST(from, insts) => 
+        case HOLL.INST(from, insts) =>
           val inner = rec(from)
           val instss = insts.toSeq.map((k, v) => asVar(toLisaTerm(k)) -> toLisaTerm(v))
           val fin = INST(instss, inner)
           fin
         case HOLL.INST_TYPE(from, insts) =>
           def singleTypeInst = (step: ctx.Fact, inst: (HOLL.TypeVariable, HOLL.Type)) =>
-            val x = 
+            val x =
               toLisaType(inst._1) match
                 case v : F.Variable => v
-                case _ => throw ExpectedVariableException              
+                case _ => throw ExpectedVariableException
             val typ = toLisaType(inst._2)
             library.have(INST_TYPE(x, typ, step))
           val fin = insts.foldLeft(rec(from))(singleTypeInst)
           Restate.from(fin)(fin.statement)
-        case HOLL.AXIOM(term) => 
+        case HOLL.AXIOM(term) =>
           // prove the axioms and simply retrieve them
           ???
-        case HOLL.DEFINITION(name, term) => 
+        case HOLL.DEFINITION(name, term) =>
           // must have been handled previously
           // retrieve it
           val defn = Constants.getDefinition(name)
           Restate.from(defn)(defn.statement)
-        case HOLL.TYPE_DEFINITION(name, term, just) => 
+        case HOLL.TYPE_DEFINITION(name, term, just) =>
           // is this ever used?
           // what does it look like?
           ???
@@ -180,22 +180,22 @@ object HOLImport extends lisa.HOL {
     res
 
   /**
-    * Checks if this HOL Light sequent is a "new_basic_definition".
-    *
-    * Must be of the form DEFINITION(`|- ((=) (symbol)) (defn)`) if we have not
-    * seen `symbol` before. 
-    *
-    * The form and visibility invariants are assumed to be maintained by the HOL
-    * system for now.
-    *
-    */
+ * Checks if this HOL Light sequent is a "new_basic_definition".
+ *
+ * Must be of the form DEFINITION(`|- ((=) (symbol)) (defn)`) if we have not
+ * seen `symbol` before.
+ *
+ * The form and visibility invariants are assumed to be maintained by the HOL
+ * system for now.
+ *
+ */
   private def isDefinition(proof: HOLL.ProofStep): Boolean = proof.isInstanceOf[HOLL.DEFINITION]
 
   case class MalformedDefinitionException(id: Int, term: HOLL.Term) extends Exception(s"Malformed definition at id $id: ${term.pretty}")
   case class MalformedDefinitionFormat(id: Identifier) extends Exception(s"Definition of $id is not of the form forall(v, (v = $id) <=> (context => v = term))")
     
-  val lisaThms = 
-    for 
+  val lisaThms =
+    for
       thm <- thms.sortBy(_.id).take(15)
     yield
       println(s"Processing ${thm.id}")
@@ -205,7 +205,7 @@ object HOLImport extends lisa.HOL {
         // register the constant
         assert(hypotheses.isEmpty)
         import HOLL.{Combination, Constant}
-        conclusion match 
+        conclusion match
           case Combination(Combination(Constant("=", _), Constant(name, typ)), defTerm) =>
             val term = toLisaTerm(defTerm)
             val tpe = toLisaType(typ)
@@ -230,12 +230,12 @@ object HOLImport extends lisa.HOL {
             val z = variable
             val ctx = (context._1 ++ context._2).toSeq
             inline def base(z: Term) = F.and(ctx) ==> (z === term)
-            inline def zDef(z: Term) = 
+            inline def zDef(z: Term) =
               orderedAbstractions.foldRight(base(z))((label, inner) => forall(label, inner))
             val just = Lemma(existsOne(z, zDef(z))) {
               sorry
             }
-            val newLabel = 
+            val newLabel =
               FunctionDefinition(sanitizeName(s"HOL@$name"), thm.id, "HOLLight")(freeTypes, z, zDef(z), just).label
             val baseTypingFormula: F.Formula = (newLabel.applySeq(freeTypes) :: tpe)
             val quantifiedTypingFormula = freeTypes.foldRight(baseTypingFormula)((v, step) => forall(v, step))
@@ -277,8 +277,8 @@ object HOLImport extends lisa.HOL {
         theoremCache.update(proof, res)
         res
 
-  @main 
+  @main
   def importHOLLight =
     lisaThms.foreach(t => println(t.repr))
 }
-*/
+ */

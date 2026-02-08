@@ -1,9 +1,9 @@
 package lisa.maths.SetTheory.Functions
 
-import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.Quantifiers.∃!
+import lisa.maths.SetTheory.Base.Predef.{_, given}
 
-import Function.{apply => _, *}
+import Function.{apply => _, _}
 import Sigma._
 
 /**
@@ -15,7 +15,7 @@ object Pi extends lisa.Main {
   private val x = variable[Ind]
   private val f = variable[Ind]
   private val A, B = variable[Ind]
-  
+
   private val T, T1, e = variable[Ind]
   private val T2 = variable[Ind >>: Ind]
 
@@ -46,7 +46,7 @@ object Pi extends lisa.Main {
     val ty1 = args(0)
     val ty2 = args(1)
     ty2 match
-      case Abs(v, body) => 
+      case Abs(v, body) =>
         if body.freeVars.contains(v) then s"Π($v: $ty1). $body"
         else s"$ty1 ->: $body"
       case _ => s"Π(_: $ty1). $ty2(_)"
@@ -60,13 +60,12 @@ object Pi extends lisa.Main {
     infix def ->:(b: Expr[Ind]): Expr[Ind] =
       Pi(a)(λ(x, b))
   }
-  object `->:` :
+  object `->:`:
     def unapply(e: Expr[?]): Option[(Expr[Ind], Expr[Ind])] =
       e match
         case SPi(a, lambda(x, b)) if !b.freeVars.contains(x) =>
           Some((a, b))
         case _ => None
-
 
   // Pattern extractor for the 'Pi' Shallow Embedding constant.
   // It allows matching expressions of the form Pi(T1)(T2) using the pattern SPi(T1, T2).
@@ -84,6 +83,5 @@ object Pi extends lisa.Main {
         case SPi(t1, lambda(x, t2)) if !t2.freeVars.contains(x) =>
           Some((t1, t2))
         case _ => None
-
 
 }

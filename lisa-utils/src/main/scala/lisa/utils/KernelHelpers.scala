@@ -7,7 +7,6 @@ import lisa.kernel.proof.SCProofCheckerJudgement.SCInvalidProof
 import lisa.kernel.proof.SCProofCheckerJudgement.SCValidProof
 import lisa.kernel.proof.SequentCalculus._
 import lisa.kernel.proof._
-import lisa.utils.unification.UnificationUtils.matchExpr
 
 import scala.annotation.targetName
 

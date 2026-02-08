@@ -1,9 +1,9 @@
 package lisa.utils.prooflib
 import lisa.utils.K
-import lisa.utils.KernelHelpers.{|- => `K|-`, _}
+import lisa.utils.KernelHelpers.{|- => _, _}
 import lisa.utils.collection.Extensions._
 import lisa.utils.fol.{FOL => F}
-import lisa.utils.prooflib.ProofTacticLib.{_, given}
+import lisa.utils.prooflib.ProofTacticLib._
 import lisa.utils.prooflib._
 import lisa.utils.unification.UnificationUtils._
 
@@ -41,7 +41,7 @@ object BasicStepTactic {
   object RestateTrue_ extends ProofTactic with ProofSequentTactic {
     def apply(using lib: Library, proof: lib.Proof)(bot: F.Sequent): proof.ProofTacticJudgement = {
       val botK = bot.underlying
-      if (!K.isSameSequent(botK, () `K|-` K.top))
+      if (!K.isSameSequent(botK, K.Sequent(Set(), Set(K.top))))
         proof.InvalidProofTactic("The desired conclusion is not a trivial tautology.")
       else
         proof.ValidProofTactic(bot, Seq(K.RestateTrue(botK)), Seq())
