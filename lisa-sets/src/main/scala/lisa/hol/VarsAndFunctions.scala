@@ -56,8 +56,8 @@ object VarsAndFunctions /*extends lisa.Main*/:
 
     override def substituteUnsafe(m: Map[Variable[?], Expr[?]]): App[Ind >>: Ind, Ind] =
       super.substituteUnsafe(m) match
-        case App(App(`abs`, typ), Abs(v1, body)) if v1 == v =>
-          HOLAbstraction(TypedVariable(v.id, typ), body)
+        case App(App(`abs`, typ), Abs(v1, body)) =>
+          HOLAbstraction(TypedVariable(v1.id, typ), body)
         case e =>
           println("Warning: unexpected substitution result: " + e + "for " + this)
           e
@@ -273,9 +273,6 @@ object VarsAndFunctions /*extends lisa.Main*/:
         case a ->: b =>
           val x = Variable.fresh[Ind](Set(a, b), "x")
           val s1 = have(TypeNonEmptyProof(b))
-          println(s"s1: ${s1.statement}")
-          println(s"goal: ${exists(x, x ∈ (a ->: b))}")
-          println(s"theorem: ${(nonEmptyFuncSpace of (A := a, B := b)).statement}")
           have(s1.statement.left |- exists(x, x ∈ (a ->: b))) by Tautology.from(s1, nonEmptyFuncSpace of (A := a, B := b))
         case _ => throw new IllegalArgumentException("TypeNonEmptyProof can only handle type constants, type variables, and function types.")
       }

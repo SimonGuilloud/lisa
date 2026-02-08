@@ -31,7 +31,6 @@ object HOLStepsTests extends lisa.HOL {
   // REFL
 
   val test_refl_1 = HOLTheorem(x =:= x) {
-    println(x.getClass)
     have(REFL(x))
   }
 
