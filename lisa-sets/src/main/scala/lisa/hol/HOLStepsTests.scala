@@ -2,8 +2,7 @@
 package lisa.hol
 import lisa.hol.HOLSteps.*
 import lisa.utils.prooflib.BasicStepTactic.* 
-import lisa.utils.fol.FOL as F
-import F.{Expr, Ind, Prop, >>:, variable, given}
+import lisa.utils.fol.FOL.{Expr, Ind, Prop, >>:, variable, given}
 
 object HOLStepsTests extends lisa.HOL {
   

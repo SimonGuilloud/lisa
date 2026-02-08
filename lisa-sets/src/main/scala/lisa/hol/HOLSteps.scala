@@ -693,12 +693,9 @@ object HOLSteps extends lisa._HOL {
       )
       instWithProofs.foldLeft(h0:ip.Fact) {
         case (h, (v, t, typProof)) =>
-          println(s"Discharging ${t} with proof ${typProof.statement}")
           have(Discharge(typProof)(h))
       }
-      println(s"Final statement after instantiation: ${lastStep.statement}")
       have(Clean.all(lastStep))
-      println(s"Final statement after cleaning     : ${lastStep.statement}")
     }  
   }
 
@@ -715,13 +712,11 @@ object HOLSteps extends lisa._HOL {
         if !fv.contains(v) then
           None // no need to discharge if the variable isn't free in the statement
         else 
-          println("cleaning type instantiation: " + v + " := " + t)
           val typProof = have(TypeNonEmptyProof(t))
           Some((v, t, typProof))
       )
       instWithProofs.foldLeft(h0:ip.Fact) {
         case (h, (v, t, typProof)) =>
-          println(s"Discharging ${t} with proof ${typProof.statement}")
           have(Discharge(typProof)(h))
       }
       have(Clean.all(lastStep))
@@ -1154,16 +1149,9 @@ object HOLSteps extends lisa._HOL {
 
       if (prem.statement -<< ta).freeVars.contains(v) then
         return proof.InvalidProofTactic(s"The variable ${v} is used in the sequent and it's type assignment can't be eliminated")
-      println(s"Cleaning variable ${v} of type ${typ} from the sequent ${prem.statement}")
       val p1 = have(TypeNonEmptyProof(ta.typ))
-      println(s"p1: ${p1.statement}")
-      println(s"ta   : ${ta}")
-      println(s"F.exists: ${F.exists(v, ta)}")
-      println(s"res: ${prem.statement -<? ta +<? F.exists(v, ta)}")
       val p2 = have(prem.statement -<? ta +<? F.exists(v, ta)) by LeftExists.withParameters(ta, v)(prem)
-      println(s"p2: ${p2.statement}")
       val p3 = have(Discharge(p1)(p2))
-      println(s"p3: ${p3.statement}")
     }
 
 
@@ -1180,11 +1168,6 @@ object HOLSteps extends lisa._HOL {
     }
 
     def typeVar(using proof: Proof)(net: Expr[Prop], tv: Variable[Ind])(prem: proof.Fact) : proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
-      println(s"net   : ${net}")
-      println(s"tv    : ${tv}")
-      println(s"prem  : ${prem.statement}")
-      println(s"Nete  : ${nonEmptyTypeExists.statement}")
-      println(s"Target: ${prem.statement -<? net +<< nonEmptyTypeExists.statement.right.head}")
       val p2 = have(prem.statement -<? net +<< nonEmptyTypeExists.statement.right.head) by LeftExists.withParameters(net, tv)(prem)
       val p3 = have(Discharge(nonEmptyTypeExists)(p2))
     }
