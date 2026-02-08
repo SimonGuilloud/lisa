@@ -676,7 +676,7 @@ object HOLSteps extends lisa._HOL {
   object INST extends ProofTactic {
     def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       val k = prem.of(inst.map(_ := _)*)
-      val h0 = have(k.statement) by Restate.from(k)
+      val h0 = have(k.statement) by Restate.from(k) //to avoid laststep failing
       val fv = prem.statement.freeVars 
       val violating = inst.collectFirst {
         case (v: TypedVariable, t) if fv.contains(v) && (v.asInstanceOf[TypedVariable].typ != computeType(t)) => (v, t)
@@ -706,19 +706,25 @@ object HOLSteps extends lisa._HOL {
 
   object INST_TYPE extends ProofTactic {
 
-    def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{
+    def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       val fv = prem.statement.freeVars
+      val k = prem.of(inst.map(_ := _)*)
+      val h0 = have(k.statement) by Restate.from(k) //to avoid laststep failing
       
       val instWithProofs = inst.flatMap((v, t) => 
         if !fv.contains(v) then
           None // no need to discharge if the variable isn't free in the statement
         else 
+          println("cleaning type instantiation: " + v + " := " + t)
           val typProof = have(TypeNonEmptyProof(t))
           Some((v, t, typProof))
       )
-      val k = prem.of(inst.map(_ := _)*)
-      val h0 = have(k.statement) by Restate.from(k)
-      have(Clean.all(h0))
+      instWithProofs.foldLeft(h0:ip.Fact) {
+        case (h, (v, t, typProof)) =>
+          println(s"Discharging ${t} with proof ${typProof.statement}")
+          have(Discharge(typProof)(h))
+      }
+      have(Clean.all(lastStep))
     }
 
   }

@@ -20,6 +20,7 @@ object HOLStepsTests extends lisa.HOL {
   private val e = typedvar(A ->: A)
   private val f = typedvar(A ->: B)
   private val g = typedvar(A ->: B)
+  private val g2 = typedvar(A ->: B)
   private val h = typedvar(B ->: A)
   private val i = typedvar(A ->: A)
   private val p = typedvar(𝔹)
@@ -328,20 +329,38 @@ object HOLStepsTests extends lisa.HOL {
 
   }
 
-
-  // Those don't hold because they require alpha equivalence to conclude the proof.
-
-  println("Starting test 15")
   val test_inst_15 = HOLTheorem(fun(q::𝔹, p)*p){
     have(fun(p::𝔹, r)*p) by Sorry
     have(INST(Seq((r, p)), lastStep))
   }
 
-  println("Starting test 16")
   val test_inst_16 = HOLTheorem(fun(x::A, fun(y::A, x))*y =:= fun(z::A, y)){
     have(BETA(fun(x::A, fun(y::A, x))*x))
     have(INST(Seq((x, y)), lastStep))
   }
+
+  println("start inst_type tests")
+  val test_inst_type_1 = HOLTheorem(fun(d::B, d)*d =:= d) {
+    have(BETA(fun(x::A, x)*x))
+    have(INST_TYPE(Seq((A, B)), lastStep))
+    have(INST(Seq((typedvar(B, "x"), d)), lastStep))
+  }
+
+
+  println("start test_inst_type_2\n\n ")
+  
+  val test_inst_type_2 = HOLTheorem(fun(q::𝔹, q)*p =:= p) {
+    have(BETA(fun(x::A, x)*x))
+    have(INST_TYPE(Seq((A, 𝔹)), lastStep))
+    have(INST(Seq((typedvar(𝔹, "x"), p)), lastStep))
+  }
+
+
+  val test_inst_type_3 = HOLTheorem(fun(f::A ->: B, fun(g::A ->: B, g) =:= fun(g::A ->: B, f))*g2 =:= (fun(g::A ->: B, g) =:= fun(g::A ->: B, g2))) {
+    have(INST_TYPE(Seq((A, A ->: B)), test_inst_10))
+    have(INST(Seq((typedvar(A ->: B, "z"), g2)), lastStep))
+  }
+
 
 
 }

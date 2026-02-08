@@ -66,6 +66,7 @@ object VarsAndFunctions /*extends lisa.Main*/ :
     override def rename(newId: Identifier): TypedVariable = TypedVariable(newId, typ)
   }
   def typedvar(typ: Expr[Ind])(using name: sourcecode.Name): TypedVariable = TypedVariable(name.value, typ)
+  def typedvar(typ: Expr[Ind], id: Identifier): TypedVariable = TypedVariable(id, typ)
 
   def fun(v: TypeAssign[Variable[Ind]], b: Expr[Ind]): Expr[Ind] = abs(v.typ)(λ(v.vari, b))
 
@@ -289,7 +290,10 @@ object VarsAndFunctions /*extends lisa.Main*/ :
         case a ->: b => 
           val x = Variable.fresh[Ind](Set(a, b), "x")
           val s1 = have(TypeNonEmptyProof(b))
-          have(exists(x, x ∈ (a ->: b))) by Tautology.from(s1, nonEmptyFuncSpace of (A := a, B := b))
+          println(s"s1: ${s1.statement}")
+          println(s"goal: ${exists(x, x ∈ (a ->: b))}")
+          println(s"theorem: ${(nonEmptyFuncSpace of (A := a, B := b)).statement}")
+          have(s1.statement.left |- exists(x, x ∈ (a ->: b))) by Tautology.from(s1, nonEmptyFuncSpace of (A := a, B := b))
         case _ => throw new IllegalArgumentException("TypeNonEmptyProof can only handle type constants, type variables, and function types.")
       }
     }
