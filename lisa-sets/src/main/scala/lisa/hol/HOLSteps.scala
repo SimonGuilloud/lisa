@@ -14,12 +14,12 @@ import lisa.maths.SetTheory.Functions.BasicTheorems.{absBodyEq, functionalExtent
 import lisa.maths.SetTheory.Base.Singleton
 import Singleton.singleton
 
-import lisa.hol.VarsAndFunctions.{computeType, contextToMap, eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, nonEmptyTypeExists, TypeNonEmptyProof, TypedVariable,
+import lisa.hol.VarsAndFunctions.{computeType, contextToMap, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, TypeNonEmptyProof, TypedVariable,
           given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
           given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
 import lisa.utils.prooflib.BasicStepTactic.*
 
-import HOLHelperTheorems.{Bool, `0 : 𝔹`, `1 : 𝔹`, Zero, One, zero_in_B}
+import HOLHelperTheorems.{Bool, `0 : 𝔹`, `1 : 𝔹`, Zero, One, zero_in_B, =:=, nonEmptyTypeExists}
 
 
 /**
@@ -46,41 +46,32 @@ object HOLSteps extends lisa._HOL {
   //INST
   //INST_TYPE
 
-  private val A = variable[Ind]
-  private val B = variable[Ind]
+  private val A = typevar
+  private val B = typevar
   private val t, u = variable[Ind >>: Ind]
   // Helpers for instantiating library theorems (some are stated using these names).
   private val Gf, Hf = variable[Ind >>: Ind]
-  private val v = variable[Ind]
-  private val w = variable[Ind]
-  private val x = variable[Ind]
-  private val y = variable[Ind]
-  private val z = variable[Ind]
-  private val e = variable[Ind]
-  private val f = variable[Ind]
-  private val g = variable[Ind]
-  private val h = variable[Ind]
+  private val v = typedvar(B)
+  private val w = typedvar(A)
+  private val x = typedvar(A)
+  private val y = typedvar(A)
+  private val z = typedvar(A)
+  private val e = typedvar(A ->: A)
+  private val f = typedvar(A ->: B)
+  private val g = typedvar(A ->: B)
+  private val h = typedvar(B ->: A)
 
-  private val p = variable[Ind]
-  private val q = variable[Ind]
-  private val r = variable[Ind]
+  private val p = typedvar(𝔹)
+  private val q = typedvar(𝔹)
+  private val r = typedvar(𝔹)
 
+  val eqDefin = {
+    val x = typedvar(A)
+    val y = typedvar(A)
+    val eqDefin = Axiom(((x::A) /\ (y::A)) ==> ((x =:= y)===One) <=> (x===y))
+    eqDefin
+  }
 
-
-  given ctx: Map[Variable[Ind], Typ] = Map(
-    v -> B,
-    w -> A,
-    x -> A,
-    y -> A,
-    z -> A,
-    e -> (A ->: A),
-    f -> (A ->: B),
-    g -> (A ->: B),
-    h -> (B ->: A),
-    p -> 𝔹,
-    q -> 𝔹,
-    r -> 𝔹
-  )
 
 
   val eqCorrect = Theorem((x::A, y::A) |- ((x =:= y)===One) <=> (x===y)) {
@@ -292,6 +283,32 @@ object HOLSteps extends lisa._HOL {
     have(thesis) by Sorry
   }
 
+    val mk_comTHM = Theorem((f::( A ->: B), g::(A ->: B), x::A, y::A, f =:= g, x =:= y) |- (f*x =:= g*y)) {
+    val typ1 = A ->: B
+    val typ2 = A
+    val vx = typedvar(A)
+    val vf = typedvar(A ->: B)
+    assume(f::(A ->: B))
+    assume(g::(A ->: B))
+    assume(x::A)
+    assume(y::A)
+    assume(f =:= g)
+    assume(x =:= y)
+    val p0 = have(HOLProofType(f*x)) 
+    val p1 = have(f*x :: B |- f*x =:= f*x) by Tautology.from(eqRefl of (HOLSteps.x := f*x, A := B))
+    val s1 = have(f*x =:= f*x) by Cut(p0, p1)
+    val s2 = have((f :: typ1, g::typ1) |- (f===g)) by Tautology.from(eqCorrect of (HOLSteps.x := f, HOLSteps.y := g, A := typ1))
+    val s3 = have((x :: typ2, y::typ2) |- (x===y)) by Tautology.from(eqCorrect of (HOLSteps.x := x, HOLSteps.y := y, A := typ2))
+
+    val s4 = have((x :: typ2, f::typ1, x === y) |- (f*x =:= f*y) === One) by RightSubstEq.withParameters(List((x, y)), (Seq(vx), f*x =:= f*vx))(s1)
+    val s5 = have(((x :: typ2, f::typ1, x === y, f === g)) |- (f*x =:= g*y) === One) by RightSubstEq.withParameters(List((f, g)), (Seq(vf), f*x =:= vf*y))(s4)
+
+    val s6 = have((x :: typ2, y::typ2, f::typ1, (f === g)) |- (f*x =:= g*y) === One) by Cut(s3, s5)
+    val s7 = have((x :: typ2, y::typ2, f :: typ1, g::typ1) |- (f*x =:= g*y) === One) by Cut(s2, s6)
+  }
+
+
+
   /**
    *  ------------------
    *     |- t = t
@@ -299,7 +316,8 @@ object HOLSteps extends lisa._HOL {
   object REFL extends ProofTactic {
     def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{
       // Extract typing context from current proof assumptions
-      val s1 = have(HOLProofType(t)) //t::A
+      val pp = HOLProofType(t)
+      val s1 = have(pp) //t::A
       val typ = s1.statement.right.head match
         case _ ∈ typ => typ
         case _ => return proof.InvalidProofTactic(s"Could not compute type of $t")
@@ -386,30 +404,7 @@ object HOLSteps extends lisa._HOL {
 
   */
 
-  val mk_comTHM = Theorem((f::( A ->: B), g::(A ->: B), x::A, y::A, f =:= g, x =:= y) |- (f*x =:= g*y)) {
-    val typ1 = A ->: B
-    val typ2 = A
-    val vx = variable[Ind]
-    val vf = variable[Ind]
-    assume(f::(A ->: B))
-    assume(g::(A ->: B))
-    assume(x::A)
-    assume(y::A)
-    assume(f =:= g)
-    assume(x =:= y)
-    println(s"eqrefl: ${(eqRefl of (HOLSteps.x := f*x, A := B)).statement}")
-    val p0 = have(HOLProofType(f*x)) 
-    val p1 = have(f*x :: B |- f*x =:= f*x) by Tautology.from(eqRefl of (HOLSteps.x := f*x, A := B))
-    val s1 = have(f*x =:= f*x) by Cut(p0, p1)
-    val s2 = have((f :: typ1, g::typ1) |- (f===g)) by Tautology.from(eqCorrect of (HOLSteps.x := f, HOLSteps.y := g, A := typ1))
-    val s3 = have((x :: typ2, y::typ2) |- (x===y)) by Tautology.from(eqCorrect of (HOLSteps.x := x, HOLSteps.y := y, A := typ2))
 
-    val s4 = have((x :: typ2, f::typ1, x === y) |- (f*x =:= f*y) === One) by RightSubstEq.withParameters(List((x, y)), (Seq(vx), f*x =:= f*vx))(s1)
-    val s5 = have(((x :: typ2, f::typ1, x === y, f === g)) |- (f*x =:= g*y) === One) by RightSubstEq.withParameters(List((f, g)), (Seq(vf), f*x =:= vf*y))(s4)
-
-    val s6 = have((x :: typ2, y::typ2, f::typ1, (f === g)) |- (f*x =:= g*y) === One) by Cut(s3, s5)
-    val s7 = have((x :: typ2, y::typ2, f :: typ1, g::typ1) |- (f*x =:= g*y) === One) by Cut(s2, s6)
-  }
 
   /**
    *  |- f = g    |- x = y

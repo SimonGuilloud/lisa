@@ -4,10 +4,13 @@ package lisa.hol
 import lisa.maths.SetTheory.Types
 import lisa.maths.SetTheory.Types.Tactics.*
 
+import lisa.utils.prooflib.ProofTacticLib.{_, given}
+import lisa.utils.K
 import lisa.utils.fol.FOL as F
 import lisa.utils.fol.FOL.*
 import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 import lisa.SetTheoryLibrary
+import SetTheoryLibrary.{have, thenHave, lastStep, JUSTIFICATION, thesis, THM, Proof, Theorem }
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
 import lisa.maths.SetTheory.Types.TypingHelpers.{*}
 import lisa.maths.SetTheory.Base.Predef.{pair, ∅, singleton, unorderedPair, ∈ }
@@ -16,10 +19,13 @@ import lisa.maths.SetTheory.Base.Pair.{snd}
 import lisa.maths.SetTheory.Functions.Predef.{*, given}
 import lisa.maths.SetTheory.Types.Tactics.Typecheck
 import scala.annotation.targetName
+import lisa.utils.UserLisaException
+import lisa.utils.prooflib.BasicStepTactic.*
+import lisa.automation.*
 
-object VarsAndFunctions extends lisa.Main :
+object VarsAndFunctions /*extends lisa.Main*/ :
   
-  import HOLHelperTheorems.{Bool, `0 : 𝔹`, `1 : 𝔹`, Zero, One, zero_in_B, boolNonEmpty, 𝔹}
+  import HOLHelperTheorems.{𝔹, Zero, One, boolNonEmpty, =:=, nonEmptyFuncSpace, nonEmptyTypeExists, T, assume}
 
   // import TypeSystem.*
 
@@ -43,7 +49,9 @@ object VarsAndFunctions extends lisa.Main :
   }
 
 
-  class TypeVariable(id: Identifier) extends Variable[Ind](id)
+  class TypeVariable(id: Identifier) extends Variable[Ind](id) {
+    override def rename(newId: Identifier): TypeVariable = TypeVariable(newId)
+  }
   def typevar(using name: sourcecode.Name): TypeVariable = TypeVariable(K.Identifier(name.value))
   class HOLConstantType(id: Identifier, val nonEmptyThm: JUSTIFICATION) extends Constant[Ind](id)
   class HOLConstant(id: Identifier, override val typ: Expr[Ind], val thm: JUSTIFICATION) extends TypedConstant(id, typ, thm)
@@ -55,6 +63,7 @@ object VarsAndFunctions extends lisa.Main :
       else 
         val newtyp = typ.substituteUnsafe(m)
         TypedVariable(id, newtyp).asInstanceOf[Expr[Ind]]
+    override def rename(newId: Identifier): TypedVariable = TypedVariable(newId, typ)
   }
   def typedvar(typ: Expr[Ind])(using name: sourcecode.Name): TypedVariable = TypedVariable(name.value, typ)
 
@@ -72,7 +81,11 @@ object VarsAndFunctions extends lisa.Main :
 
   def nonEmpty(typ: Variable[Ind]): Expr[Prop] = 
     val v = if typ.id.name == "x" then Variable[Ind](K.Identifier("x", typ.id.no+1)) else Variable[Ind]("x")
-    exists(v, v ∈ typ)  
+    exists(v, v ∈ typ)
+
+  class LisaHOLException(errorMessage: String)(using sourcecode.Line, sourcecode.File) extends UserLisaException(errorMessage){
+    def showError: String = errorMessage
+  }
 
   def computeType(t: Expr[Ind]): Typ = 
     val r = t match 
@@ -87,13 +100,13 @@ object VarsAndFunctions extends lisa.Main :
             val argType = computeType(arg)
             if isSame(argType, dom) then codom
             else 
-              throw new IllegalArgumentException("In application " + t + ", argument " + arg + " has type " + argType + " instead of expected " + dom + ".")
-          case funcType => throw new IllegalArgumentException("In application " + t + ", function " + func + " expected to have function type A ->: B, but has type " + funcType + ". ")
-      case Multiapp(func, args: List[Expr[Ind]] @unchecked) => 
+              throw new LisaHOLException("In application " + t + ", argument " + arg + " has type " + argType + " instead of expected " + dom + ".")
+          case funcType => throw new LisaHOLException("In application " + t + ", function " + func + " expected to have function type A ->: B, but has type " + funcType + ". ")
+      case Multiapp(func, args: List[Expr[Ind]]@unchecked)  => 
         func match
           case tcf: TypedConstantFunctional[?] =>
             if tcf.arity != args.size then 
-              throw new IllegalArgumentException("computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments.")
+              throw new LisaHOLException("computeType can only handle fully applied functions. Function " + tcf + " has arity " + tcf.arity + " but was applied to " + args.size + " arguments.")
             if args.zip(tcf.typ.inTyp).forall((arg, inType) => inType match
               case Some(value) => 
                 val argType = computeType(arg)
@@ -106,9 +119,9 @@ object VarsAndFunctions extends lisa.Main :
               val argsTypes = args.map(arg =>
                 computeType(arg)
               )
-              throw new IllegalArgumentException("Function " + tcf + " has type " + tcf.typ + " but was applied to arguments " + args + " of types " + argsTypes + ".")
-          case _ => throw new IllegalArgumentException("computeType can only handle typed constant functionals. " + func + " is not a typed constant functional.")
-      case _ => throw new IllegalArgumentException("computeTypes only support fully typed terms. " + t + " is not fully typed.")
+              throw new LisaHOLException("Function " + tcf + " has type " + tcf.typ + " but was applied to arguments " + args + " of types " + argsTypes + ".")
+          case _ => throw new LisaHOLException("computeType can only handle typed constant functionals. " + func + " is not a typed constant functional (with args " + args + "). It has class " + func.getClass + "."  )
+      case _ => throw new LisaHOLException("computeTypes only support fully typed terms. " + t + " is not fully typed.")
     r
 
 
@@ -230,20 +243,10 @@ object VarsAndFunctions extends lisa.Main :
 
 
 
-  val =:= : TypedConstantFunctional[Ind >>: Ind] ={
-    val =:= =  Constant[Ind >>: Ind]("=:=").printInfix()
-    addSymbol(=:=)
-    val typing_of_eq = Axiom(forall(A, =:=(A) :: (A ->: (A ->: 𝔹))))
-    TypedConstantFunctional[Ind >>: Ind]("=:=", FunctionalClass(List(None), List(A), (A ->: (A ->: 𝔹))), typing_of_eq)
-  }
-  lazy val eqDefin = {
-    val x = typedvar(A)
-    val y = typedvar(A)
-    val eqDefin = Axiom(((x::A) /\ (y::A)) ==> ((x =:= y)===One) <=> (x===y))
-    eqDefin
-  }
 
-  val holeq : TypedConstantFunctional[Ind >>: Ind] = VarsAndFunctions.=:=
+
+
+  val holeq : TypedConstantFunctional[Ind >>: Ind] = HOLHelperTheorems.=:=
 
   object eqOne {
     def unapply(f: Expr[Prop]): Option[Expr[Ind]] = f match {
@@ -275,7 +278,6 @@ object VarsAndFunctions extends lisa.Main :
   object TypeNonEmptyProof extends ProofTactic {
     val A = variable[Ind]
     val B = variable[Ind]
-    val nonEmptyFuncSpace = Axiom(exists(x, x ∈ B) ==> exists(x, x ∈ (A ->: B)))
     
     def apply(using proof: Proof)(typ: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof{ ip ?=>
       typ match {
@@ -296,10 +298,7 @@ object VarsAndFunctions extends lisa.Main :
 
 
 
-  val T = variable[Ind]
-  val nonEmptyTypeExists = Theorem(exists(T, exists(x, (x ∈ T)))) {
-    have(thesis) by RightExists(boolNonEmpty)
-  }
+
 
   def TypingTheorem(using om: lisa.utils.prooflib.OutputManager, name: sourcecode.FullName)(assignment: Expr[Prop]): THM = 
     val contextAssigns = getContext(assignment)
@@ -311,7 +310,8 @@ object VarsAndFunctions extends lisa.Main :
   object HOLProofType extends ProofTactic {
     def apply2(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind]): proof.ProofTacticJudgement =
       val contextAssigns: Set[Expr[Prop]] =  getContext(t)
-      Typecheck.inferProof(contextAssigns, t)
+      val r = Typecheck.inferProof(contextAssigns, t)
+      r
 
     def apply(using proof: SetTheoryLibrary.Proof)(t:Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
       given SetTheoryLibrary.type = SetTheoryLibrary

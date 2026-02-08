@@ -17,10 +17,10 @@ trait _HOL extends BasicMain {
   export lisa.maths.SetTheory.Functions.Predef.{*}
   export lisa.maths.SetTheory.Types.TypingHelpers.{main => _, *, given}
   export lisa.hol.VarsAndFunctions.{computeType, eqOne,
-                                    eqDefin, tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, definition, getContext, typedvar, typevar,
+                                    tforall, TypedForall, HOLProofType, holeq, HOLSequent, =:=, getContext, typedvar, typevar,
                                     given_Conversion_TypedForall_Expr, given_Conversion_Expr_HOLSequent,
                                     given_Conversion_Expr_Expr, termToSetConv, setTermToSetConv}
-  export lisa.hol.HOLHelperTheorems.{𝔹, Zero, One}
+  export lisa.hol.HOLHelperTheorems.{𝔹, Zero, One, =:=}
   export lisa.maths.SetTheory.Types.Tactics.Typecheck.*
   val library: SetTheoryLibrary.type = SetTheoryLibrary
 

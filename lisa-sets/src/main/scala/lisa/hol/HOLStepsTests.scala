@@ -33,6 +33,7 @@ object HOLStepsTests extends lisa.HOL {
   // REFL
 
   val test_refl_1 = HOLTheorem(x =:= x) {
+    println(x.getClass)
     have(REFL(x))
   }
 
@@ -131,12 +132,12 @@ object HOLStepsTests extends lisa.HOL {
     have(BETA(fun(x::A, x =:= y)*x))
   }
 
-  val test_beta_6 = HOLTheorem(fun(x::A, fun(y::B, x))*x =:= fun(y::B, x)) {
-    have(BETA(fun(x::A, fun(y::B, x))*x))
+  val test_beta_6 = HOLTheorem(fun(x::A, fun(d::B, x))*x =:= fun(d::B, x)) {
+    have(BETA(fun(x::A, fun(d::B, x))*x))
   }
 
-  val test_beta_7 = HOLTheorem(fun(x::A, fun(y::B, y))*x =:= fun(y::B, y)) {
-    have(BETA(fun(x::A, fun(y::B, y))*x))
+  val test_beta_7 = HOLTheorem(fun(x::A, fun(d::B, d))*x =:= fun(d::B, d)) {
+    have(BETA(fun(x::A, fun(d::B, d))*x))
   }
 
   val test_beta_8 = HOLTheorem(fun(x::A, fun(y::A, x =:= y))*x =:= fun(y::A, x =:= y)) {
@@ -144,8 +145,8 @@ object HOLStepsTests extends lisa.HOL {
   }
 
 
-  val test_beta_9 = HOLTheorem(fun(x::A, fun(y::B, fun(z::A, x)))*x =:= fun(y::B, fun(z::A, x))) {
-    have(BETA(fun(x::A, fun(y::B, fun(z::A, x)))*x))
+  val test_beta_9 = HOLTheorem(fun(x::A, fun(d::B, fun(z::A, x)))*x =:= fun(d::B, fun(z::A, x))) {
+    have(BETA(fun(x::A, fun(d::B, fun(z::A, x)))*x))
   }
 
   val test_beta_10 = HOLTheorem(fun(x::A, fun(y::A, fun(z::A, y) =:= fun(w::A, x)))*x =:= fun(y::A, fun(z::A, y) =:= fun(w::A, x))) {

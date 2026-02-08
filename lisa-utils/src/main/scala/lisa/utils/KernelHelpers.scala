@@ -446,7 +446,7 @@ object KernelHelpers {
      * Make a predicate definition in the theory, but only ask for the identifier of the new symbol; Arity is inferred
      * of the theorem to have more explicit writing and for sanity check. See also [[lisa.kernel.proof.RunningTheory.makePredicateDefinition]]
      */
-    def definition(symbol: String, expression: Expression): RunningTheoryJudgement[theory.Definition] = {
+    def makeSimpleDefinition(symbol: String, expression: Expression): RunningTheoryJudgement[theory.Definition] = {
       val label = Constant(symbol, expression.sort)
       val vars = expression.leadingVars()
       if (vars.length == expression.sort.depth) then theory.makeDefinition(label, expression, vars)

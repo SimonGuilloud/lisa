@@ -68,6 +68,15 @@ abstract class Library extends lisa.utils.prooflib.WithTheorems with lisa.utils.
     case Some(value) => value
   }
 
+  extension (symbol: F.Constant[?]) {
+    def definition: JUSTIFICATION = {
+      getDefinition(symbol).get
+    }
+    def shortDefinition: JUSTIFICATION = {
+      getShortDefinition(symbol).get
+    }
+  }
+
   /**
    * An alias to create a Theorem
    */
@@ -80,7 +89,7 @@ abstract class Library extends lisa.utils.prooflib.WithTheorems with lisa.utils.
    * Allows to create a definition by shortcut of a predicate symbol:
    */
   def makeSimpleDefinition(symbol: String, expression: K.Expression): K.Judgement[theory.Definition] =
-    theory.definition(symbol, expression)
+    theory.makeSimpleDefinition(symbol, expression)
 
   /**
    * Prints a short representation of the given theorem or definition
