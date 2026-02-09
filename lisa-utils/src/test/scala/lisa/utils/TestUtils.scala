@@ -1,8 +1,8 @@
 package lisa.utils
 
 import lisa.kernel.fol.FOL._
-import lisa.utils.KernelHelpers.given_Conversion_String_Identifier
 import lisa.utils.KernelHelpers._
+import lisa.utils.KernelHelpers.given_Conversion_String_Identifier
 import lisa.utils._
 
 trait TestUtils {

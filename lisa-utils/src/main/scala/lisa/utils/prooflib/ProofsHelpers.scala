@@ -5,10 +5,10 @@ import lisa.utils.K.Identifier
 import lisa.utils.KernelHelpers._
 import lisa.utils.LisaException
 import lisa.utils.UserLisaException
+import lisa.utils._
 import lisa.utils.prooflib.BasicStepTactic._
 import lisa.utils.prooflib.ProofTacticLib._
 import lisa.utils.prooflib._
-import lisa.utils._
 
 
 trait ProofsHelpers {
