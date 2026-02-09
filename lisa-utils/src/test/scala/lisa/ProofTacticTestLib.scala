@@ -4,7 +4,6 @@ import lisa.utils.prooflib.BasicMain
 import lisa.utils.prooflib.BasicStepTactic._
 import org.scalatest.funsuite.AnyFunSuite
 
-
 trait ProofTacticTestLib extends AnyFunSuite with BasicMain {
 
   export lisa.test.TestTheoryLibrary.{_, given}

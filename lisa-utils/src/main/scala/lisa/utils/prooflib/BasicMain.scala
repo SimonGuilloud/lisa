@@ -1,6 +1,5 @@
 package lisa.utils.prooflib
 
-
 trait BasicMain {
   val library: Library
 

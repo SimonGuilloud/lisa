@@ -9,7 +9,6 @@ import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 import lisa.utils.prooflib.ProofTacticLib.UnimplementedProof
 import lisa.utils.prooflib._
 
-
 trait WithTheorems {
   library: Library =>
 

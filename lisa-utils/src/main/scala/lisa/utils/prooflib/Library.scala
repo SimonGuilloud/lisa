@@ -5,7 +5,6 @@ import lisa.kernel.proof.SequentCalculus
 import lisa.utils.KernelHelpers._
 import lisa.utils._
 
-
 /**
  * A class abstracting a [[lisa.kernel.proof.RunningTheory]] providing utility functions and a convenient syntax
  * to write and use Theorems and Definitions.

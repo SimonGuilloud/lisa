@@ -1,6 +1,5 @@
 package lisa.utils
 
-
 /**
  * Utilities to work with sequent-calculus proofs.
  * All of these methods assume that the provided proof are well-formed but not necessarily valid.

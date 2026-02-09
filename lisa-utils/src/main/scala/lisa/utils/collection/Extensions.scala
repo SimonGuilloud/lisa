@@ -1,6 +1,5 @@
 package lisa.utils.collection
 
-
 object Extensions:
 
   extension [A](seq: IterableOnce[A])

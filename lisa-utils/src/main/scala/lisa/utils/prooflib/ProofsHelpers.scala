@@ -10,7 +10,6 @@ import lisa.utils.prooflib.BasicStepTactic._
 import lisa.utils.prooflib.ProofTacticLib._
 import lisa.utils.prooflib._
 
-
 trait ProofsHelpers {
   library: Library & WithTheorems =>
 
@@ -342,7 +341,6 @@ trait ProofsHelpers {
   /////////////////////////
   //  Local Definitions  //
   /////////////////////////
-
 
   /**
    * A term with a definition, local to a proof.

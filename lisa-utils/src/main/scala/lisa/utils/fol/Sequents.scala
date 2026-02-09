@@ -3,7 +3,6 @@ package lisa.utils.fol
 import lisa.utils.K
 import lisa.utils.prooflib.ProofTacticLib.ProofTactic
 
-
 trait Sequents extends Predef {
 
   /**

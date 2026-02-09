@@ -5,7 +5,6 @@ import lisa.utils.fol.ExprOps
 
 import scala.annotation.showAsInfix
 
-
 trait Predef extends ExprOps {
 
   export K.{given_Conversion_String_Identifier, given_Conversion_Identifier_String}
