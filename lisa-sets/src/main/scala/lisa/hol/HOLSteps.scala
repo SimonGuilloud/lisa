@@ -181,7 +181,7 @@ object HOLSteps extends lisa._HOL {
       pointwiseEq
     )
 
-    // Explicit instantiation keys for TypingRules.TAbs (its schematic variables are named T1, T2, e).
+    // Use TAbs to get typing from the tforall hypotheses
     val T1 = variable[Ind]
     val T2 = variable[Ind >>: Ind]
     val e = variable[Ind >>: Ind]
@@ -229,32 +229,7 @@ object HOLSteps extends lisa._HOL {
       thenHave(thesis) by RightForall
     }
 
-    // Type abs(A)(lam) using TAbs
-    val T1 = variable[Ind]
-    val T2 = variable[Ind >>: Ind]
-    val e = variable[Ind >>: Ind]
-
-    val lamTyping = have(tforall(x :: A, lam(x) :: B)) subproof {
-      // Need schematic variables matching TApp's names
-      val e1, e2 = variable[Ind]
-      val T1 = variable[Ind]
-      val T2 = variable[Ind >>: Ind]
-
-      have((x :: A) ==> (lam(x) :: B)) subproof {
-        assume(x :: A)
-        val lamApp = have(lam(x) === f * x) by Restate
-        val fxTyped = have(f * x :: B) by Tautology.from(
-          lisa.maths.SetTheory.Types.TypingRules.TApp of (e1 := f, e2 := x, T1 := A, T2 := λ(y, B))
-        )
-        have(thesis) by Congruence.from(fxTyped, lamApp)
-      }
-      thenHave(thesis) by RightForall
-    }
-
-    val absTyped = have(abs(A)(lam) :: (A ->: B)) by Tautology.from(
-      lisa.maths.SetTheory.Types.TypingRules.TAbs of (T1 := A, T2 := λ(x, B), e := lam),
-      lamTyping
-    )
+    val absTyped = have(HOLProofType(abs(A)(lam)))
     val fTyped = have(f :: (A ->: B)) by Hypothesis
 
     have(thesis) by Tautology.from(
@@ -265,10 +240,15 @@ object HOLSteps extends lisa._HOL {
     )
   }
 
-  // TODO: This theorem proof needs to be fixed - there's a subtle variable scoping issue
-  // with the lambda binding and the schematic variable x in the theorem statement
   val etaConv = Theorem((f :: (A ->: B), x :: A) |- holeq(A ->: B) * (fun(x :: A, f * x)) * f) {
-    have(thesis) by Sorry
+    val lam = abs(A)(λ(x, f * x))
+    assume(f :: (A ->: B))
+    val absT = have(HOLProofType(lam))
+    have(thesis) by Tautology.from(
+      etaConvEq,
+      absT,
+      eqCorrect of (HOLSteps.x := lam, HOLSteps.y := f, A := (A ->: B))
+    )
   }
 
   val mk_comTHM = Theorem((f :: (A ->: B), g :: (A ->: B), x :: A, y :: A, f =:= g, x =:= y) |- (f * x =:= g * y)) {
