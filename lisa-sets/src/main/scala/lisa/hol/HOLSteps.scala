@@ -29,7 +29,7 @@ object HOLSteps extends lisa._HOL {
   // draft()
 
   // REFL
-  // _TRANS
+  // TRANS
   // MK_COMB
   // ABS
   // BETA
@@ -279,7 +279,7 @@ object HOLSteps extends lisa._HOL {
    *  ------------------
    *     |- t = t
    */
-  object REFL extends ProofTactic {
+  object _REFL extends ProofTactic {
     def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
       // Extract typing context from current proof assumptions
       val pp = HOLProofType(t)
@@ -291,6 +291,8 @@ object HOLSteps extends lisa._HOL {
       have(Clean.all(lastStep))
     }
   }
+
+
 
   /**
    *  |- s = t    |- t = u
@@ -342,13 +344,13 @@ object HOLSteps extends lisa._HOL {
         case (HOLSequent(left1, (=:= #@aa)*s*ta), HOLSequent(left2, (=:= #@ab)*tb*u) ) => //equality is too strict
             if aa == ab then
               if ta == tb then
-                _TRANS(t1, t2)
+                TRANS(t1, t2)
               else
                 // try to see if ta alpha_eq tb
                 TacticSubproof:
                   val alpha = have(ALPHA_EQUIVALENCE(ta, tb))
-                  val s1 = have(_TRANS(t1, alpha))
-                  val s2 = have(_TRANS(s1, t2))
+                  val s1 = have(TRANS(t1, alpha))
+                  val s2 = have(TRANS(s1, t2))
             else
               return proof.InvalidProofTactic(s"Types don't agree: $aa and $ab")
 
@@ -372,7 +374,7 @@ object HOLSteps extends lisa._HOL {
    *  ---------------------
    *        |- f x = g y
    */
-  object MK_COMB extends ProofTactic {
+  object _MK_COMB extends ProofTactic {
     def apply(using proof: Proof)(f1: proof.Fact, f2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof {
       val fg = f1.statement
       val xy = f2.statement
@@ -404,8 +406,9 @@ object HOLSteps extends lisa._HOL {
    * ---------------------
    *  |- λx. t =:= λx. u
    */
-  object ABS extends ProofTactic {
-    def apply(using proof: Proof)(x: Variable[Ind], xTyp: Typ)(prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
+  object _ABS extends ProofTactic {
+    def apply(using proof: Proof)(x: TypedVariable)(prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
+      val xTyp = x.typ
       val s1 = prem.statement
       s1 match {
         case HOLSequent(left, (=:= #@ typ1) * tt * uu) =>
@@ -444,7 +447,7 @@ object HOLSteps extends lisa._HOL {
   /**
    * BETA_CONV((λx. t) u) produces |- (λx. t) u =:= t[x := u]
    */
-  object BETA_CONV extends ProofTactic {
+  object _BETA_CONV extends ProofTactic {
     def apply(using proof: Proof)(tin: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
       tin match
         case Sabs(typ1, Abs(xx, tt)) * (r: Expr[Ind]) =>
@@ -470,12 +473,12 @@ object HOLSteps extends lisa._HOL {
   /**
    * BETA((λx. t) x) produces |- (λx. t) x =:= t
    */
-  object BETA extends ProofTactic {
+  object _BETA extends ProofTactic {
     def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
       t match
         case Sabs(typ1, tt) * (r: Variable[Ind]) =>
           // assure the right shape is present, and pass to the general case
-          have(BETA_CONV(t))
+          have(_BETA_CONV(t))
         case _ =>
           return proof.InvalidProofTactic(s"The Expr[Ind] should be of the form (λx. t) y")
 
@@ -530,7 +533,7 @@ object HOLSteps extends lisa._HOL {
    */
 
   // λ(x, t*x) =:= t
-  object ETA extends ProofTactic {
+  object _ETA extends ProofTactic {
     def apply(using proof: Proof)(x: TypedVariable, t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
 
       if t.freeVars.contains(x) then return proof.InvalidProofTactic(s"Variable $x is free in the Expr[Ind] $t")
@@ -548,7 +551,7 @@ object HOLSteps extends lisa._HOL {
    * ---------------
    *     t |- t
    */
-  object ASSUME extends ProofTactic {
+  object _ASSUME extends ProofTactic {
     def apply(using proof: Proof)(t: Expr[Ind]): proof.ProofTacticJudgement = TacticSubproof {
       val typ = computeType(t)
       if typ == 𝔹 then
@@ -564,7 +567,7 @@ object HOLSteps extends lisa._HOL {
    * -------------------
    *       |- u
    */
-  object EQ_MP extends ProofTactic {
+  object _EQ_MP extends ProofTactic {
     def apply(using proof: Proof)(eq: proof.Fact, p: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
       if eq.statement.right.size != 1 then return proof.InvalidProofTactic(s"The first premise should be of the form (t =:= u) === One")
       eq.statement match
@@ -597,7 +600,7 @@ object HOLSteps extends lisa._HOL {
    * -------------------------
    *   A - p, B - q |- p = q
    */
-  object DEDUCT_ANTISYM_RULE extends ProofTactic {
+  object _DEDUCT_ANTISYM_RULE extends ProofTactic {
     def apply(using proof: Proof)(t1: proof.Fact, t2: proof.Fact): proof.ProofTacticJudgement = TacticSubproof {
       if t1.statement.right.size != 1 || t2.statement.right.size != 1 then return proof.InvalidProofTactic(s"The premises should be of the form p === One and q === One")
       val left1 = t1.statement.left
@@ -623,7 +626,7 @@ object HOLSteps extends lisa._HOL {
 
   }
 
-  object INST extends ProofTactic {
+  object _INST extends ProofTactic {
     def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
       val k = prem.of(inst.map(_ := _)*)
       val h0 = have(k.statement) by Restate.from(k) // to avoid laststep failing
@@ -647,7 +650,7 @@ object HOLSteps extends lisa._HOL {
     }
   }
 
-  object INST_TYPE extends ProofTactic {
+  object _INST_TYPE extends ProofTactic {
 
     def apply(using proof: Proof)(inst: Seq[(Variable[Ind], Expr[Ind])], prem: proof.Fact): proof.ProofTacticJudgement = TacticSubproof { ip ?=>
       val fv = prem.statement.freeVars
