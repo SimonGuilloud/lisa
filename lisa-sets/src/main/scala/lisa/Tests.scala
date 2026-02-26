@@ -58,11 +58,5 @@ object Tests extends lisa.Main {
   val example2 = Theorem(∃(x, ∀(y, d(x) ==> d(y)))):
     have(thesis) by Prover9
 
-  val dr2proof = flattenProof(drinkers2.kernelProof.get)
-  java.lang.Thread.sleep(5)
-  checkProof(dr2proof)
-  java.lang.Thread.sleep(5)
-  val tptpproof = ProofPrinter.proofToTPTP(dr2proof, Map(), ("drinkers2", drinkers2.statement.underlying), false)
-  tptpproof.foreach { p => println(p.pretty) }
 
 }
