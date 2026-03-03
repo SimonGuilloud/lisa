@@ -345,10 +345,8 @@ trait WithTheorems {
   /**
    * Top-level instance of [[Proof]] directly proving a theorem
    */
-  sealed class BaseProof(val owningTheorem: THMFromProof) extends Proof(Nil) {
-
-    val goal: F.Sequent = owningTheorem.goal
-    val possibleGoal: Option[F.Sequent] = Some(goal)
+  final class BaseProof(val owningTheorem: THMFromProof) extends Proof(Nil) {
+    val possibleGoal: Option[F.Sequent] = owningTheorem.possibleGoal
     type OutsideFact = JUSTIFICATION
     override inline def asOutsideFact(j: JUSTIFICATION): OutsideFact = j
 
@@ -357,7 +355,6 @@ trait WithTheorems {
     def justifications: List[JUSTIFICATION] = getImports.map(_._1)
 
     def sorryDependencies = justifications.filter(_.withSorry)
-
   }
 
   /**
@@ -488,7 +485,7 @@ trait WithTheorems {
      * @return
      */
     def apply(using om: OutputManager)(statement: F.Sequent, fullName: String, line: Int, file: String, kind: TheoremKind)(computeProof: Proof ?=> Unit) =
-      THMFromProof(statement, fullName, line, file, kind)(computeProof)
+      THMWithStatement(statement, fullName, line, file, kind)(computeProof)
 
     /**
      * Constructs a "high level" theorem from an existing theorem in the
@@ -529,6 +526,21 @@ trait WithTheorems {
           )
       }
 
+    /**
+     * Construct a theorem without providing a concrete goal. Intended to be
+     * used in internal tactic proofs where the exact goal of the theorem is not
+     * known in advance.
+      *
+      * @param om The output manager, available in any file extending [[lisa.utils.BasicMain]]
+      * @param fullName The full name of the theorem, including the path/package.
+      * @param line The line at which the theorem is defined. Usually fetched automatically by the compiler. Used for error reporting
+      * @param file The file in which the theorem is defined. Usually fetched automatically by the compiler. Used for error reporting
+      * @param kind The kind of theorem (Theorem, Lemma, Corollary)
+      * @param computeProof The proof computation.
+     */
+    def withoutStatement(using om: OutputManager)(fullName: String, line: Int, file: String, kind: TheoremKind)(computeProof: Proof ?=> Unit): THM =
+      THMWithoutStatement(fullName, line, file, kind)(computeProof)
+
   }
 
   /**
@@ -546,24 +558,16 @@ trait WithTheorems {
 
   }
 
-  /**
-   * A theorem that was produced from a high level proof. See [[THM.apply]].
-   * Typical way to construct a theorem in the library, but serialization for example will produce a [[THMFromKernel]].
-   */
-  final class THMFromProof(using om: OutputManager)(val statement: F.Sequent, val fullName: String, line: Int, file: String, val kind: TheoremKind)(computeProof: Proof ?=> Unit) extends THM {
-
-    val goal: F.Sequent = statement
-
-    def kernelProof: Some[K.SCProof] = Some(prove(computeProof)._3)
-    def highProof: Some[BaseProof] = Some(prove(computeProof)._2)
-
+  sealed abstract class THMFromProof(using om: OutputManager)(val fullName: String, val line: Int, val file: String)(val possibleGoal: Option[F.Sequent])(val computeProof: Proof ?=> Unit) extends THM {
     import lisa.utils.Serialization.*
-    val innerJustification: theory.Theorem =
-      if library._draft.nonEmpty && library._draft.get.value != file
+
+    val (innerJustification: theory.Theorem, provedStatement: F.Sequent) =
+      if library._draft.nonEmpty && library._draft.get.value != file && possibleGoal.isDefined
       then // if the draft option is activated, and the theorem is not in the file where the draft option is given, then we replace the proof by sorry
+        val goal = possibleGoal.get
         theory.theorem(name, goal.underlying, SCProof(SC.Sorry(goal.underlying)), IndexedSeq.empty) match {
           case K.Judgement.ValidJustification(just) =>
-            just
+            (just, goal)
           case wrongJudgement: K.Judgement.InvalidJustification[?] =>
             om.lisaThrow(
               LisaException.InvalidKernelJustificationComputation(
@@ -575,22 +579,35 @@ trait WithTheorems {
         }
       else if library._withCache then
         oneThmFromFile("cache/" + name, library.theory) match {
-          case Some(thm) => thm // try to get the theorem from file
+          case Some(thm) => 
+            val goal = possibleGoal.getOrElse {
+              // cached theorem with no known goal, lift the kernel sequent
+              val K.Sequent(left, right) = thm.proposition
+              F.Sequent(
+                left.map(F.asFrontExpression(_).asInstanceOf), 
+                right.map(F.asFrontExpression(_).asInstanceOf)
+              )
+            }
+            (thm, goal) // try to get the theorem from file
 
           case None =>
-            val (thm, _, scp, justifs) = prove(computeProof) // if fail, prove it
+            val (thm, proof, scp, justifs) = prove(computeProof) // if fail, prove it
             thmsToFile("cache/" + name, theory, List((name, flattenProof(scp), justifs))) // and save it to the file
-            thm
+            (thm, proof.mostRecentStep.bot)
         }
-      else prove(computeProof)._1
+      else 
+        val (innerThm, proof, _, _) = prove(computeProof)
+
+        (innerThm, proof.mostRecentStep.bot)
 
     library.last = Some(this)
 
     /**
      * Construct the kernel theorem from the high level proof
      */
-    private def prove(computeProof: Proof ?=> Unit): (theory.Theorem, BaseProof, SCProof, List[(String, theory.Justification)]) = {
+    protected def prove(computeProof: Proof ?=> Unit): (theory.Theorem, BaseProof, SCProof, List[(String, theory.Justification)]) = {
       val proof = new BaseProof(this)
+
       try {
         computeProof(using proof)
       } catch {
@@ -603,6 +620,11 @@ trait WithTheorems {
 
       val scp = proof.toSCProof
       val justifs = proof.getImports.map(e => (e._1.owner, e._1.innerJustification))
+
+      // if we have a targeted goal, use that. Otherwise, we have proved
+      // whatever the proof justifies
+      val goal = possibleGoal.getOrElse(proof.mostRecentStep.bot)
+
       theory.theorem(name, goal.underlying, scp, justifs.map(_._2)) match {
         case K.Judgement.ValidJustification(just) =>
           (just, proof, scp, justifs)
@@ -617,6 +639,45 @@ trait WithTheorems {
       }
 
     }
+  }
+
+  /**
+   * A theorem that was produced from a high level proof. See [[THM.apply]].
+   * Typical way to construct a theorem in the library, but serialization for example will produce a [[THMFromKernel]].
+   */
+  final class THMWithStatement
+    (using val om: OutputManager)
+    (
+      val statement: F.Sequent, 
+      fullName: String, 
+      line: Int, 
+      file: String, 
+      val kind: TheoremKind
+    )(computeProof: Proof ?=> Unit)
+       extends THMFromProof(fullName, line, file)(Some(statement))(computeProof) {
+
+    val goal: F.Sequent = statement
+
+    def kernelProof: Some[K.SCProof] = Some(prove(computeProof)._3)
+    def highProof: Some[BaseProof] = Some(prove(computeProof)._2)
+
+  }
+
+  final class THMWithoutStatement
+    (using val om: OutputManager)
+    (
+      fullName: String, 
+      line: Int, 
+      file: String, 
+      val kind: TheoremKind
+    )(computeProof: Proof ?=> Unit)
+       extends THMFromProof(fullName, line, file)(None)(computeProof) {
+
+    val statement: F.Sequent = provedStatement // the statement computed from the proof
+
+    override def kernelProof: Some[SCProof] = Some(prove(computeProof)._3)
+
+    override def highProof: Some[BaseProof] = Some(prove(computeProof)._2)
 
   }
 
@@ -628,6 +689,12 @@ trait WithTheorems {
     def apply(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(statement: F.Sequent)(computeProof: Proof ?=> Unit): THM = {
       val s = library.contextHypotheses.getOrElse(file, Set.empty).foldLeft(statement)(_ +<< _)
       val thm = THM(s, name.value, line.value, file.value, this)(computeProof)
+      show(thm)
+      thm
+    }
+
+    def withoutStatement(using om: OutputManager, name: sourcecode.FullName, line: sourcecode.Line, file: sourcecode.File)(computeProof: Proof ?=> Unit): THM = {
+      val thm = THM.withoutStatement(name.value, line.value, file.value, this)(computeProof)
       show(thm)
       thm
     }
