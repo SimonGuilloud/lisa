@@ -1150,8 +1150,8 @@ object BasicStepTactic {
             if (K.isSame(left, right))
               proof.ValidProofTactic(bot, Seq(K.RightRefl(botK, faK)), Seq())
             else
-              proof.InvalidProofTactic("φ is not an instance of reflexivity.")
-          case _ => proof.InvalidProofTactic("φ is not an equality.")
+              proof.InvalidProofTactic(s"Conclusion is not an instance of reflexivity. Found unequal terms $left and $right instead.")
+          case _ => proof.InvalidProofTactic("Conclusion is not an equality.")
         }
     }
 
