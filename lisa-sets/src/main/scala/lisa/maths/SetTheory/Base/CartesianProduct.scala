@@ -315,6 +315,7 @@ object CartesianProduct extends lisa.Main {
       right
     )
   }
+
   /**
    * Theorem --- The union of two Cartesian products `A × B` and `C × D` is a subset
    * of the Cartesian product of the unions.

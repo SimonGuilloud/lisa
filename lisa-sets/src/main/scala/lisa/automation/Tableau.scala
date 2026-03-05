@@ -165,7 +165,7 @@ object Tableau extends ProofTactic with ProofSequentTactic with ProofFactSequent
         s"${BLUE(prettyIte(delta, "delta"))}, " +
         s"${YELLOW(prettyIte(gamma, "gamma"))}, " +
         s"${MAGENTA(prettyIte(atoms._1, "+"))}, ${CYAN(prettyIte(atoms._2, "-"))}, " + ""
-        //s"$pretUnif, _, _)"
+        // s"$pretUnif, _, _)"
       ).split("'").mkString("").split("_").mkString("")
 
   }
@@ -283,7 +283,7 @@ object Tableau extends ProofTactic with ProofSequentTactic with ProofFactSequent
     val minSize = substs.minBy(_._1.size)
     val smallSubst = substs.filter(_._1.size == minSize._1.size)
     // Up to this, it is necessary for completeness. From this, it is heuristic.
-    //println("subst_with_score: " + smallSubst.map(s => prettySubst(s._1) + " using " + s._2.map(_.repr).mkString("{", ", ", "}") + " score: " + substitutionScore(s._1, branch)).mkString(" | "))
+    // println("subst_with_score: " + smallSubst.map(s => prettySubst(s._1) + " using " + s._2.map(_.repr).mkString("{", ", ", "}") + " score: " + substitutionScore(s._1, branch)).mkString(" | "))
 
     val best = smallSubst.minBy(s => substitutionScore(s._1, branch))
     Some(best)
@@ -475,8 +475,8 @@ object Tableau extends ProofTactic with ProofSequentTactic with ProofFactSequent
       )
     else if (closeSubst.nonEmpty && closeSubst.get._1.nonEmpty) // If branch can be closed with Instantiation (LeftForall)
       val (x, t) = closeSubst.get._1.minBy((x, t) => branch.varsOrder(x))
-      //println("Instantiating " + x.id + " with " + t.repr)
-      //println("Branch before instantiation: " + branch)
+      // println("Instantiating " + x.id + " with " + t.repr)
+      // println("Branch before instantiation: " + branch)
       Thread.sleep(500)
       val (recBranch, instantiated) = applyInst(branch, x, t)
       val upperProof = decide(recBranch)

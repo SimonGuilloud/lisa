@@ -1,8 +1,8 @@
 package lisa.test.automation
 
+import lisa.automation.Tableau.solve
 import lisa.kernel.proof.SCProofChecker.checkSCProof
 import org.scalatest.funsuite.AnyFunSuite
-import lisa.automation.Tableau.solve
 
 class TableauTest extends AnyFunSuite with lisa.TestMain {
 
@@ -34,7 +34,9 @@ class TableauTest extends AnyFunSuite with lisa.TestMain {
   private val Q = variable[Ind >>: Prop]
   private val R = variable[Ind >>: Ind >>: Prop]
 
-  /** Solve a formula and return (proofFound, proofValid). */
+  /**
+   * Solve a formula and return (proofFound, proofValid).
+   */
   private def solveAndCheck(formula: Expr[Prop]): (Boolean, Boolean) = {
     val res = Tableau.solve(() |- formula)
     res match
@@ -126,11 +128,18 @@ class TableauTest extends AnyFunSuite with lisa.TestMain {
   private val a1 = ∀(x, ∀(y, ∀(z, ((E(x)(y) /\ E(y)(z)) ==> E(x)(z)))))
   private val a2 = ∀(x, ∀(y, (E(x)(y) ==> E(f(x))(f(y)))))
   private val a3 = ∀(x, E(f(g(x)))(g(f(x))))
-  private val biga = ∀(x, ∀(y, ∀(z,
-    ((E(x)(y) /\ E(y)(z)) ==> E(x)(z)) /\
-      (E(x)(y) ==> E(f(x))(f(y))) /\
-      E(f(g(x)))(g(f(x)))
-  )))
+  private val biga = ∀(
+    x,
+    ∀(
+      y,
+      ∀(
+        z,
+        ((E(x)(y) /\ E(y)(z)) ==> E(x)(z)) /\
+          (E(x)(y) ==> E(f(x))(f(y))) /\
+          E(f(g(x)))(g(f(x)))
+      )
+    )
+  )
 
   private val hardFormulas: List[Expr[Prop]] = List(
     ∀(x, P(x) ==> Q(x)) ==> (∀(x, P(x)) ==> ∀(x, Q(x))),
