@@ -477,7 +477,6 @@ object Tableau extends ProofTactic with ProofSequentTactic with ProofFactSequent
       val (x, t) = closeSubst.get._1.minBy((x, t) => branch.varsOrder(x))
       // println("Instantiating " + x.id + " with " + t.repr)
       // println("Branch before instantiation: " + branch)
-      Thread.sleep(500)
       val (recBranch, instantiated) = applyInst(branch, x, t)
       val upperProof = decide(recBranch)
       upperProof.map((proof, step) =>
