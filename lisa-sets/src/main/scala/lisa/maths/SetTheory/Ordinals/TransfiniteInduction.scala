@@ -2,8 +2,8 @@ package lisa.maths.SetTheory.Ordinals
 
 import lisa.maths.SetTheory.Base.Predef._
 import lisa.maths.SetTheory.Order.Predef._
-import lisa.maths.SetTheory.Relations.Examples.MembershipRelation._
 import lisa.maths.SetTheory.Order.WellOrders.WellOrder
+import lisa.maths.SetTheory.Relations.Examples.MembershipRelation._
 
 import Ordinal._
 
@@ -147,7 +147,8 @@ object TransfiniteInduction extends lisa.Main {
 
       // Convert to implication and generalize over δ
       have((minimal(δ)(A ∩ α)(membershipRelation(α))) |- ∃(α ∈ A, ∀(β ∈ A, α <= β))) by Tautology.from(
-        lastStep, minimal.definition of (a := δ, A := (A ∩ α), R := membershipRelation(α))
+        lastStep,
+        minimal.definition of (a := δ, A := (A ∩ α), R := membershipRelation(α))
       )
       val fromMinimal = thenHave(∃(δ, minimal(δ)(A ∩ α)(membershipRelation(α))) |- ∃(α ∈ A, ∀(β ∈ A, α <= β))) by LeftExists
 

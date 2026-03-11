@@ -144,10 +144,12 @@ object WellOrderedRecursion extends lisa.Main {
 
         // initialSegment(x)(A)(<) ⊆ dom(G1) and dom(G2) since functionOn(Gi)(A) gives dom(Gi) = A
         val segSubG1 = have(initialSegment(x)(A)(<) ⊆ dom(G1)) by Congruence.from(
-          InitialSegment.subset, Functions.BasicTheorems.functionOnDomain of (f := G1)
+          InitialSegment.subset,
+          Functions.BasicTheorems.functionOnDomain of (f := G1)
         )
         val segSubG2 = have(initialSegment(x)(A)(<) ⊆ dom(G2)) by Congruence.from(
-          InitialSegment.subset, Functions.BasicTheorems.functionOnDomain of (f := G2)
+          InitialSegment.subset,
+          Functions.BasicTheorems.functionOnDomain of (f := G2)
         )
 
         have(thesis) by Tautology.from(
@@ -1004,13 +1006,15 @@ object WellOrderedRecursion extends lisa.Main {
   private val successorRelMembership = Lemma(
     (x, y) ∈ ((< ∩ (A × A)) ∪ (A × singleton(m0))) <=> ((((x, y) ∈ <) /\ (x ∈ A) /\ (y ∈ A)) \/ ((x ∈ A) /\ (y === m0)))
   ) {
-    have(thesis).by(Tautology.from(
-      Union.membership.of(x := (< ∩ (A × A)), y := (A × singleton(m0)), z := (x, y)),
-      Intersection.membership.of(x := <, y := (A × A), z := (x, y)),
-      CartesianProduct.pairMembership.of(A := A, B := A, x := x, y := y),
-      CartesianProduct.pairMembership.of(A := A, B := singleton(m0), x := x, y := y),
-      Singleton.membership.of(x := m0, y := y)
-    ))
+    have(thesis).by(
+      Tautology.from(
+        Union.membership.of(x := (< ∩ (A × A)), y := (A × singleton(m0)), z := (x, y)),
+        Intersection.membership.of(x := <, y := (A × A), z := (x, y)),
+        CartesianProduct.pairMembership.of(A := A, B := A, x := x, y := y),
+        CartesianProduct.pairMembership.of(A := A, B := singleton(m0), x := x, y := y),
+        Singleton.membership.of(x := m0, y := y)
+      )
+    )
   }
 
   /**
@@ -1028,12 +1032,14 @@ object WellOrderedRecursion extends lisa.Main {
     val xInA = have(x ∈ A).by(Tautology.from(Subset.membership.of(x := B, y := A, z := x), BSubA, xInB))
     val xInDomF = have(x ∈ dom(f)).by(Congruence.from(xInA, domF))
 
-    have(thesis).by(Tautology.from(
-      Functions.Operations.Restriction.restrictedApp.of(f := f, A := B, x := x),
-      funF,
-      xInDomF,
-      xInB
-    ))
+    have(thesis).by(
+      Tautology.from(
+        Functions.Operations.Restriction.restrictedApp.of(f := f, A := B, x := x),
+        funF,
+        xInDomF,
+        xInB
+      )
+    )
   }
 
   /**
@@ -1204,7 +1210,8 @@ object WellOrderedRecursion extends lisa.Main {
 
     // strictTotalOrder(A2)(R2)
     val `strictPartialOrder(A2)(R2)` = have(strictPartialOrder(A2)(R2)).by(Tautology.from(strictPartialOrder.definition.of(A := A2, < := R2), `relation(R2)`, `trans(R2)(A2)`, `irrefl(R2)(A2)`))
-    val `strictTotalOrder(A2)(R2)` = have(TotalOrder.strictTotalOrder(A2)(R2)).by(Tautology.from(TotalOrder.strictTotalOrder.definition.of(A := A2, < := R2), `strictPartialOrder(A2)(R2)`, `total(R2)(A2)`))
+    val `strictTotalOrder(A2)(R2)` =
+      have(TotalOrder.strictTotalOrder(A2)(R2)).by(Tautology.from(TotalOrder.strictTotalOrder.definition.of(A := A2, < := R2), `strictPartialOrder(A2)(R2)`, `total(R2)(A2)`))
 
     // wellFounded(R2)(A2)
     val `wellFounded(R2)(A2)` = have(WellFoundedRelation.wellFounded(R2)(A2)) subproof {
@@ -1360,7 +1367,7 @@ object WellOrderedRecursion extends lisa.Main {
     have(thesis) subproof {
       have(
         Pm
-        |- functionOn(G)(A) /\ ∀(x ∈ A, G(x) === F(x)(G ↾ initialSegment(x)(A)(<)))
+          |- functionOn(G)(A) /\ ∀(x ∈ A, G(x) === F(x)(G ↾ initialSegment(x)(A)(<)))
       ) subproof {
         assume(Pm)
 
@@ -1420,12 +1427,20 @@ object WellOrderedRecursion extends lisa.Main {
    * recursion of `F` on `(A, <)`, additionally satisfying `functionOn(G)(A)`.
    */
   val recursiveFunctionOn = DEF(
-    λ(Func, λ(A, λ(<,
-      ε(G,
-        functionOn(G)(A) /\
-          ∀(x ∈ A, G(x) === Func(x)(G ↾ initialSegment(x)(A)(<)))
+    λ(
+      Func,
+      λ(
+        A,
+        λ(
+          <,
+          ε(
+            G,
+            functionOn(G)(A) /\
+              ∀(x ∈ A, G(x) === Func(x)(G ↾ initialSegment(x)(A)(<)))
+          )
+        )
       )
-    )))
+    )
   )
 
   /**

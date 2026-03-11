@@ -70,14 +70,17 @@ object Converse extends lisa.Main {
       Pair.pairSnd of (x := snd(a), y := fst(a)),
       Pair.pairFst of (x := snd(a), y := fst(a))
     )
-    have((snd(a), fst(a)) ∈ converse(R) |-
-      (snd(a), fst(a)) ∈ converse(R) /\ ((snd((snd(a), fst(a))), fst((snd(a), fst(a)))) === (fst(a), snd(a)))
+    have(
+      (snd(a), fst(a)) ∈ converse(R) |-
+        (snd(a), fst(a)) ∈ converse(R) /\ ((snd((snd(a), fst(a))), fst((snd(a), fst(a)))) === (fst(a), snd(a)))
     ) by Tautology.from(pairSwap)
-    thenHave((snd(a), fst(a)) ∈ converse(R) |-
-      ∃(x, x ∈ converse(R) /\ ((snd(x), fst(x)) === (fst(a), snd(a))))
+    thenHave(
+      (snd(a), fst(a)) ∈ converse(R) |-
+        ∃(x, x ∈ converse(R) /\ ((snd(x), fst(x)) === (fst(a), snd(a))))
     ) by RightExists
-    val step2 = thenHave((snd(a), fst(a)) ∈ converse(R) |-
-      (fst(a), snd(a)) ∈ converse(converse(R))
+    val step2 = thenHave(
+      (snd(a), fst(a)) ∈ converse(R) |-
+        (fst(a), snd(a)) ∈ converse(converse(R))
     ) by Tautology.fromLastStep(outerMemb of (a := (fst(a), snd(a))))
 
     // Step 3: a = (fst(a), snd(a)) by inversion

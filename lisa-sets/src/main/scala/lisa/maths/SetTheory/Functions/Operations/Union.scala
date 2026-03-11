@@ -4,8 +4,8 @@ package Operations
 import lisa.maths.Quantifiers
 import lisa.maths.Quantifiers.∃!
 import lisa.maths.SetTheory.Base.Predef.{_, given}
-import lisa.maths.SetTheory.Relations.Predef._
 import lisa.maths.SetTheory.Relations
+import lisa.maths.SetTheory.Relations.Predef._
 
 import Function.{functionBetween, functionOn, function, app, injective, surjective, bijective, abs}
 import BasicTheorems.{appDefinition, inversion => _, _}
@@ -118,7 +118,8 @@ object Union extends lisa.Main {
         // (fst(z), snd(z)) ∈ dom × range
         val pairInProd = have((fst(z), snd(z)) ∈ (dom(⋃(𝓕)) × range(⋃(𝓕)))) by Tautology.from(
           CartesianProduct.pairMembership of (x := fst(z), y := snd(z), A := dom(⋃(𝓕)), B := range(⋃(𝓕))),
-          fstInDom, sndInRange
+          fstInDom,
+          sndInRange
         )
         // z = (fst(z), snd(z)) ∈ dom × range  →  z ∈ dom × range
         have(thesis) by Congruence.from(zEqPair, pairInProd)
@@ -158,14 +159,19 @@ object Union extends lisa.Main {
         Relations.BasicTheorems.domainMembership of (R := g, x := x, y := z)
       )
       val fxIsY = have(f(x) === y) by Tautology.from(
-        appDefinition of (y := y), funF, xInDomF
+        appDefinition of (y := y),
+        funF,
+        xInDomF
       )
       val gxIsZ = have(g(x) === z) by Tautology.from(
-        appDefinition of (f := g, y := z), funG, xInDomG
+        appDefinition of (f := g, y := z),
+        funG,
+        xInDomG
       )
       val xInInter = have(x ∈ (dom(f) ∩ dom(g))) by Tautology.from(
         Intersection.membership of (z := x, x := dom(f), y := dom(g)),
-        xInDomF, xInDomG
+        xInDomF,
+        xInDomG
       )
       val fxEqGx = have(f(x) === g(x)) subproof {
         // Instantiate the agree-on-intersection hypothesis for f, g, x
@@ -201,7 +207,8 @@ object Union extends lisa.Main {
       have((z ∈ ⋃(𝓕), fst(z) === x) |- ∃(y, (x, y) ∈ ⋃(𝓕))) subproof {
         assume(z ∈ ⋃(𝓕)); assume(fst(z) === x)
         have(z === (fst(z), snd(z))) by Tautology.from(
-          unionIsRel, Relations.BasicTheorems.inversion of (R := ⋃(𝓕))
+          unionIsRel,
+          Relations.BasicTheorems.inversion of (R := ⋃(𝓕))
         )
         thenHave((fst(z), snd(z)) ∈ ⋃(𝓕)) by Congruence
         thenHave((x, snd(z)) ∈ ⋃(𝓕)) by Congruence
@@ -272,7 +279,8 @@ object Union extends lisa.Main {
 
       // Combine: fst(z) ∈ dom(f) ∧ dom(f) ∈ { dom(f) | f ∈ 𝓕 } → ∃y. y ∈ {...} ∧ fst(z) ∈ y
       have((z ∈ f, f ∈ 𝓕) |- dom(f) ∈ { dom(f) | f ∈ 𝓕 } /\ fst(z) ∈ dom(f)) by Tautology.from(
-        fstInDomf, domFinSet
+        fstInDomf,
+        domFinSet
       )
       thenHave((z ∈ f, f ∈ 𝓕) |- ∃(y, y ∈ { dom(f) | f ∈ 𝓕 } /\ fst(z) ∈ y)) by RightExists
       thenHave((z ∈ f, f ∈ 𝓕) |- fst(z) ∈ ⋃({ dom(f) | f ∈ 𝓕 })) by Tautology.fromLastStep(

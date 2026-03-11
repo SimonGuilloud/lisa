@@ -383,9 +383,12 @@ object InitialSegment extends lisa.Main {
         Relations.BasicTheorems.appliedTransitivity of (R := <, X := A, x := y, y := z, z := a)
       )
       thenHave((y ∈ I, z ∈ I, a ∈ I) |- (y < z) /\ (z < a) ==> (y < a)) by Tautology.fromLastStep(
-        Subset.membership of (x := I, y := A, z := y), `I ⊆ A`,
-        Subset.membership of (x := I, y := A, z := z), `I ⊆ A`,
-        Subset.membership of (x := I, y := A, z := a), `I ⊆ A`
+        Subset.membership of (x := I, y := A, z := y),
+        `I ⊆ A`,
+        Subset.membership of (x := I, y := A, z := z),
+        `I ⊆ A`,
+        Subset.membership of (x := I, y := A, z := a),
+        `I ⊆ A`
       )
       thenHave((y ∈ I) /\ (z ∈ I) /\ (a ∈ I) /\ (y < z) /\ (z < a) ==> (y < a)) by Tautology
       thenHave(∀(y, ∀(z, ∀(a, (y ∈ I) /\ (z ∈ I) /\ (a ∈ I) /\ (y < z) /\ (z < a) ==> (y < a))))) by Generalize
@@ -400,8 +403,10 @@ object InitialSegment extends lisa.Main {
         Relations.BasicTheorems.appliedTotality of (R := <, X := A, x := y, y := z)
       )
       thenHave((y ∈ I, z ∈ I) |- (y < z) \/ (z < y) \/ (y === z)) by Tautology.fromLastStep(
-        Subset.membership of (x := I, y := A, z := y), `I ⊆ A`,
-        Subset.membership of (x := I, y := A, z := z), `I ⊆ A`
+        Subset.membership of (x := I, y := A, z := y),
+        `I ⊆ A`,
+        Subset.membership of (x := I, y := A, z := z),
+        `I ⊆ A`
       )
       thenHave((y ∈ I) /\ (z ∈ I) ==> ((y < z) \/ (z < y) \/ (y === z))) by Tautology
       thenHave(∀(y, ∀(z, (y ∈ I) /\ (z ∈ I) ==> ((y < z) \/ (z < y) \/ (y === z))))) by Generalize
@@ -430,7 +435,10 @@ object InitialSegment extends lisa.Main {
 
     have(thesis) by Tautology.from(
       rel,
-      irr, trans, tot, wf,
+      irr,
+      trans,
+      tot,
+      wf,
       strictPartialOrder.definition of (A := I),
       strictTotalOrder.definition of (A := I),
       wellOrder.definition of (A := I)

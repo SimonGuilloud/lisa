@@ -102,7 +102,8 @@ object Restriction extends lisa.Main {
     have(z ∈ f /\ (fst(z) ∈ A) /\ (fst(z) === x) |- x ∈ dom(f) /\ (x ∈ A)) by Tautology.from(xInA, xInDomF)
     thenHave(∃(z, z ∈ f /\ (fst(z) ∈ A) /\ (fst(z) === x)) |- x ∈ dom(f) /\ (x ∈ A)) by LeftExists
     val fwd = thenHave(x ∈ dom(f ↾ A) ==> x ∈ (dom(f) ∩ A)) by Tautology.fromLastStep(
-      eq1, Intersection.membership of (z := x, x := dom(f), y := A)
+      eq1,
+      Intersection.membership of (z := x, x := dom(f), y := A)
     )
 
     // Backward: x ∈ dom(f) ∩ A |- ∃(z ∈ f, fst(z) ∈ A ∧ fst(z) = x)
@@ -115,7 +116,9 @@ object Restriction extends lisa.Main {
     thenHave((z ∈ f /\ (fst(z) === x), x ∈ A) |- ∃(z, z ∈ f /\ (fst(z) ∈ A) /\ (fst(z) === x))) by Restate
     thenHave((∃(z, z ∈ f /\ (fst(z) === x)), x ∈ A) |- ∃(z, z ∈ f /\ (fst(z) ∈ A) /\ (fst(z) === x))) by LeftExists
     val bwd = thenHave(x ∈ (dom(f) ∩ A) ==> x ∈ dom(f ↾ A)) by Tautology.fromLastStep(
-      eq1, `x ∈ dom(f)`, Intersection.membership of (z := x, x := dom(f), y := A)
+      eq1,
+      `x ∈ dom(f)`,
+      Intersection.membership of (z := x, x := dom(f), y := A)
     )
 
     have(x ∈ dom(f ↾ A) <=> x ∈ (dom(f) ∩ A)) by Tautology.from(fwd, bwd)
@@ -216,22 +219,29 @@ object Restriction extends lisa.Main {
 
       // f(fst(z)) = snd(z)
       val fApp = have(f(fst(z)) === snd(z)) by Tautology.from(
-        BasicTheorems.appDefinition of (x := fst(z), y := snd(z)), fstInDomF, pairInF
+        BasicTheorems.appDefinition of (x := fst(z), y := snd(z)),
+        fstInDomF,
+        pairInF
       )
 
       // g(fst(z)) is defined and (fst(z), g(fst(z))) ∈ g
       val gAppInG = have((fst(z), g(fst(z))) ∈ g) by Tautology.from(
-        BasicTheorems.appDefinition of (f := g, x := fst(z), y := g(fst(z))), gIsFunc, fstInDomG
+        BasicTheorems.appDefinition of (f := g, x := fst(z), y := g(fst(z))),
+        gIsFunc,
+        fstInDomG
       )
 
       // (fst(z), g(fst(z))) ∈ f since g ⊆ f
       val gAppInF = have((fst(z), g(fst(z))) ∈ f) by Tautology.from(
-        Subset.membership of (x := g, y := f, z := (fst(z), g(fst(z)))), gAppInG
+        Subset.membership of (x := g, y := f, z := (fst(z), g(fst(z)))),
+        gAppInG
       )
 
       // f(fst(z)) = g(fst(z))
       val fEqG = have(f(fst(z)) === g(fst(z))) by Tautology.from(
-        BasicTheorems.appDefinition of (x := fst(z), y := g(fst(z))), fstInDomF, gAppInF
+        BasicTheorems.appDefinition of (x := fst(z), y := g(fst(z))),
+        fstInDomF,
+        gAppInF
       )
 
       // snd(z) = g(fst(z)), so (fst(z), snd(z)) ∈ g
@@ -269,17 +279,21 @@ object Restriction extends lisa.Main {
 
       // fst(z) ∈ dom(f)
       val fstInDomF = have(fst(z) ∈ dom(f)) by Tautology.from(
-        BasicTheorems.domainMembership of (x := fst(z), y := snd(z)), pairInF
+        BasicTheorems.domainMembership of (x := fst(z), y := snd(z)),
+        pairInF
       )
 
       // f(fst(z)) = snd(z)
       val fApp = have(f(fst(z)) === snd(z)) by Tautology.from(
-        BasicTheorems.appDefinition of (x := fst(z), y := snd(z)), fstInDomF, pairInF
+        BasicTheorems.appDefinition of (x := fst(z), y := snd(z)),
+        fstInDomF,
+        pairInF
       )
 
       // fst(z) ∈ dom(g) from A ⊆ dom(g)
       val fstInDomG = have(fst(z) ∈ dom(g)) by Tautology.from(
-        Subset.membership of (x := A, y := dom(g), z := fst(z)), fstInA
+        Subset.membership of (x := A, y := dom(g), z := fst(z)),
+        fstInA
       )
 
       // f(fst(z)) = g(fst(z))
@@ -292,7 +306,8 @@ object Restriction extends lisa.Main {
 
       // (fst(z), g(fst(z))) ∈ g
       val gAppInG = have((fst(z), g(fst(z))) ∈ g) by Tautology.from(
-        BasicTheorems.appDefinition of (f := g, x := fst(z), y := g(fst(z))), fstInDomG
+        BasicTheorems.appDefinition of (f := g, x := fst(z), y := g(fst(z))),
+        fstInDomG
       )
 
       // (fst(z), snd(z)) ∈ g
@@ -314,17 +329,21 @@ object Restriction extends lisa.Main {
       val pairInG = have((fst(z), snd(z)) ∈ g) by Congruence.from(zInG, zIsPair)
 
       val fstInDomG = have(fst(z) ∈ dom(g)) by Tautology.from(
-        BasicTheorems.domainMembership of (f := g, x := fst(z), y := snd(z)), pairInG
+        BasicTheorems.domainMembership of (f := g, x := fst(z), y := snd(z)),
+        pairInG
       )
 
       // g(fst(z)) = snd(z)
       val gApp = have(g(fst(z)) === snd(z)) by Tautology.from(
-        BasicTheorems.appDefinition of (f := g, x := fst(z), y := snd(z)), fstInDomG, pairInG
+        BasicTheorems.appDefinition of (f := g, x := fst(z), y := snd(z)),
+        fstInDomG,
+        pairInG
       )
 
       // fst(z) ∈ dom(f) from A ⊆ dom(f)
       val fstInDomF = have(fst(z) ∈ dom(f)) by Tautology.from(
-        Subset.membership of (x := A, y := dom(f), z := fst(z)), fstInA
+        Subset.membership of (x := A, y := dom(f), z := fst(z)),
+        fstInA
       )
 
       // f(fst(z)) = g(fst(z))
@@ -337,7 +356,8 @@ object Restriction extends lisa.Main {
 
       // (fst(z), f(fst(z))) ∈ f
       val fAppInF = have((fst(z), f(fst(z))) ∈ f) by Tautology.from(
-        BasicTheorems.appDefinition of (x := fst(z), y := f(fst(z))), fstInDomF
+        BasicTheorems.appDefinition of (x := fst(z), y := f(fst(z))),
+        fstInDomF
       )
 
       // (fst(z), snd(z)) ∈ f

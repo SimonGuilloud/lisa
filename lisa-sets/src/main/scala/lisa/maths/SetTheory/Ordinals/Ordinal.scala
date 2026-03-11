@@ -2,9 +2,9 @@ package lisa.maths.SetTheory.Ordinals
 
 import lisa.maths.SetTheory.Base.Predef.{_, given}
 import lisa.maths.SetTheory.Order
+import lisa.maths.SetTheory.Order.LowerSet
 import lisa.maths.SetTheory.Order.Predef._
 import lisa.maths.SetTheory.Order.WellOrders._
-import lisa.maths.SetTheory.Order.LowerSet
 import lisa.maths.SetTheory.Relations
 import lisa.maths.SetTheory.Relations.Examples.MembershipRelation
 import lisa.maths.SetTheory.Relations.Predef._
@@ -1022,7 +1022,8 @@ object Ordinal extends lisa.Main {
             have((α ∈ B, β ∈ B, α <= β) |- (β, α) ∉ membershipRelation(A)) by Tautology.from(
               MembershipRelation.membership of (x := β, y := α),
               asymmetry of (α := β, β := α),
-              `α ∈ B`, `α ∈ B` of (α := β)
+              `α ∈ B`,
+              `α ∈ B` of (α := β)
             )
             thenHave((α ∈ B, β ∈ B ==> α <= β) |- β ∈ B ==> (β, α) ∉ membershipRelation(A)) by Tautology
             thenHave((α ∈ B, ∀(β, β ∈ B ==> α <= β)) |- β ∈ B ==> (β, α) ∉ membershipRelation(A)) by LeftForall
@@ -1188,8 +1189,10 @@ object Ordinal extends lisa.Main {
             have((x, z) ∈ membershipRelation(α)) by Tautology.from(
               transitiveMembershipRelation,
               Relations.BasicTheorems.appliedTransitivity of (R := membershipRelation(α), X := α),
-              `x ∈ α`, `y ∈ α`,
-              `x ∈_α y`, `y ∈_α z`
+              `x ∈ α`,
+              `y ∈ α`,
+              `x ∈_α y`,
+              `y ∈_α z`
             )
             thenHave(thesis) by Tautology.fromLastStep(MembershipRelation.membership of (y := z, A := α))
           }
