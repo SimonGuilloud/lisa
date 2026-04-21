@@ -1,33 +1,23 @@
-import lisa.automation.Congruence
 import lisa.automation.Substitution.{Apply => Substitute}
-import lisa.automation.Tableau
+import lisa.automation.{Substitution, Congruence}
+import Base.{replace, toFormula, findBestAtom}
 
 object Example extends lisa.Main:
   // draft mode; only proofs from the current file are checked
   draft()
 
   // first-order variables
+  val a = variable[Prop]
+  val b = variable[Prop]
+  val c = variable[Prop]
   val x = variable[Ind]
   val y = variable[Ind]
-
-  // a predicate with one argument
   val P = variable[Ind >>: Prop]
-
-  val form = forall(x, P(x) ==> exists(y, P(y)))
-  println(form.subexpressions.mkString("\n"))
-
-  // a first-order function with one argument
   val f = variable[Ind >>: Ind]
 
   // we can use scala extensions to define custom syntax
   extension (x: Expr[Ind])
-    inline infix def subset(y: Expr[Ind]): Expr[Prop] = App(App(⊆, x), y)
-
-  // a simple proof with Lisa's DSL
-  val fixedPointDoubleApplication = Theorem(∀(x, P(x) ==> P(f(x))) |- P(x) ==> P(f(f(x)))) {
-    val a1 = assume(∀(x, P(x) ==> P(f(x))))
-    have(thesis) by Tautology.from(a1 of x, a1 of f(x))
-  }
+    inline infix def subset(y: Expr[Ind]): Expr[Prop] = ⊆(x)(y)
 
   // Example of set theoretic development
   /**
@@ -37,11 +27,9 @@ object Example extends lisa.Main:
     */
   val union = Theorem(
     x subset x
-    // or x ⊆ x is predefined
   ) {
     have((y ∈ x) ==> (y ∈ x)) by Restate
     thenHave(∀(y, (y ∈ x) ==> (y ∈ x))) by RightForall
-
     have(thesis) by Tautology.from(lastStep, subsetAxiom of (x := x, y := x))
   }
 
@@ -86,5 +74,30 @@ object Example extends lisa.Main:
   // example showing the Tableau tactic to discharge first-order tautologies
   val buveurs = Theorem(exists(x, P(x) ==> forall(y, P(y)))) {
     have(thesis) by Tableau
+  }
+
+
+  def dpll(using proof: library.Proof)(bot: Sequent): proof.ProofTacticJudgement = TacticSubproof :
+    val f = normalForm(bot.right.head)     //computes OL-normal form
+    if f == ⊤ then have(bot) by Restate
+    else if f == ⊥ then throw Exception("Not a tautology")
+    else
+      val a = findBestAtom(f)
+
+      have(dpll(f.replace(a,  ⊤)))
+      thenHave(⊤ <=> a |- f) by Congruence
+      val step1 = thenHave(a |- f) by Restate.from //subproof 1
+
+      have(dpll(f.replace(a,  ⊥)))
+      thenHave(⊥ <=> a |-f) by Congruence
+      val step2 = thenHave(() |- (a, f)) by Restate.from //subproof 2
+
+      have(f) by Cut(step2, step1)
+      thenHave(bot) by Restate
+
+    
+
+  val testTheorem = Lemma(((a /\ b) \/ (a /\ c)) <=> (a /\ (b \/ c))) {
+    have(dpll(thesis))
   }
 

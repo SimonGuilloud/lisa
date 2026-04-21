@@ -404,6 +404,7 @@ trait Syntax {
     val sort: K.Sort = sortEv.underlying
     private var infix: Boolean = false
     var customPrinter: Option[Seq[Expr[?]] => String] = None
+    var infixRepr: String = this.toString()
 
     /**
      * Set the variable to be printed infix.
@@ -412,6 +413,16 @@ trait Syntax {
      */
     def printInfix(): Constant[S] =
       infix = true
+      infixRepr = this.toString()
+      this
+    
+    def printInfix(symbol: String): Constant[S] =
+      infix = true
+      infixRepr = symbol
+      this
+    
+    def disableInfix(): Constant[S] =
+      infix = false
       this
 
     /**
@@ -439,12 +450,12 @@ trait Syntax {
     // Special handling for inxfix constants
     override def toString(): String = id.toString
     mkString = (args: Seq[Expr[?]]) =>
-      if infix && args.size == 2 then s"${args(0)} $this ${args(1)}"
+      if infix && args.size == 2 then s"${args(0)} $infixRepr ${args(1)}"
       else if infix & args.size > 2 then s"(${args(0)} $this ${args(1)})${args.drop(2).map(_.mkStringSeparated).mkString})"
       else if customPrinter.isDefined then customPrinter.get(args)
       else defaultMkString(args)
     mkStringSeparated = (args: Seq[Expr[?]]) =>
-      if infix && args.size == 2 then s"${args(0)} $this ${args(1)}"
+      if infix && args.size == 2 then s"${args(0)} $infixRepr ${args(1)}"
       else if infix & args.size > 2 then s"(${args(0)} $this ${args(1)})${args.drop(2).map(_.mkStringSeparated).mkString})"
       else if customPrinter.isDefined then customPrinter.get(args)
       else defaultMkStringSeparated(args)

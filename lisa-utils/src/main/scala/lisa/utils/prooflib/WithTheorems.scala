@@ -449,8 +449,9 @@ trait WithTheorems {
    */
   sealed abstract class THM extends JUSTIFICATION {
     val kind: TheoremKind
+    //remove !! Relies on Sorry warning
     def repr: String =
-      s"  ${kind.kind2} ${name} := ${statement}${if (withSorry) " (!! Relies on Sorry)" else ""}"
+      s"  ${kind.kind2} ${name} := ${statement}"
 
     /**
      * The underlying Kernel proof [[K.SCProof]], if it is still available. Proofs are not kept in memory for efficiency.
