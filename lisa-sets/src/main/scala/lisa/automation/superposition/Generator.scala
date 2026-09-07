@@ -95,18 +95,24 @@ final class Generator(bank: TermBank, trail: Trail, active: ActiveSet, opts: Sea
    *
    *  `pos` may be a caller's live subterm-walk stack, so nothing here retains it: [[Superposition.superpose]]
    *  snapshots it, and only for the inferences that fire.
+   *
+   *  '''`emit` runs after the trail is restored''', as it does in [[Inference.resolve]] and
+   *  [[Inference.factor]]. The unifier here binds scope 1, and `emit` is the whole downstream pipeline: with
+   *  [[SearchOptions.condensation]] or [[SearchOptions.forwardSimplifyAtGeneration]] on, that reaches
+   *  [[Subsumption]], which treats its target clause as rigid in scope 1 and asserts the scope is unbound.
+   *  Emitting inside the bracket therefore killed the search on any problem where a superposition conclusion
+   *  met either simplification. Safe to defer because [[Superposition.superpose]] instantiates every literal
+   *  it keeps while building `rr`, so the conclusion does not depend on the bindings outliving it.
    */
   private def superposeVerified(fromC: Clause, iFrom: Int, fromSide: Int, intoC: Clause, iInto: Int, pos: IntArrayList): Boolean =
     val l: Term = bank.arg(bank.atomOf(fromC.literals(iFrom)), fromSide)
     val u: Term = Superposition.subtermAt(bank, bank.atomOf(intoC.literals(iInto)), pos)
     val saved: Int = trail.save()
-    var stop = false
-    if trail.unify(l, 0, u, 1) then
-      Superposition.superpose(bank, trail, fromC, iFrom, fromSide, intoC, iInto, pos) match
-        case Some(rr) => stop = emit(rr)
-        case None => ()
+    val result: Option[Clause] =
+      if trail.unify(l, 0, u, 1) then Superposition.superpose(bank, trail, fromC, iFrom, fromSide, intoC, iInto, pos)
+      else None
     trail.restore(saved)
-    stop
+    result.exists(emit)
 
   // --- factoring and the unary equality rules -------------------------------------------------------------
 

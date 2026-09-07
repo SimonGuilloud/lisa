@@ -147,7 +147,8 @@ private[clausification] object NamingPhase:
    *  (possibly quantified) subformulas via [[nameOne]] and delegates definition clausification to the
    *  downstream phases; each definition is discharged latest-first (see [[NamingSupport.proveQuantifiedReflIff]]).
    */
-  def certifyNaming(problem: Problem, prover: ClausificationProver, threshold: Int): ClausificationProof =
+  def certifyNaming(problem: Problem, prover: ClausificationProver)(using o: ClausifierOptions): ClausificationProof =
+    val threshold = o.threshold
     require(problem.conjecture.isEmpty, "certifyNaming expects a conjecture-free problem")
     val counter = Counter()
     val n = problem.hypotheses.size

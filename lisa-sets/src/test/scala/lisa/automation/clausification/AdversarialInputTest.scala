@@ -24,6 +24,9 @@ import org.scalatest.funsuite.AnyFunSuite
  */
 class AdversarialInputTest extends AnyFunSuite:
 
+  /** The phases read their configuration as a given; these tests exercise the shipped one. */
+  private given Clausification.ClausifierOptions = Clausification.ClausifierOptions()
+
   private val a = Variable(Identifier("a"), Prop)
   private val b = Variable(Identifier("b"), Prop)
   private val x = Variable(Identifier("x"), Ind)

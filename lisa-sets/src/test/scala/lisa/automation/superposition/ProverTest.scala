@@ -17,6 +17,9 @@ import org.scalatest.funsuite.AnyFunSuite
  */
 class ProverTest extends AnyFunSuite:
 
+  /** The clausifier reads its configuration as a given; these tests exercise the shipped one. */
+  private given Clausification.ClausifierOptions = Clausification.ClausifierOptions()
+
   private val p = Constant(Identifier("p"), Prop)
   private val q = Constant(Identifier("q"), Prop)
   private val r = Constant(Identifier("r"), Prop)
@@ -28,7 +31,12 @@ class ProverTest extends AnyFunSuite:
    * and then the library statements.
    */
   private def checkContract(proof: K.SCProof, problem: Problem): Unit =
-    assert(K.SCProofChecker.checkSCProof(proof).isValid, s"proof is not kernel-valid:\n${proof.toString}")
+    K.SCProofChecker.checkSCProof(proof) match
+      case K.SCProofCheckerJudgement.SCValidProof(_, usesSorry) =>
+        // `Sorry` proves anything, so a proof leaning on one is valid and worthless. Without this the suite
+        // cannot tell a real refutation from a fabricated one, which is the property under test.
+        assert(!usesSorry, s"proof is valid only because it uses Sorry:\n${proof.toString}")
+      case bad => fail(s"proof is not kernel-valid: $bad\n${proof.toString}")
     val goal = problem.conjecture.getOrElse(K.Sequent(Set.empty, Set.empty))
     assert(K.isSameSequent(proof.conclusion, goal), s"concluded ${proof.conclusion.repr}, expected ${goal.repr}")
     val hyps = problem.hypotheses.toIndexedSeq
@@ -80,4 +88,14 @@ class ProverTest extends AnyFunSuite:
     assert(K.isSameSequent(outer.conclusion, inner.conclusion), "widening must not change what is concluded")
     // and the conclusion is the hypothesis that was at slot 1, not at slot 0
     assert(K.isSameSequent(outer.conclusion, all(1)), "the premise must be the kept hypothesis, at its original slot")
+  }
+
+  test("checkContract rejects a proof that is valid only because it uses Sorry") {
+    // The guard above is the one thing separating a real refutation from a fabricated one, so it is worth
+    // knowing that it can fail. A `Sorry` of the goal is kernel-valid and proves nothing.
+    val problem = Problem(hypotheses = Seq(hyp(p)), conjecture = Some(hyp(q)))
+    val goal = problem.conjecture.get
+    val fabricated = K.SCProof(IndexedSeq(K.Sorry(goal)), problem.hypotheses.toIndexedSeq ++ Clausification.libImports)
+    assert(K.SCProofChecker.checkSCProof(fabricated).isValid, "the fabricated proof should still be kernel-valid")
+    intercept[org.scalatest.exceptions.TestFailedException](checkContract(fabricated, problem))
   }

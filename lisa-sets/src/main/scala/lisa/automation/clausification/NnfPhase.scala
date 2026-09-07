@@ -11,7 +11,7 @@ import Clausification._
  */
 private[clausification] object NnfPhase:
 
-  def certifyNnf(problem: Problem, prover: ClausificationProver): ClausificationProof = {
+  def certifyNnf(problem: Problem, prover: ClausificationProver)(using ClausifierOptions): ClausificationProof = {
     require(
       problem.hypotheses.forall(h => h.left.isEmpty && h.right.size == 1),
       s"certifyNnf expects each hypothesis to have an empty left-hand side and a single formula on the " +

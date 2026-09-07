@@ -79,11 +79,59 @@ object Clausification {
    */
   val existsEpsilonIffStatement: Sequent = () |- (exists(vX, schemaP(vX)) <=> schemaP(epsilon(vX, schemaP(vX))))
 
+  private[clausification] val schemaR: Variable = Variable(Identifier("R", 0), Prop)
+
+  /**
+   * Statements of `lisa.maths.Quantifiers.forall{And,Or}{Left,Right}`, the prenex laws lifting a `∀` one
+   * connective outwards. Imported only by [[Prenex.Rewrite]]; the shipped strategy needs none of them.
+   * `R` is a nullary `Prop` schema, so it cannot contain the bound variable and the laws hold as stated.
+   */
+  val forallAndLeftStatement: Sequent = () |- (and(forall(Lambda(vX, schemaP(vX))))(schemaR) <=> forall(Lambda(vX, and(schemaP(vX))(schemaR))))
+  val forallAndRightStatement: Sequent = () |- (and(schemaR)(forall(Lambda(vX, schemaP(vX)))) <=> forall(Lambda(vX, and(schemaR)(schemaP(vX)))))
+  val forallOrLeftStatement: Sequent = () |- (or(forall(Lambda(vX, schemaP(vX))))(schemaR) <=> forall(Lambda(vX, or(schemaP(vX))(schemaR))))
+  val forallOrRightStatement: Sequent = () |- (or(schemaR)(forall(Lambda(vX, schemaP(vX)))) <=> forall(Lambda(vX, or(schemaR)(schemaP(vX)))))
+
+  /**
+   * How [[PrenexPhase]] strips a `∀` that is not at the root. `Deconstruct` walks the formula's tree and
+   * instantiates each quantifier where it stands, in a proof linear in `|φ|` and needing no library statement.
+   * `Rewrite` lifts each quantifier to the root one connective at a time, which is asymptotically smaller but
+   * needs the four prenex laws as imports.
+   */
+  enum Prenex:
+    case Deconstruct, Rewrite
+
+  /**
+   * How [[DistributePhase]] derives each clause. `Weakening` is one step justified by ortholattice entailment;
+   * `Primitive` takes the formula apart with `LeftAnd`, `LeftOr` and `Hypothesis`. See `DistributePhase`.
+   */
+  enum Distribute:
+    case Weakening, Primitive
+
+  /**
+   * Everything the pipeline can be configured with, in one value, supplied once by
+   * [[CertifiedClausifier.certifyClausal]] and read by the phases as a given. The library import list depends
+   * on it, so a configuration needing no prenex law does not carry four unused imports, and two configurations
+   * are therefore comparable on proof size.
+   */
+  case class ClausifierOptions(
+      threshold: Int = 4, //           name a subformula once its CNF estimate exceeds this
+      prenex: Prenex = Prenex.Deconstruct,
+      distribute: Distribute = Distribute.Weakening
+  ):
+    def libStatements: IndexedSeq[Sequent] = prenex match
+      case Prenex.Deconstruct => IndexedSeq(existsEpsilonIffStatement)
+      case Prenex.Rewrite =>
+        IndexedSeq(existsEpsilonIffStatement, forallAndLeftStatement, forallAndRightStatement, forallOrLeftStatement, forallOrRightStatement)
+
   /**
    * Library imports threaded to every clausification proof, in fixed order.
    */
-  val libImports: IndexedSeq[Sequent] = IndexedSeq(existsEpsilonIffStatement)
+  def libImports(using o: ClausifierOptions): IndexedSeq[Sequent] = o.libStatements
   private[clausification] val libExistsEpsilonIffIdx: Int = 0
+  private[clausification] val libForallAndLeftIdx: Int = 1
+  private[clausification] val libForallAndRightIdx: Int = 2
+  private[clausification] val libForallOrLeftIdx: Int = 3
+  private[clausification] val libForallOrRightIdx: Int = 4
 
   private[clausification] def singleRightFormula(sequent: Sequent, what: String): Expression = {
     require(sequent.left.isEmpty, s"$what must have empty left-hand side, got ${sequent.repr}")
@@ -123,7 +171,8 @@ object Clausification {
   /**
    * References into outer imports for the library imports, in their fixed order.
    */
-  private[clausification] def libRefs(nonLibSize: Int): IndexedSeq[Int] = libImports.indices.map(libRef(nonLibSize, _)).toIndexedSeq
+  private[clausification] def libRefs(nonLibSize: Int)(using ClausifierOptions): IndexedSeq[Int] =
+    libImports.indices.map(libRef(nonLibSize, _)).toIndexedSeq
 
   private[clausification] type ClausificationProver = Problem => ClausificationProof
 

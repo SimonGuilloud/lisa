@@ -62,7 +62,14 @@ object ProofPrinter {
   }
 
   def isLowerWord(s: String): Boolean = s.head.isLower && s.tail.forall(_.isLetterOrDigit)
-  inline def quoted(s: String): String = if isLowerWord(s) then s else s"'$s'"
+
+  /**
+   * `s` as a TPTP `atomic_word`: a lower word verbatim, anything else single-quoted. Inside the quotes `\` and
+   *  `'` must themselves be backslash-escaped, or a name that contains either — glosses in `Axioms/BIO001+0.ax`
+   *  contain both — closes the quote early and yields unparseable output. Matches `Tstp.functor`.
+   */
+  inline def quoted(s: String): String =
+    if isLowerWord(s) then s else "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
   /**
    * A `$n`-prefixed constant — a TPTP numeral parked as an uninterpreted nullary constant by [[KernelParser]]

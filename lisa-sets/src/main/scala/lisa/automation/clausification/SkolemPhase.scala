@@ -19,7 +19,7 @@ private[clausification] object SkolemPhase:
    * witness `ε(λx.φ)` replaced by a fresh Skolem-function schema variable `F(x̄)`), so ε-terms never nest and never blow
    * up. Each step's fresh `F` carries a *defining equality* `∀x̄. ε(λx.φ) = F(x̄)` as an assumption.
    */
-  def certifySkolem(problem: Problem, prover: ClausificationProver): ClausificationProof =
+  def certifySkolem(problem: Problem, prover: ClausificationProver)(using ClausifierOptions): ClausificationProof =
     require(problem.conjecture.isEmpty, "certifySkolem expects a conjecture-free problem (consumed by certifyNegated)")
     val counter = Counter()
     val n = problem.hypotheses.size

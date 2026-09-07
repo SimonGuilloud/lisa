@@ -20,7 +20,7 @@ import Clausification._
  */
 private[clausification] object NegatedPhase:
 
-  def certifyNegated(problem: Problem, prover: ClausificationProver): ClausificationProof =
+  def certifyNegated(problem: Problem, prover: ClausificationProver)(using ClausifierOptions): ClausificationProof =
     problem.conjecture match
       case None => prover(problem)
       case Some(conjecture) =>

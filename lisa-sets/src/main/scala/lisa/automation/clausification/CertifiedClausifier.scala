@@ -25,7 +25,8 @@ object CertifiedClausifier:
    * `a₁, …, aₘ ⊢ b₁, …, bₙ` for `¬a₁ ∨ … ∨ ¬aₘ ∨ b₁ ∨ … ∨ bₙ` (README §1.2), with no
    * disjunctions, quantifiers, or right-hand negations left to unpack.
    */
-  def certifyClausal(problem: Problem, prover: Problem => SCProof, threshold: Int = UncertifiedClausifier.DefaultThreshold): SCProof =
+  def certifyClausal(problem: Problem, prover: Problem => SCProof, options: ClausifierOptions = ClausifierOptions()): SCProof =
+    given ClausifierOptions = options
     val wrappedProver: ClausificationProver = p =>
       val downstream = ClausificationProof.fromSCProof(prover(p))
       ClausificationProof(downstream.steps, downstream.imports ++ libImports)
@@ -33,7 +34,7 @@ object CertifiedClausifier:
     val prenexProver: ClausificationProver = PrenexPhase.certifyPrenex(_, distributeProver)
     val skolemProver: ClausificationProver = SkolemPhase.certifySkolem(_, prenexProver)
     val nnfProver: ClausificationProver = NnfPhase.certifyNnf(_, skolemProver)
-    val namingProver: ClausificationProver = NamingPhase.certifyNaming(_, nnfProver, threshold)
+    val namingProver: ClausificationProver = NamingPhase.certifyNaming(_, nnfProver)
     val negatedProver: ClausificationProver = NegatedPhase.certifyNegated(_, namingProver)
     val fullProver: ClausificationProver = ScreenPhase.certifyScreen(_, negatedProver)
     clausificationProofToSCProof(fullProver(problem))

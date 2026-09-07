@@ -36,7 +36,28 @@ object UncertifiedClausifier:
    * The uncertified Skolemization of an NNF formula (∃ → Skolem functions, ∀ stripped).
    */
   private[clausification] def skolemizeNnf(nnf: Expression, counter: Counter): Expression =
-    skolemize(nnf, Map.empty, Map.empty, nnf.freeVariables.iterator.filter(_.sort == Ind).map(v => (v, v)).toList, counter)
+    val univs = topUniversals(nnf, Set.empty, counter)
+    skolemize(nnf, univs.map((o, r) => (o, r: Expression)).toMap, univs.map((o, r) => (o, Set(r))).toMap, univs, counter)
+
+  /**
+   * The formula's top-level universals paired with the fresh clause variable each becomes: its free individual
+   * variables, minus the frozen ones, which are symbols rather than variables and so never clause variables
+   * nor arguments of a Skolem term.
+   *
+   * '''Sorted''', because `freeVariables` is a `Set` whose iteration order is a hash order. These become the
+   * leading arguments of every Skolem function the formula produces, so an unordered prefix makes the Skolem
+   * terms depend on hashing: one run gives `sk(A)(B)` and another `sk(B)(A)`, which the prover sees as
+   * different terms.
+   *
+   * '''α-renamed''' to `w` clause variables, like every binder [[skolemize]] strips. Leaving them as the
+   * input's own names was harmless in isolation but made this path's clauses differ from the certified one's,
+   * which renames throughout, on nothing more than the choice of name.
+   */
+  private def topUniversals(nnf: Expression, frozen: Set[Variable], counter: Counter): List[(Variable, Variable)] =
+    nnf.freeVariables.toList
+      .filter(v => v.sort == Ind && !frozen.contains(v))
+      .sortBy(v => (v.id.name, v.id.no))
+      .map(v => (v, Variable(Identifier(GeneratedNames.clauseVar, counter.next()), v.sort)))
 
   /**
    * The named formula (naming step) put through NNF and Skolemization.
@@ -44,15 +65,26 @@ object UncertifiedClausifier:
   private[clausification] def namedNnfSkolem(phi: Expression, threshold: Int): Expression =
     skolemizeNnf(NnfPhase.toNNF(namedFormula(phi, threshold, Counter()), negated = false), Counter())
 
-  def clausify(phi: Expression, threshold: Int, frozen: Set[Variable], counter: Counter): List[Sequent] =
+  /**
+   * @param counter    numbers the naming atoms `nm`
+   * @param skoCounter numbers the Skolem symbols `sk`
+   *
+   * Two counters, not one. Sharing a counter between the two makes each `nm` number depend on how many Skolem
+   * symbols happen to have been minted before it, so the naming atoms of this path and of the certified one
+   * (which has always counted them separately) diverge on any problem containing an existential — `nm_87` here
+   * against `nm_5` there — for no difference in the naming decisions themselves.
+   */
+  def clausify(phi: Expression, threshold: Int, frozen: Set[Variable], counter: Counter, skoCounter: Counter): List[Sequent] =
     val defs = scala.collection.mutable.ListBuffer.empty[Expression]
     val (named, _) = name(phi, 1, threshold, frozen, defs, counter)
     (named :: defs.toList).flatMap { g =>
       val nnf = NnfPhase.toNNF(g, negated = false)
-      // Free Ind vars are the top-level universals, except the frozen ones, which are constants and so no
-      // Skolem term's arguments. They aren't α-renamed, so orig = renamed.
-      val univs = nnf.freeVariables.iterator.filter(v => v.sort == Ind && !frozen.contains(v)).map(v => (v, v)).toList
-      toClauses(skolemize(nnf, Map.empty, Map.empty, univs, counter))
+      // The top-level universals are α-renamed here, exactly as `skolemize` renames each binder it strips, so
+      // they enter as a substitution rather than as the identity mapping they used to be.
+      val univs = topUniversals(nnf, frozen, skoCounter)
+      val subst = univs.map((o, r) => (o, r: Expression)).toMap
+      val imageFree = univs.map((o, r) => (o, Set(r))).toMap
+      toClauses(skolemize(nnf, subst, imageFree, univs, skoCounter))
     }
 
   /**
@@ -90,18 +122,22 @@ object UncertifiedClausifier:
    */
   def clausalFormWithOrigins(problem: Problem, threshold: Int = DefaultThreshold, orthologic: Boolean = false): IndexedSeq[(Sequent, Int)] =
     val (hyps0, frozen) = negated(problem)
-    val counter = Counter(freshCounterStart(hyps0))
+    // Both start past every input name, so neither can collide; they advance independently thereafter, as the
+    // certified pipeline's naming and Skolem counters do.
+    val start = freshCounterStart(hyps0)
+    val counter = Counter(start)
+    val skoCounter = Counter(start)
     hyps0.zipWithIndex.flatMap { (h, origin) =>
       val f0 = singleRightFormula(h, "hypothesis")
       // η-expand after the orthologic step, because `reducedNNFForm` produces an eta-contracted formula
       val f = etaExpandQuantifiers(if orthologic then reducedNNFForm(f0) else f0)
-      clausify(f, threshold, frozen, counter).map(clause => (clause, origin))
+      clausify(f, threshold, frozen, counter, skoCounter).map(clause => (clause, origin))
     }
 
   /**
-   * Where the shared fresh-name counter must start so that nothing this path mints collides with an input name.
-   * The three generated kinds (`w` clause variables, `sk` Skolem functions, `nm` naming atoms) share one
-   * counter.
+   * Where each fresh-name counter must start so that nothing this path mints collides with an input name.
+   * Naming atoms (`nm`) run on one counter and the Skolemization's own fresh names (`sk` functions and `w`
+   * clause variables) on another; both start here, so both clear every input name.
    */
   private def freshCounterStart(hypotheses: Seq[Sequent]): Int =
     val prefixes = Set(GeneratedNames.clauseVar, GeneratedNames.uncertifiedSkolem, GeneratedNames.namingAtom)

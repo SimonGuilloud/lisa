@@ -12,7 +12,7 @@ import Clausification._
  */
 private[clausification] object ScreenPhase:
 
-  def certifyScreen(problem: Problem, prover: ClausificationProver): ClausificationProof =
+  def certifyScreen(problem: Problem, prover: ClausificationProver)(using ClausifierOptions): ClausificationProof =
     val renaming: Map[Variable, Variable] = screeningRenaming(problem)
     val sigma: Map[Variable, Expression] = renaming.map((v, w) => v -> (w: Expression))
     val sigmaInv: Map[Variable, Expression] = renaming.map((v, w) => w -> (v: Expression))

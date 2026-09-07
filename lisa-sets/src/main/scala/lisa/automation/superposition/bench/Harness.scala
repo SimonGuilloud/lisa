@@ -3,6 +3,11 @@ package bench
 
 import lisa.automation.Problem
 import lisa.automation.clausification.CertifiedClausifier
+import lisa.automation.clausification.Clausification.ClausifierOptions
+import lisa.automation.clausification.Clausification.Distribute
+import lisa.automation.clausification.Clausification.GeneratedNames
+import lisa.automation.clausification.Clausification.Prenex
+
 import lisa.automation.clausification.UncertifiedClausifier
 import lisa.tptp.KernelParser.problemToKernel
 import lisa.tptp.KernelParser.strictMapAtom
@@ -63,8 +68,20 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
       n: Int = 100,
       timeoutMs: Long = 15000L,
       maxSize: Int = 50000,
+      limit: Int = Int.MaxValue, //  truncate the problem list, for dry runs
+      clausifyOnly: Boolean = false, //  clausify and check that derivation, but do not search
+      clausifier: ClausifierOptions = ClausifierOptions(),
       certified: Boolean = true,
       opts: SearchOptions = SearchOptions(maxGiven = 100000),
+      // Where the listed problems live, when that is not the TPTP library: the CASC problems are scrambled
+      // copies (implications reversed, conjuncts permuted) and must be run as issued, not as the library has
+      // them. `$TPTP` is still required either way, since a problem's `include('Axioms/…')` resolves against
+      // it once the lookup beside the problem file fails.
+      problemRoot: Option[String] = None,
+      dataset: String = "", //   the CSV's `dataset` column, set by the driver
+      configName: String = "", //  the CSV's `config` column, naming this point of the matrix
+      strategy: String = "", //  the CSV's `strategy` column, empty for a single-strategy run
+      csvOut: Option[String] = None,
       raw: Seq[String] = Nil
   ):
     def mode: String = if certified then "certified" else "uncertified"
@@ -86,7 +103,33 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
         case "timeout" => c.copy(timeoutMs = value.toLong)
         case "given" => c.copy(opts = c.opts.copy(maxGiven = value.toInt))
         case "size" => c.copy(maxSize = value.toInt)
+        case "limit" => c.copy(limit = value.toInt)
+        case "clausifyOnly" => c.copy(clausifyOnly = flag)
+        case "prenex" =>
+          c.copy(clausifier = c.clausifier.copy(prenex = value.toLowerCase match
+            case "deconstruct" => Prenex.Deconstruct
+            case "rewrite" => Prenex.Rewrite
+            case other => sys.error(s"prenex takes deconstruct|rewrite, got '$other'")))
+        case "threshold" => c.copy(clausifier = c.clausifier.copy(threshold = value.toInt))
+        case "distribute" =>
+          c.copy(clausifier = c.clausifier.copy(distribute = value.toLowerCase match
+            case "weakening" => Distribute.Weakening
+            case "primitive" => Distribute.Primitive
+            case other => sys.error(s"distribute takes weakening|primitive, got '$other'")))
         case "mode" => c.copy(certified = value.toLowerCase != "uncert")
+        // `strategy` replaces the whole option record, so it must come before any flag meant to override it.
+        case "strategy" =>
+          val s = Strategy.byName(value).getOrElse(sys.error(s"unknown strategy '$value'; have ${Strategy.portfolio.map(_.name).mkString(", ")}"))
+          c.copy(strategy = value, opts = s.opts.copy(maxGiven = c.opts.maxGiven, maxMillis = c.opts.maxMillis))
+        case "orthologic" => c.copy(opts = c.opts.copy(orthologic = flag))
+        case "sine" => c.copy(opts = c.opts.copy(sine = if flag then Some(c.opts.sine.getOrElse(SineConfig())) else None))
+        case "sineTol" => c.copy(opts = c.opts.copy(sine = Some(c.opts.sine.getOrElse(SineConfig()).copy(tolerance = value.toDouble))))
+        case "sineDepth" => c.copy(opts = c.opts.copy(sine = Some(c.opts.sine.getOrElse(SineConfig()).copy(depth = value.toInt))))
+        case "fwdUDIndex" => c.copy(opts = c.opts.copy(forwardUnitDeletionIndexThreshold = value.toInt))
+        case "root" => c.copy(problemRoot = Some(value))
+        case "dataset" => c.copy(dataset = value)
+        case "config" => c.copy(configName = value)
+        case "out" => c.copy(csvOut = Some(value))
         case _ => c.copy(opts = withFlag(c.opts, key, flag))
     }
 
@@ -132,7 +175,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
         s"timeout=${cfg.timeoutMs}ms, maxGiven=${cfg.opts.maxGiven}, maxSize=${cfg.maxSize}, mode=${cfg.mode}, " +
         s"equality=${cfg.opts.equality}, ${BenchUtil.isolationBanner}"
     )
-    run(picked, tptpRoot.get, cfg)
+    run(picked, cfg.problemRoot.map(new File(_)).getOrElse(tptpRoot.get), cfg)
 
   /**
    * Run an explicit list of TPTP-root-relative paths, one per line, with no sampling and no size guard.
@@ -140,35 +183,104 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
   private def runFiles(listPath: String, cfg0: Config): Unit =
     val tptpRoot: Option[File] = BenchUtil.tptpRootOrExplain()
     if tptpRoot.isEmpty then return
-    val paths = Using(scala.io.Source.fromFile(listPath))(_.getLines().map(_.trim).filter(_.nonEmpty).toVector).get
+    val all = Using(scala.io.Source.fromFile(listPath))(_.getLines().map(_.trim).filter(_.nonEmpty).toVector).get
+    val paths = all.take(cfg0.limit)
     val cfg = cfg0.copy(maxSize = Int.MaxValue)
+    val root = cfg.problemRoot.map(new File(_)).getOrElse(tptpRoot.get)
     println(
-      s"files=$listPath (${paths.size} problems), timeout=${cfg.timeoutMs}ms, maxGiven=${cfg.opts.maxGiven}, " +
-        s"mode=${cfg.mode}, ${BenchUtil.isolationBanner}"
+      s"files=$listPath (${paths.size} of ${all.size} problems), root=$root, timeout=${cfg.timeoutMs}ms, " +
+        s"maxGiven=${cfg.opts.maxGiven}, mode=${cfg.mode}, ${BenchUtil.isolationBanner}"
     )
-    run(paths, tptpRoot.get, cfg)
+    run(paths, root, cfg)
 
-  private def run(paths: Vector[String], tptpRoot: File, cfg: Config): Unit =
+  /** Run each listed problem, resolved against `root` (the TPTP library unless `root=` said otherwise). */
+  private def run(paths: Vector[String], root: File, cfg: Config): Unit =
     BenchUtil.resetAbandoned() // this run's contamination count starts here
-    println(f" ${"PROBLEM"}%-19s ${"HYP"}%4s ${"CJ"}%3s  ${"RESULT"}%-12s ${"clausify"}%10s ${"prover"}%10s ${"check"}%9s ${"given"}%9s")
-    report(paths.map(rel => solveRow(new File(tptpRoot, rel), cfg)), paths.size)
+    println(f" ${"PROBLEM"}%-19s ${"HYP"}%4s ${"CJ"}%3s  ${"RESULT"}%-12s ${"clausify"}%10s ${"search"}%9s ${"recon"}%8s ${"check"}%9s ${"given"}%9s")
+    val rows = paths.map(rel => (rel, solveRow(new File(root, rel), cfg)))
+    cfg.csvOut.foreach(writeCsv(_, rows, cfg))
+    report(rows.map(_._2), paths.size)
+
+  // ── CSV ───────────────────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * The columns every run writes, whatever it was launched to answer, so that one analysis reads them all.
+   */
+  private val CsvHeader: Seq[String] = Seq(
+    "dataset", "problem", "config", "strategy", "verdict",
+    "hypotheses",
+    "clausify_ms", "search_ms", "reconstruct_ms", "check_ms",
+    "given", "derived", "peak_active", "peak_passive",
+    "clauses", "fresh_symbols",
+    "proof_steps", "raw_size", "shared_size", "max_sequent", "imports",
+    "uses_sorry", "contaminated", "detail"
+  )
+
+  /**
+   * One row per problem. A quantity this run could not produce is written **empty**, never zero, so that an
+   * aggregate cannot silently average "not measured" as "measured as zero": a problem that never reached the
+   * prover has no clause count, and one that built no proof has no sizes.
+   */
+  private def writeCsv(path: String, rows: Vector[(String, Timing)], cfg: Config): Unit =
+    def opt(i: Int): String = if i < 0 then "" else i.toString
+    def ms(reached: Boolean, d: Double): String = if reached then f"$d%.3f" else ""
+    def cnt(reached: Boolean, i: Int): String = if reached then i.toString else ""
+    val out = new java.io.PrintWriter(new File(path), "UTF-8")
+    try
+      out.println(CsvHeader.mkString(","))
+      rows.foreach { (rel, t) =>
+        val reached = ReachedProver(t.category)
+        val m = t.metrics
+        val cells = Seq(
+          cfg.dataset, rel, cfg.configName, cfg.strategy, t.category,
+          opt(t.hypotheses),
+          f"${t.clausifyMs}%.3f", ms(reached, t.searchMs), ms(reached, t.reconstructMs),
+          if m.isDefined then f"${t.checkMs}%.3f" else "",
+          // The loop counters default to 0, which for a problem that never reached the prover would read as
+          // "searched and derived nothing" rather than "did not search".
+          cnt(reached, t.givenProcessed), cnt(reached, t.derived), cnt(reached, t.peakActive), cnt(reached, t.peakPassive),
+          opt(t.clauses), opt(t.freshSymbols),
+          m.map(_.steps.toString).getOrElse(""), m.map(_.rawSize.toString).getOrElse(""),
+          m.map(_.sharedSize.toString).getOrElse(""), m.map(_.maxSequent.toString).getOrElse(""),
+          m.map(_.imports.toString).getOrElse(""),
+          if m.isDefined then t.usesSorry.toString else "",
+          t.contaminated.toString, t.detail
+        )
+        out.println(cells.map(csvCell).mkString(","))
+      }
+    finally out.close()
+    println(s"wrote ${rows.size} rows to $path")
+
+  /** Quote a cell only when it needs it, so the common case stays readable. */
+  private def csvCell(s: String): String =
+    if s.exists(c => c == ',' || c == '"' || c == '\n') then "\"" + s.replace("\"", "\"\"") + "\"" else s
 
   // ── one problem ───────────────────────────────────────────────────────────────────────────────────────────
 
   /**
    * Per-problem outcome and where the wall-clock went: `clausifyMs` (everything outside the prover call),
-   * `proverMs` (search and reconstruction), `checkMs` (the kernel check), plus the loop-scale counters.
+   * `searchMs` (the saturation), `reconstructMs` (building the kernel proof), `checkMs` (the kernel check),
+   * plus the loop-scale counters.
    * `contaminated` marks a row that ran while an abandoned worker was still alive, whose timings and often
    * whose verdict say more about that thread than about this problem.
    */
   private final case class Timing(
       category: String,
       clausifyMs: Double = 0.0,
-      proverMs: Double = 0.0,
+      searchMs: Double = 0.0,
+      reconstructMs: Double = 0.0,
       checkMs: Double = 0.0,
       givenProcessed: Int = 0,
+      derived: Int = 0,
       peakActive: Int = 0,
       peakPassive: Int = 0,
+      // Hypotheses the problem carries. In the CSV because `e5` splits on it: SInE keeps everything below
+      // `SineConfig.minAxioms`, so an on/off comparison is only meaningful above that count.
+      hypotheses: Int = -1,
+      clauses: Int = -1, //         clauses handed to the prover; -1 when it was never reached
+      freshSymbols: Int = -1, //    naming atoms and Skolem symbols in those clauses
+      metrics: Option[ProofMetrics] = None, //  present exactly when a proof was built
+      usesSorry: Boolean = false,
       contaminated: Boolean = false,
       detail: String = ""
   )
@@ -190,11 +302,11 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     val (hyps, cj, res0) =
       if BenchUtil.forkEnabled then solveForked(f, cfg)
       else solveLocal(f, cfg, outerTimeout = true)
-    val res = res0.copy(contaminated = dirty)
+    val res = res0.copy(contaminated = dirty, hypotheses = hyps)
     val mark = if dirty then "!" else " "
     val h = if hyps < 0 then "?" else hyps.toString
     val detail = if res.detail.isEmpty then "" else s"  (${res.detail})"
-    println(f"$mark$name%-19s $h%4s $cj%3s  ${res.category}%-12s ${res.clausifyMs}%10.1f ${res.proverMs}%10.1f ${res.checkMs}%9.1f ${res.givenProcessed}%9d$detail")
+    println(f"$mark$name%-19s $h%4s $cj%3s  ${res.category}%-12s ${res.clausifyMs}%10.1f ${res.searchMs}%9.1f ${res.reconstructMs}%8.1f ${res.checkMs}%9.1f ${res.givenProcessed}%9d$detail")
     res
 
   /**
@@ -221,18 +333,43 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
       hyps.toString,
       cj,
       t.clausifyMs.toString,
-      t.proverMs.toString,
+      t.searchMs.toString,
+      t.reconstructMs.toString,
       t.checkMs.toString,
       t.givenProcessed.toString,
+      t.derived.toString,
       t.peakActive.toString,
       t.peakPassive.toString,
+      t.clauses.toString,
+      t.freshSymbols.toString,
+      // `-` for absent, since a child that built no proof has no metrics to send.
+      t.metrics.fold("-")(m => s"${m.steps} ${m.rawSize} ${m.sharedSize} ${m.maxSequent} ${m.imports}"),
+      t.usesSorry.toString,
       t.detail
     ).mkString(BenchUtil.ResultPrefix, "\t", "")
 
   private def decodeRow(line: String): Option[(Int, String, Timing)] =
     val p = line.stripPrefix(BenchUtil.ResultPrefix).split('\t')
-    if p.length < 9 then None
-    else Try((p(1).toInt, p(2), Timing(p(0), p(3).toDouble, p(4).toDouble, p(5).toDouble, p(6).toInt, p(7).toInt, p(8).toInt, detail = p.lift(9).getOrElse("")))).toOption
+    if p.length < 15 then None
+    else
+      Try {
+        val metrics = p(13) match
+          case "-" => None
+          case s =>
+            val f = s.split(' ')
+            Some(ProofMetrics(f(0).toInt, f(1).toLong, f(2).toLong, f(3).toLong, f(4).toInt))
+        // Named, not positional: this decodes a wire format whose field order is fixed, into a record whose
+        // field order is not, and a new field in the middle of `Timing` silently reassigns every argument
+        // after it. `hypotheses` is absent here on purpose -- it travels as its own field, `p(1)`, and
+        // `solveRow` puts it back on the result.
+        (p(1).toInt, p(2), Timing(
+          category = p(0),
+          clausifyMs = p(3).toDouble, searchMs = p(4).toDouble, reconstructMs = p(5).toDouble, checkMs = p(6).toDouble,
+          givenProcessed = p(7).toInt, derived = p(8).toInt, peakActive = p(9).toInt, peakPassive = p(10).toInt,
+          clauses = p(11).toInt, freshSymbols = p(12).toInt,
+          metrics = metrics, usesSorry = p(14).toBoolean, detail = p.lift(15).getOrElse("")
+        ))
+      }.toOption
 
   /**
    * Parse, clausify and solve one problem in this JVM. `outerTimeout` adds the thread-based wall-clock guard,
@@ -283,42 +420,116 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
    * Run the pipeline once, timing each phase and recording the loop-scale stats.
    */
   private def solveOne(cprob: Problem, cfg: Config): Timing =
-    val proverNanos = new java.util.concurrent.atomic.AtomicLong(0L)
+    val searchNanos = new java.util.concurrent.atomic.AtomicLong(0L)
+    val reconstructNanos = new java.util.concurrent.atomic.AtomicLong(0L)
+    val clauseCount = new java.util.concurrent.atomic.AtomicInteger(-1)
+    val freshCount = new java.util.concurrent.atomic.AtomicInteger(-1)
+    def proverNanos: Long = searchNanos.get + reconstructNanos.get
     val stats = new java.util.concurrent.atomic.AtomicReference[Discount.LoopStats](Discount.LoopStats(0, 0, 0, 0))
+    // `Clausal.prove` is inlined here rather than called, so that the search and the reconstruction of its
+    // result are timed apart. Both accumulate, since the clausifier calls this closure as a continuation and
+    // may call it more than once.
     val prover: Problem => K.SCProof = p =>
-      val ps = System.nanoTime()
       try
-        Clausal.prove(p, cfg.opts.copy(maxMillis = cfg.timeoutMs, onStats = stats.set)) match
-          case Right(proof) => proof
-          case Left(other) => throw new NonRefutation(other)
+        clauseCount.set(p.imports.size)
+        freshCount.set(freshSymbolsOf(p))
+        // Clausify-only: satisfy the prover contract with a `Sorry` and never search. What is then built and
+        // checked is the clausification derivation alone, which is what the clausification variants are
+        // compared on, and it costs nothing on problems no configuration could refute anyway.
+        if cfg.clausifyOnly then K.SCProof(IndexedSeq(K.Sorry(K.Sequent(Set.empty, Set.empty))), p.imports)
+        else
+          val prepared = Clausal.prepare(p)
+          val ss = System.nanoTime()
+          val outcome =
+            try Clausal.refute(prepared.work, cfg.opts.copy(maxMillis = cfg.timeoutMs, onStats = stats.set),
+                               symbolVars = prepared.symbolVars, discharge = prepared.abs.dischargeSubst)
+            finally searchNanos.addAndGet(System.nanoTime() - ss)
+          outcome match
+            case s: Clausal.Outcome.Success =>
+              val rs = System.nanoTime()
+              try Clausal.composeProof(s.reconstructKernelProof, prepared.orig)
+              finally reconstructNanos.addAndGet(System.nanoTime() - rs)
+            case other => throw new NonRefutation(other)
       catch
         case nr: NonRefutation => throw nr // a decided non-refutation: propagate to the SATURATED/TIMEOUT arm
         case ie: InterruptedException => throw ie // hard-timeout interrupt: propagate to the TIMEOUT arm
         case e: Throwable => throw new ProverError(e)
-      finally proverNanos.addAndGet(System.nanoTime() - ps)
     val t0 = System.nanoTime()
-    def clausifyMsSoFar: Double = (System.nanoTime() - t0 - proverNanos.get) / 1e6
+    def clausifyMsSoFar: Double = (System.nanoTime() - t0 - proverNanos) / 1e6
     val base: Timing =
       try
         val proof =
-          if cfg.certified then CertifiedClausifier.certifyClausal(cprob, prover)
+          if cfg.certified then CertifiedClausifier.certifyClausal(cprob, prover, cfg.clausifier)
           else UncertifiedClausifier.uncertifyClausal(cprob, prover)
         val clausifyMs = clausifyMsSoFar
         val cs = System.nanoTime()
-        val valid = K.SCProofChecker.checkSCProof(proof).isValid
-        Timing(if valid then "REFUTED" else "BAD_PROOF", clausifyMs, proverNanos.get / 1e6, (System.nanoTime() - cs) / 1e6)
+        val judgement = K.SCProofChecker.checkSCProof(proof)
+        val checkMs = (System.nanoTime() - cs) / 1e6
+        val sorry = judgement match
+          case K.SCProofCheckerJudgement.SCValidProof(_, us) => us
+          case _ => false
+        // In clausify-only mode nothing was proved, so the verdict says so: the proof is the clausification
+        // derivation capped by a `Sorry`, and `usesSorry` is true by construction rather than by defect.
+        // Anywhere else a `Sorry` makes the proof valid and worthless, so it counts as a bad proof rather than
+        // a refutation: validity alone cannot tell a real refutation from a fabricated one.
+        val verdict =
+          if !judgement.isValid then "BAD_PROOF"
+          else if cfg.clausifyOnly then "CLAUSIFIED"
+          else if sorry then "BAD_PROOF"
+          else "REFUTED"
+        // A rejected proof is the one verdict that is useless without a reason: it says a reconstruction bug
+        // exists but not where, and re-running to find out means reproducing a search that may have taken
+        // minutes. So the checker's own message and the step it failed at are carried into the row.
+        val detail = judgement match
+          case K.SCProofCheckerJudgement.SCInvalidProof(_, path, message) =>
+            s"step ${path.mkString(".")}: ${message.replace(',', ';').replace('\n', ' ').take(300)}"
+          case _ => if sorry && !cfg.clausifyOnly then "valid only via Sorry" else ""
+        Timing(
+          verdict,
+          clausifyMs, searchNanos.get / 1e6, reconstructNanos.get / 1e6, checkMs,
+          metrics = Some(ProofMetrics.of(proof)), usesSorry = sorry,
+          detail = detail
+        )
       catch
         case nr: NonRefutation =>
           val cat = nr.outcome match
             case Clausal.Outcome.Saturated => "SATURATED"
             case Clausal.Outcome.Timeout => "TIMEOUT"
             case _ => "UNKNOWN"
-          Timing(cat, clausifyMsSoFar, proverNanos.get / 1e6)
-        case _: InterruptedException => Timing("TIMEOUT", clausifyMsSoFar, proverNanos.get / 1e6)
-        case _: ProverError => Timing("BAD_PROOF", clausifyMsSoFar, proverNanos.get / 1e6)
-        case e: Throwable => Timing(s"CLAUSIFY_ERR(${e.getClass.getSimpleName})", clausifyMsSoFar, proverNanos.get / 1e6)
+          Timing(cat, clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6)
+        case _: InterruptedException => Timing("TIMEOUT", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6)
+        // Same reasoning as for a rejected proof: the verdict alone says a bug exists but not where, and
+        // reproducing it means re-running a search. The cause is what the prover actually threw.
+        case pe: ProverError =>
+          val cause = Option(pe.getCause).getOrElse(pe)
+          val where = cause.getStackTrace.headOption.fold("")(t => s" at ${t.getClassName.split('.').last}.${t.getMethodName}:${t.getLineNumber}")
+          val what = s"${cause.getClass.getSimpleName}: ${Option(cause.getMessage).getOrElse("")}$where"
+          // The CSV gets one line; the log gets the trace. A prover error is always a bug and always rare, so
+          // there is no cost to printing it, and without it the next reader repeats this whole investigation.
+          System.err.println(s"[bad-proof] ${cause.getClass.getName}: ${cause.getMessage}")
+          cause.getStackTrace.take(12).foreach(t => System.err.println(s"[bad-proof]   at $t"))
+          Timing("BAD_PROOF", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6, detail = what.replace(',', ';').replace('\n', ' ').take(300))
+        case e: Throwable => Timing(s"CLAUSIFY_ERR(${e.getClass.getSimpleName})", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6)
     val s = stats.get
-    base.copy(givenProcessed = s.givenProcessed, peakActive = s.peakActive, peakPassive = s.peakPassive)
+    base.copy(
+      givenProcessed = s.givenProcessed, derived = s.passiveEnqueued,
+      peakActive = s.peakActive, peakPassive = s.peakPassive,
+      clauses = clauseCount.get, freshSymbols = freshCount.get
+    )
+
+  /**
+   * Naming atoms and Skolem symbols in the clause set handed to the prover, counted by the prefixes
+   * `Clausification.GeneratedNames` reserves for them. Counted here rather than reported by the clausifier,
+   * so that both clausifiers are measured the same way and neither needs instrumenting.
+   */
+  private def freshSymbolsOf(p: Problem): Int =
+    val prefixes = Set(GeneratedNames.namingAtom, GeneratedNames.skolemFun, GeneratedNames.uncertifiedSkolem)
+    p.imports.iterator
+      .flatMap(s => s.left.iterator ++ s.right.iterator)
+      .flatMap(_.freeVariables)
+      .collect { case v if prefixes(v.id.name) => v.id }
+      .toSet
+      .size
 
   /**
    * Clausify one problem both ways, solve, and report the kernel checker's verdict in full, for diagnosing a
@@ -355,7 +566,8 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
       s"\nrefuted=$refuted  saturated=${count(_ == "SATURATED")}  timeout=${count(_ == "TIMEOUT")}  " +
         s"hard_timeout=${count(_ == "HARD_TIMEOUT")}  bad_proof=${count(_ == "BAD_PROOF")}  " +
         s"clausify_err=${count(_.startsWith("CLAUSIFY_ERR"))}  error=${count(_.startsWith("ERROR"))}  " +
-        s"parse_err=${count(_ == "PARSE_ERR")}  skipped=${count(_ == "SKIPPED")}  of $total"
+        s"parse_err=${count(_ == "PARSE_ERR")}  skipped=${count(_ == "SKIPPED")}  " +
+        (if count(_ == "CLAUSIFIED") > 0 then s"clausified=${count(_ == "CLAUSIFIED")}  " else "") + s"of $total"
     )
     // Printed before the numbers, not after: they are the thing being called into question.
     val warning = BenchUtil.contaminationWarning
@@ -381,7 +593,8 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     if solved.nonEmpty then
       println(s"\nphase times over the $refuted REFUTED problems:")
       phase("clausify", solved.map(_.clausifyMs))
-      phase("prover", solved.map(_.proverMs))
+      phase("search", solved.map(_.searchMs))
+      phase("reconstruct", solved.map(_.reconstructMs))
       phase("check", solved.map(_.checkMs))
     // Clausification runs regardless of the prover's verdict, so it is worth summing over every attempt.
     val attempted = rows.filter(r => ReachedProver(r.category) || r.category.startsWith("CLAUSIFY_ERR"))
