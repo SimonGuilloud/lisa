@@ -1,0 +1,2 @@
+wrote 1 rows to /export/starexec/sandbox/output/output_files/first-negative/result.csv
+% SZS status GaveUp for theBenchmark.p
