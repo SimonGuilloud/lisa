@@ -26,18 +26,33 @@ object CertifiedClausifier:
    * disjunctions, quantifiers, or right-hand negations left to unpack.
    */
   def certifyClausal(problem: Problem, prover: Problem => SCProof, options: ClausifierOptions = ClausifierOptions()): SCProof =
+    certifyClausalGoal(problem, (p, _) => prover(p), options)
+
+  /**
+   * [[certifyClausal]], but telling the prover which clauses came from the negated conjecture.
+   *
+   * A superposition prover selects its next given clause partly by how goal-related the clause is, and every
+   * strategy tunes that with `nonGoalWeightCoefficient`. Without this the certified path ran with an empty
+   * goal set, so those knobs did nothing and it searched differently from the uncertified path — which passes
+   * the same information through `UncertifiedClausifier.clausalProblemWithOrigins`. That is not a cost of
+   * certification but a difference in configuration, and it made the two incomparable.
+   *
+   * The set indexes `problem.hypotheses` of the clausal problem handed to `prover`, and is empty when there is
+   * no conjecture. See [[Clausification.ClausificationProver]] for how it travels down the pipeline.
+   */
+  def certifyClausalGoal(problem: Problem, prover: (Problem, Set[Int]) => SCProof, options: ClausifierOptions = ClausifierOptions()): SCProof =
     given ClausifierOptions = options
-    val wrappedProver: ClausificationProver = p =>
-      val downstream = ClausificationProof.fromSCProof(prover(p))
+    val wrappedProver: ClausificationProver = (p, goal) =>
+      val downstream = ClausificationProof.fromSCProof(prover(p, goal))
       ClausificationProof(downstream.steps, downstream.imports ++ libImports)
-    val distributeProver: ClausificationProver = DistributePhase.certifyDistribute(_, wrappedProver)
-    val prenexProver: ClausificationProver = PrenexPhase.certifyPrenex(_, distributeProver)
-    val skolemProver: ClausificationProver = SkolemPhase.certifySkolem(_, prenexProver)
-    val nnfProver: ClausificationProver = NnfPhase.certifyNnf(_, skolemProver)
-    val namingProver: ClausificationProver = NamingPhase.certifyNaming(_, nnfProver)
-    val negatedProver: ClausificationProver = NegatedPhase.certifyNegated(_, namingProver)
-    val fullProver: ClausificationProver = ScreenPhase.certifyScreen(_, negatedProver)
-    clausificationProofToSCProof(fullProver(problem))
+    val distributeProver: ClausificationProver = DistributePhase.certifyDistribute(_, wrappedProver, _)
+    val prenexProver: ClausificationProver = PrenexPhase.certifyPrenex(_, distributeProver, _)
+    val skolemProver: ClausificationProver = SkolemPhase.certifySkolem(_, prenexProver, _)
+    val nnfProver: ClausificationProver = NnfPhase.certifyNnf(_, skolemProver, _)
+    val namingProver: ClausificationProver = NamingPhase.certifyNaming(_, nnfProver, _)
+    val negatedProver: ClausificationProver = NegatedPhase.certifyNegated(_, namingProver, _)
+    val fullProver: ClausificationProver = ScreenPhase.certifyScreen(_, negatedProver, _)
+    clausificationProofToSCProof(fullProver(problem, Set.empty))
 
   // ── oracles for the uncertified/certified equivalence test ─────────────────────────────────────
   //

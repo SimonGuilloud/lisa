@@ -114,7 +114,22 @@ object UncertifiedClausifier:
    */
   def clausalProblemWithOrigins(problem: Problem, threshold: Int = DefaultThreshold, orthologic: Boolean = false): (Problem, IndexedSeq[Int]) =
     val withOrigins = clausalFormWithOrigins(problem, threshold, orthologic)
-    (Problem(withOrigins.map(_._1).toList, None, negated(problem)._2), withOrigins.map(_._2))
+    val clauses = withOrigins.map(_._1).toList
+    (Problem(clauses, None, negated(problem)._2 ++ skolemVariables(clauses)), withOrigins.map(_._2))
+
+  /**
+   * The Skolem symbols in `clauses`, which the prover must treat as rigid.
+   *
+   * Read back off the clauses rather than threaded out of [[skolemize]]: they are minted deep inside a
+   * recursion whose result is a formula, and a Skolem that reached a clause without reaching this set would be
+   * ∀-closed by the prover — sound-looking and wrong. Scanning cannot miss one.
+   */
+  private def skolemVariables(clauses: Seq[Sequent]): Set[Variable] =
+    clauses.iterator
+      .flatMap(s => s.left.iterator ++ s.right.iterator)
+      .flatMap(_.freeVariables)
+      .filter(_.id.name == GeneratedNames.skolemFun)
+      .toSet
 
   /**
    * Pairs each clause with the index of the source formula it was clausified from:
@@ -140,7 +155,7 @@ object UncertifiedClausifier:
    * clause variables) on another; both start here, so both clear every input name.
    */
   private def freshCounterStart(hypotheses: Seq[Sequent]): Int =
-    val prefixes = Set(GeneratedNames.clauseVar, GeneratedNames.uncertifiedSkolem, GeneratedNames.namingAtom)
+    val prefixes = Set(GeneratedNames.clauseVar, GeneratedNames.skolemFun, GeneratedNames.namingAtom)
     var maxNo = -1
     def note(id: Identifier): Unit = if prefixes(id.name) && id.no > maxNo then maxNo = id.no
     def scan(e: Expression): Unit = e match
@@ -228,9 +243,14 @@ object UncertifiedClausifier:
         val bodyFree = f.freeVariables.flatMap(y => imageFree.getOrElse(y, Set(y)))
         val mentioned = univs.collect { case (_, v) if bodyFree.contains(v) => v }
         val skSort = mentioned.foldRight(x.sort)((u, acc) => u.sort -> acc)
-        // A **Constant** (function symbol), NOT a Variable: a *nullary* Skolem has result sort `Ind`, so as a
-        // Variable it would be mistaken for a clause variable (universally quantified), which is unsound.
-        val skTerm = mentioned.foldLeft(Constant(Identifier(GeneratedNames.uncertifiedSkolem, counter.next()), skSort): Expression)((acc, u) => acc(u))
+        // A schematic **Variable**, as [[SkolemPhase]] mints, not a `Constant`: the two paths must produce the
+        // same clauses, and this was the last place where they differed in representation rather than in
+        // names. Safe for the reason the certified path relies on -- every one of these is put in the
+        // problem's `frozen` set by [[skolemVariables]], and `Clausal.prepare` makes `frozen` rigid, so a
+        // nullary Skolem (`Ind`-sorted, and so otherwise indistinguishable from a clause variable) is never
+        // universally quantified. Without that freezing this would be unsound, which is why it used to be a
+        // `Constant`.
+        val skTerm = mentioned.foldLeft(Variable(Identifier(GeneratedNames.skolemFun, counter.next()), skSort): Expression)((acc, u) => acc(u))
         skolemize(g, subst + (x -> skTerm), imageFree + (x -> mentioned.toSet), univs, counter)
       case lit => if subst.isEmpty then lit else substituteVariablesOpti(lit, subst)
 

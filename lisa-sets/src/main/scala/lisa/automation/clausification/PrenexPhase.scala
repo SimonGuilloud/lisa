@@ -18,7 +18,7 @@ private[clausification] object PrenexPhase:
    * clause variable `w` (pre-order) via `LeftForall`. Certifies the derivation of the quantifier-free matrix
    * via [[provePrenex]].
    */
-  def certifyPrenex(problem: Problem, prover: ClausificationProver)(using ClausifierOptions): ClausificationProof = {
+  def certifyPrenex(problem: Problem, prover: ClausificationProver, goal: Set[Int] = Set.empty)(using ClausifierOptions): ClausificationProof = {
     require(problem.conjecture.isEmpty, "certifyPrenex expects a conjecture-free problem (consumed by certifyNegated)")
     val counter = Counter()
     val hypotheses = problem.hypotheses.toIndexedSeq
@@ -43,7 +43,8 @@ private[clausification] object PrenexPhase:
         matrixRefs += steps.size - 1
 
     val newProblem = Problem(matrices.toList, None, problem.frozen)
-    val downstream = prover(newProblem)
+    require(matrices.size == problem.hypotheses.size, "prenex must map hypotheses one-to-one: the goal travels as a hypothesis index")
+    val downstream = prover(newProblem, goal)
     require(sameImportList(downstream.imports, newProblem.imports ++ libImports), "Downstream imports must match transformed problem imports")
     steps += ClausificationSubproof(downstream, matrixRefs.toIndexedSeq ++ libRefs(n))
     ClausificationProof(steps.toIndexedSeq, hypotheses ++ libImports)

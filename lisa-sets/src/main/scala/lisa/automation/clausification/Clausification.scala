@@ -25,7 +25,6 @@ object Clausification {
     val clauseVar = "w" // both clausifiers:       the fresh variable each stripped ∀ is instantiated with
     val epsAbs = "epsi" // Clausal:                ε-abstraction function schema var lifting ε-terms
     val etaVar = "etaZ" // Clausification:         fresh var for η-expansion, avoiding capture when `∀ P` becomes `∀(λz. P(z))`
-    val uncertifiedSkolem = "sk" // UncertifiedClausifier:  Skolem function Constant (not the certified `esk`)
     // Input screening ([[ScreenPhase]]): the three namespaces every free input variable is renamed into,
     // by the sort a symbol ultimately returns. Screening counters start at 1.
     val inputVar = "v" // Ind:                    the clause variables of the input
@@ -174,7 +173,23 @@ object Clausification {
   private[clausification] def libRefs(nonLibSize: Int)(using ClausifierOptions): IndexedSeq[Int] =
     libImports.indices.map(libRef(nonLibSize, _)).toIndexedSeq
 
-  private[clausification] type ClausificationProver = Problem => ClausificationProof
+  /**
+   * A phase's continuation: the rest of the pipeline, applied to the problem this phase transformed.
+   *
+   * The second argument carries the '''goal''' — the negated conjecture — down to the prover, which biases
+   * clause selection toward it and lets a strategy's `nonGoalWeightCoefficient` mean anything. It is a set of
+   * indices, and what they index changes exactly once, at [[DistributePhase]]:
+   *
+   *   - '''above''' it, indices into `problem.hypotheses`. [[NegatedPhase]] puts the negated conjecture there
+   *     and every phase between forwards the set untouched, which is sound because none of them reorders or
+   *     drops a hypothesis: naming only appends its definitions after the existing ones, and NNF, Skolem and
+   *     prenex map hypotheses one-to-one in order. Each of those phases asserts as much.
+   *   - '''below''' it, indices into the clause list handed to the prover. [[DistributePhase]] emits each
+   *     hypothesis's clauses in turn, so it knows which clauses descend from the goal and translates.
+   *
+   * Empty for a conjecture-free problem, where there is no goal to be directed toward.
+   */
+  private[clausification] type ClausificationProver = (Problem, Set[Int]) => ClausificationProof
 
   /**
    * Expand η-reduced quantifier bodies: rewrite `∀(f)` / `∃(f)` to

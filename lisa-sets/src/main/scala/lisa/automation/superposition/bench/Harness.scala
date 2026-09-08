@@ -27,8 +27,12 @@ import BenchUtil.median
 /**
  * Runs a dataset through the whole pipeline: clausify, refute, kernel-check the composed proof. A `bad_proof`
  * row is therefore a reconstruction or composition bug. The clausifiers take a `Problem => SCProof`, so the
- * prover is called mid-descent and is timed inside its own closure. Certified and uncertified produce the same
- * clauses, so the difference between the two modes is the cost of building the proof.
+ * prover is called mid-descent and is timed inside its own closure.
+ *
+ * `mode=uncert` is a different pipeline rather than a flag on this one: it clausifies without a certificate,
+ * searches, and prints the refutation as TSTP, which is what the prover does at CASC. It builds no kernel
+ * proof and checks nothing, so the difference between the two modes is the whole cost of certification. The
+ * two clausifiers produce the same clauses, so nothing else varies between them.
  *
  * The three dataset objects ([[Evaluation]], [[FofEvaluation]], [[EqFofEvaluation]]) differ only in the list
  * they draw from. Requires `TPTP` to point at the problem library.
@@ -78,10 +82,19 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
       // them. `$TPTP` is still required either way, since a problem's `include('Axioms/…')` resolves against
       // it once the lookup beside the problem file fails.
       problemRoot: Option[String] = None,
+      // The CSV's `problem` column, when the file cannot supply it: StarExec copies every benchmark to
+      // `theBenchmark.p`, so the name has to be passed in or all 400 rows look alike.
+      problemName: String = "",
       dataset: String = "", //   the CSV's `dataset` column, set by the driver
       configName: String = "", //  the CSV's `config` column, naming this point of the matrix
       strategy: String = "", //  the CSV's `strategy` column, empty for a single-strategy run
       csvOut: Option[String] = None,
+      // Print the TSTP derivation, as CASC wants. Only the single-problem entry point sets it: a batch run
+      // would build hundreds of derivations to discard them, and bury its own output under the ones it kept.
+      tstpOut: Boolean = false,
+      // Treat `timeoutMs` as a wall-clock budget for this whole JVM, parsing and start-up included, rather
+      // than as a budget for the search alone. Set only where one JVM handles one problem.
+      wallBudget: Boolean = false,
       raw: Seq[String] = Nil
   ):
     def mode: String = if certified then "certified" else "uncertified"
@@ -127,6 +140,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
         case "sineDepth" => c.copy(opts = c.opts.copy(sine = Some(c.opts.sine.getOrElse(SineConfig()).copy(depth = value.toInt))))
         case "fwdUDIndex" => c.copy(opts = c.opts.copy(forwardUnitDeletionIndexThreshold = value.toInt))
         case "root" => c.copy(problemRoot = Some(value))
+        case "problem" => c.copy(problemName = value)
         case "dataset" => c.copy(dataset = value)
         case "config" => c.copy(configName = value)
         case "out" => c.copy(csvOut = Some(value))
@@ -160,8 +174,64 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     case "sample" +: rest =>
       sample(rest.lift(0).map(_.toInt).getOrElse(100), rest.lift(1).map(_.toLong).getOrElse(42L)).foreach(println)
     case "verify" +: rest => rest.foreach(verifyOne)
+    case "one" +: file +: outDir +: rest => runOne(file, outDir, parse(rest))
     case "files" +: list +: rest => runFiles(list, parse(rest))
     case rest => benchmark(parse(rest))
+
+  /**
+   * One problem, for a cluster that schedules the problems itself: writes this run's CSV row into `outDir` and
+   * prints an SZS status line.
+   *
+   * StarExec invokes a run script per (solver configuration, benchmark) pair with the problem as `$1` and a
+   * preserved output directory as `$2`, and classifies the outcome by reading an SZS status off stdout. So the
+   * two halves are both needed: the status for the cluster's own bookkeeping, and the row for everything the
+   * paper measures beyond solved-or-not.
+   *
+   * '''In-process''', unlike every other entry point here: the harness normally forks a JVM per problem to keep
+   * a runaway one from contaminating its successors, but StarExec already isolates each pair, and the fork
+   * would put a second JVM start inside the measured budget and confuse its resource accounting.
+   */
+  private def runOne(file: String, outDir: String, cfg0: Config): Unit =
+    val f = new File(file)
+    val out = new File(outDir)
+    out.mkdirs()
+    val cfg = cfg0.copy(maxSize = Int.MaxValue, csvOut = Some(new File(out, "result.csv").getPath), tstpOut = true, wallBudget = true)
+    // The cluster names every benchmark `theBenchmark.p`, so the file cannot identify the problem. `problem=`
+    // carries the real name when the caller knows it; the file name is only a fallback.
+    val name = if cfg.problemName.nonEmpty then cfg.problemName else f.getName
+
+    // A row even when the run is killed from outside. StarExec enforces its own limits and sends SIGTERM, and
+    // a pair killed that way otherwise returns no CSV at all — losing `given`, `derived` and the phase times
+    // for exactly the unsolved problems, which is what `e3-given` is built on. A shutdown hook cannot catch
+    // SIGKILL, so this is a best effort, but SIGTERM comes first and is what the limits actually send.
+    val written = new java.util.concurrent.atomic.AtomicBoolean(false)
+    Runtime.getRuntime.addShutdownHook(new Thread(() =>
+      if written.compareAndSet(false, true) then
+        writeCsv(cfg.csvOut.get, Vector((name, Timing("KILLED", detail = "killed before finishing"))), cfg)
+        println(s"% SZS status Timeout for $name")
+    ))
+
+    val (hyps, cj, res) = solveLocal(f, cfg, outerTimeout = true)
+    val timing = res.copy(hypotheses = hyps) //  as `solveRow` does; `e5` splits on this column
+    val hasConjecture = cj == "y"
+    // The SZS ontology distinguishes a refuted conjecture from a refuted axiom set, and satisfiable likewise;
+    // a budget that ran out is `Timeout`, and anything else is `GaveUp` rather than a claim we cannot support.
+    val szs = timing.category match
+      case "REFUTED" => if hasConjecture then "Theorem" else "Unsatisfiable"
+      // A saturation is `GaveUp`, never `(Counter)Satisfiable`, which is [[CascProver]]'s rule and has to be
+      // this one too: SInE selection drops axioms, so the search that saturated may have saturated a strictly
+      // weaker problem, and claiming its conjecture underivable would be a wrong answer rather than a missing
+      // one. The CSV still records `SATURATED`, so the analysis keeps the distinction the status line drops.
+      case "SATURATED" => "GaveUp"
+      case "CLAUSIFIED" => "GaveUp" //         clausify-only: nothing was proved, by construction
+      case "TIMEOUT" | "HARD_TIMEOUT" => "Timeout"
+      case _ => "GaveUp"
+    if written.compareAndSet(false, true) then
+      writeCsv(cfg.csvOut.get, Vector((name, timing)), cfg)
+      println(s"% SZS status $szs for $name")
+      // The derivation follows its status line, as CASC expects. Only the uncertified path produces one: the
+      // certified path's proof is a kernel proof, which is checked rather than printed.
+      timing.tstp.foreach(print)
 
   /**
    * Draw a seeded sample and run each problem.
@@ -234,7 +304,11 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
         val cells = Seq(
           cfg.dataset, rel, cfg.configName, cfg.strategy, t.category,
           opt(t.hypotheses),
-          f"${t.clausifyMs}%.3f", ms(reached, t.searchMs), ms(reached, t.reconstructMs),
+          f"${t.clausifyMs}%.3f", ms(reached, t.searchMs),
+          // Reconstruction and checking are reported only when a kernel proof was actually built, which is
+          // what `metrics` being present means. The uncertified path builds none by design, so a `0.000` here
+          // would read as "reconstructed, instantly" rather than "never reconstructed".
+          if m.isDefined then f"${t.reconstructMs}%.3f" else "",
           if m.isDefined then f"${t.checkMs}%.3f" else "",
           // The loop counters default to 0, which for a problem that never reached the prover would read as
           // "searched and derived nothing" rather than "did not search".
@@ -282,13 +356,17 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
       metrics: Option[ProofMetrics] = None, //  present exactly when a proof was built
       usesSorry: Boolean = false,
       contaminated: Boolean = false,
-      detail: String = ""
+      detail: String = "",
+      // The TSTP derivation, on the uncertified path, which produces one instead of a kernel proof. Not a CSV
+      // column: it is many lines of TPTP, and only the single-problem entry point prints it — a batch run
+      // would bury its own output under hundreds of derivations.
+      tstp: Option[String] = None
   )
 
   /**
    * Categories whose problem reached the prover, i.e. clausified without error.
    */
-  private val ReachedProver: Set[String] = Set("REFUTED", "SATURATED", "TIMEOUT", "BAD_PROOF")
+  private val ReachedProver: Set[String] = Set("REFUTED", "SATURATED", "TIMEOUT", "BAD_PROOF", "EXHAUSTED")
 
   /**
    * Solve one problem and print its row, in its own JVM when [[BenchUtil.forkEnabled]], else in-process.
@@ -375,7 +453,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
    * Parse, clausify and solve one problem in this JVM. `outerTimeout` adds the thread-based wall-clock guard,
    * wanted when this *is* the run (`LISA_FORK=0`), redundant in a child whose parent will kill it.
    */
-  private def solveLocal(f: File, cfg: Config, outerTimeout: Boolean): (Int, String, Timing) =
+  private def solveLocal(f: File, cfg0: Config, outerTimeout: Boolean): (Int, String, Timing) =
     if !f.exists then return (-1, "?", Timing("MISSING"))
     // Catch `Throwable`, not just `NonFatal`: the recursive TPTP parser can `StackOverflowError` on very
     // deeply-nested formulas, which would otherwise kill the whole run.
@@ -383,6 +461,16 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     catch { case e: Throwable => Failure(e) }) match
       case Failure(e) => (-1, "?", Timing("PARSE_ERR", detail = e.getClass.getSimpleName))
       case Success(parsed) =>
+        // Parsing is part of the wall clock, so it has to come out of the budget. On the single-problem entry
+        // point the caller's limit is a wall-clock limit on the whole process, and this JVM handles exactly
+        // one problem, so its uptime is what has already been spent: JVM start-up plus reading a file that,
+        // on a corpus like CSR or SEV, is a hundred thousand formulas deep. Timing the search from *after*
+        // that put the answer past the caller's deadline on 202 of 400 problems, whose workers were then
+        // killed with nothing to report but a `KILLED` row.
+        //
+        // Only here: the batch entry points reuse one JVM across problems, where uptime is cumulative and
+        // would shrink every later problem's budget to nothing.
+        val cfg = if cfg0.wallBudget then cfg0.copy(timeoutMs = math.max(5000L, cfg0.timeoutMs - java.lang.management.ManagementFactory.getRuntimeMXBean.getUptime)) else cfg0
         val cprob = Prover.fromTptp(parsed)
         val hyps = cprob.hypotheses.size
         val cj = if cprob.conjecture.isDefined then "y" else "-"
@@ -392,14 +480,14 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
           (
             hyps,
             cj,
-            try solveOne(cprob, cfg)
+            try solveOne(cprob, cfg, parsed, f.getName)
             catch { case e: Throwable => Timing(s"ERROR(${e.getClass.getSimpleName})") }
           )
         else
           (
             hyps,
             cj,
-            withTimeout(cfg.timeoutMs + 5000L)(solveOne(cprob, cfg)) match
+            withTimeout(cfg.timeoutMs + 5000L)(solveOne(cprob, cfg, parsed, f.getName)) match
               case Some(Success(t)) => t
               case Some(Failure(e)) => Timing(s"ERROR(${e.getClass.getSimpleName})")
               case None => Timing("HARD_TIMEOUT")
@@ -417,9 +505,72 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
   private final class ProverError(cause: Throwable) extends RuntimeException(cause)
 
   /**
+   * The uncertified pipeline: clausify without a certificate, search, and print the refutation as TSTP — what
+   * the prover does at CASC, and what `e1a` measures.
+   *
+   * No kernel proof is built and none is checked, so `reconstructMs` and `checkMs` are absent rather than
+   * zero, and there are no proof-size metrics: there is no proof object to measure. That absence is the point
+   * of the experiment. Against `e1b`, which certifies the clausification, reconstructs the refutation and
+   * kernel-checks the composition, the difference is the whole cost of certification; running this path
+   * through the kernel too — which is what it used to do — would have measured only the clausification
+   * certificate and reported it as the cost of certification.
+   *
+   * [[Prover.proveTstp]] is the same entry point [[CascProver]] uses, called with the same TSTP printer, so
+   * this really is the competition configuration and not a reconstruction of it.
+   */
+  private def solveUncertified(cprob: Problem, cfg: Config, parsed: lisa.tptp.TptpProblem, name: String): Timing =
+    val stats = new java.util.concurrent.atomic.AtomicReference[Discount.LoopStats](Discount.LoopStats(0, 0, 0, 0))
+    // `proveTstp` clausifies and then searches; the callback between them is what splits the two phases.
+    val clausifiedAt = new java.util.concurrent.atomic.AtomicLong(0L)
+    val t0 = System.nanoTime()
+    def split(end: Long): (Double, Double) =
+      val mark = clausifiedAt.get
+      if mark == 0L then ((end - t0) / 1e6, 0.0) //  never reached the search
+      else ((mark - t0) / 1e6, (end - mark) / 1e6)
+    val opts = cfg.opts.copy(maxMillis = cfg.timeoutMs, onStats = stats.set)
+    val base: Timing =
+      try
+        val result = Prover.proveTstp(cprob, opts, () => clausifiedAt.set(System.nanoTime()))
+        val (clausifyMs, searchMs) = split(System.nanoTime())
+        result match
+          case Right(r) =>
+            // Captured rather than printed straight out: the SZS status line belongs before the derivation,
+            // and only the caller knows the status.
+            val tstp = Option.when(cfg.tstpOut) {
+              val buffer = new java.io.ByteArrayOutputStream()
+              val (inputFormulas, conjecture) = Tstp.inputFormulas(parsed, cprob)
+              Console.withOut(buffer) {
+                Tstp.printRefutation(name, r.axioms.map(inputFormulas), conjecture, r.clauses, r.success,
+                                     isCnf = parsed.spc.exists(_.contains("CNF")))
+              }
+              buffer.toString
+            }
+            Timing("REFUTED", clausifyMs, searchMs, clauses = r.clauses.size, tstp = tstp)
+          case Left(Clausal.Outcome.Saturated) => Timing("SATURATED", clausifyMs, searchMs)
+          case Left(Clausal.Outcome.Timeout) => Timing("TIMEOUT", clausifyMs, searchMs)
+          case Left(_) => Timing("UNKNOWN", clausifyMs, searchMs)
+      catch
+        case _: InterruptedException =>
+          val (clausifyMs, searchMs) = split(System.nanoTime())
+          Timing("TIMEOUT", clausifyMs, searchMs)
+        case e: Throwable =>
+          val (clausifyMs, searchMs) = split(System.nanoTime())
+          val where = e.getStackTrace.headOption.fold("")(t => s" at ${t.getClassName.split('.').last}.${t.getMethodName}:${t.getLineNumber}")
+          val what = s"${e.getClass.getSimpleName}: ${Option(e.getMessage).getOrElse("")}$where"
+          // Same distinction the certified path draws: running out of heap or stack is a resource limit and
+          // not a defect, and must not be counted as one.
+          val cat = if e.isInstanceOf[OutOfMemoryError] || e.isInstanceOf[StackOverflowError] then "EXHAUSTED" else s"ERROR(${e.getClass.getSimpleName})"
+          Timing(cat, clausifyMs, searchMs, detail = what.replace(',', ';').replace('\n', ' ').take(300))
+    val s = stats.get
+    base.copy(givenProcessed = s.givenProcessed, derived = s.passiveEnqueued, peakActive = s.peakActive, peakPassive = s.peakPassive)
+
+  /**
    * Run the pipeline once, timing each phase and recording the loop-scale stats.
    */
-  private def solveOne(cprob: Problem, cfg: Config): Timing =
+  private def solveOne(cprob: Problem, cfg: Config, parsed: lisa.tptp.TptpProblem, name: String): Timing =
+    // The uncertified path is a different pipeline, not the certified one with a flag flipped: it builds no
+    // kernel proof at all and so has nothing to check. See [[solveUncertified]].
+    if !cfg.certified && !cfg.clausifyOnly then return solveUncertified(cprob, cfg, parsed, name)
     val searchNanos = new java.util.concurrent.atomic.AtomicLong(0L)
     val reconstructNanos = new java.util.concurrent.atomic.AtomicLong(0L)
     val clauseCount = new java.util.concurrent.atomic.AtomicInteger(-1)
@@ -429,7 +580,9 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     // `Clausal.prove` is inlined here rather than called, so that the search and the reconstruction of its
     // result are timed apart. Both accumulate, since the clausifier calls this closure as a continuation and
     // may call it more than once.
-    val prover: Problem => K.SCProof = p =>
+    // Takes the goal clauses as well as the problem: `certifyClausalGoal` supplies them, and the uncertified
+    // path passes the same set, so both search with the same clause selection.
+    val prover: (Problem, Set[Int]) => K.SCProof = (p, goal) =>
       try
         clauseCount.set(p.imports.size)
         freshCount.set(freshSymbolsOf(p))
@@ -442,7 +595,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
           val ss = System.nanoTime()
           val outcome =
             try Clausal.refute(prepared.work, cfg.opts.copy(maxMillis = cfg.timeoutMs, onStats = stats.set),
-                               symbolVars = prepared.symbolVars, discharge = prepared.abs.dischargeSubst)
+                               symbolVars = prepared.symbolVars, discharge = prepared.abs.dischargeSubst, goal = goal)
             finally searchNanos.addAndGet(System.nanoTime() - ss)
           outcome match
             case s: Clausal.Outcome.Success =>
@@ -458,9 +611,14 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     def clausifyMsSoFar: Double = (System.nanoTime() - t0 - proverNanos) / 1e6
     val base: Timing =
       try
+        // Through `preprocessKernel`, so that SInE selection and orthologic normalisation happen here exactly
+        // as they do in `Prover.proveKernel` and on the uncertified side in `proveTstp`. Calling the
+        // clausifier directly skipped both: seven of the eight portfolio strategies set `sine` and four set
+        // `orthologic`, so the certified runs were not running the strategies they were named for, and `e4`
+        // and `e5` — whose whole content is switching those two on and off — measured nothing at all.
         val proof =
-          if cfg.certified then CertifiedClausifier.certifyClausal(cprob, prover, cfg.clausifier)
-          else UncertifiedClausifier.uncertifyClausal(cprob, prover)
+          if cfg.certified then Prover.preprocessKernel(cprob, cfg.opts)(CertifiedClausifier.certifyClausalGoal(_, prover, cfg.clausifier))
+          else UncertifiedClausifier.uncertifyClausal(cprob, p => prover(p, Set.empty))
         val clausifyMs = clausifyMsSoFar
         val cs = System.nanoTime()
         val judgement = K.SCProofChecker.checkSCProof(proof)
@@ -504,11 +662,19 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
           val cause = Option(pe.getCause).getOrElse(pe)
           val where = cause.getStackTrace.headOption.fold("")(t => s" at ${t.getClassName.split('.').last}.${t.getMethodName}:${t.getLineNumber}")
           val what = s"${cause.getClass.getSimpleName}: ${Option(cause.getMessage).getOrElse("")}$where"
-          // The CSV gets one line; the log gets the trace. A prover error is always a bug and always rare, so
-          // there is no cost to printing it, and without it the next reader repeats this whole investigation.
-          System.err.println(s"[bad-proof] ${cause.getClass.getName}: ${cause.getMessage}")
-          cause.getStackTrace.take(12).foreach(t => System.err.println(s"[bad-proof]   at $t"))
-          Timing("BAD_PROOF", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6, detail = what.replace(',', ';').replace('\n', ' ').take(300))
+          // Running out of heap or stack is not a bad proof, and must not be counted as one: `BAD_PROOF` is
+          // the verdict the artefact's T4 asserts is never non-zero, so filing an exhausted run under it
+          // would report a soundness incident where there was only a resource limit. It is a separate
+          // category, and one that says the run should be repeated with more of whatever it ran out of.
+          if cause.isInstanceOf[OutOfMemoryError] || cause.isInstanceOf[StackOverflowError] then
+            System.err.println(s"[exhausted] ${cause.getClass.getName}: ${cause.getMessage}")
+            Timing("EXHAUSTED", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6, detail = what.replace(',', ';').replace('\n', ' ').take(300))
+          else
+            // The CSV gets one line; the log gets the trace. A prover error is always a bug and always rare,
+            // so there is no cost to printing it, and without it the next reader repeats this investigation.
+            System.err.println(s"[bad-proof] ${cause.getClass.getName}: ${cause.getMessage}")
+            cause.getStackTrace.take(12).foreach(t => System.err.println(s"[bad-proof]   at $t"))
+            Timing("BAD_PROOF", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6, detail = what.replace(',', ';').replace('\n', ' ').take(300))
         case e: Throwable => Timing(s"CLAUSIFY_ERR(${e.getClass.getSimpleName})", clausifyMsSoFar, searchNanos.get / 1e6, reconstructNanos.get / 1e6)
     val s = stats.get
     base.copy(
@@ -523,7 +689,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
    * so that both clausifiers are measured the same way and neither needs instrumenting.
    */
   private def freshSymbolsOf(p: Problem): Int =
-    val prefixes = Set(GeneratedNames.namingAtom, GeneratedNames.skolemFun, GeneratedNames.uncertifiedSkolem)
+    val prefixes = Set(GeneratedNames.namingAtom, GeneratedNames.skolemFun)
     p.imports.iterator
       .flatMap(s => s.left.iterator ++ s.right.iterator)
       .flatMap(_.freeVariables)
@@ -565,6 +731,7 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
     println(
       s"\nrefuted=$refuted  saturated=${count(_ == "SATURATED")}  timeout=${count(_ == "TIMEOUT")}  " +
         s"hard_timeout=${count(_ == "HARD_TIMEOUT")}  bad_proof=${count(_ == "BAD_PROOF")}  " +
+        s"exhausted=${count(_ == "EXHAUSTED")}  " +
         s"clausify_err=${count(_.startsWith("CLAUSIFY_ERR"))}  error=${count(_.startsWith("ERROR"))}  " +
         s"parse_err=${count(_ == "PARSE_ERR")}  skipped=${count(_ == "SKIPPED")}  " +
         (if count(_ == "CLAUSIFIED") > 0 then s"clausified=${count(_ == "CLAUSIFIED")}  " else "") + s"of $total"

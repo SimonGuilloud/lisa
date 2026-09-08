@@ -91,26 +91,48 @@ object Prover:
     // `certifyClausal` calls the prover from *inside* the clausification pipeline, so a non-refutation cannot
     // be returned from there; it is thrown and caught here, which is the whole extent of the exception.
     try
-      Right(sineKernel(problem, opts) { p1 =>
-        olKernel(p1, opts) { p2 =>
-          CertifiedClausifier.certifyClausal(
-            p2,
-            clausal =>
-              Clausal.prove(clausal, opts) match
-                case Right(proof) => proof
-                case Left(outcome) => throw new NotRefuted(outcome)
-          )
-        }
+      Right(preprocessKernel(problem, opts) { p =>
+        // `certifyClausalGoal`, not `certifyClausal`: the goal clauses steer clause selection exactly as they
+        // do in `proveTstp`, so the two entry points search alike and differ only in what they hand back.
+        CertifiedClausifier.certifyClausalGoal(
+          p,
+          (clausal, goal) =>
+            Clausal.prove(clausal, opts, goal) match
+              case Right(proof) => proof
+              case Left(outcome) => throw new NotRefuted(outcome)
+        )
       })
     catch case nr: NotRefuted => Left(nr.outcome)
 
   /**
-   * A refutation in the form the TSTP printer needs, or the verdict that stopped it.
+   * SInE selection and orthologic normalisation around a kernel-proof-producing step, each justified in the
+   * proof it returns: SInE by widening the import list back to the caller's hypotheses, orthologic by one
+   * `Restate` per hypothesis.
+   *
+   * Public because [[proveKernel]] is not the only caller that needs it. The benchmark harness runs the same
+   * pipeline with a timer between each phase, so it calls [[lisa.automation.clausification.CertifiedClausifier]]
+   * itself rather than through `proveKernel` — and before this existed it therefore skipped preprocessing
+   * altogether, silently ignoring the `sine` and `orthologic` settings of every strategy it was given.
    */
-  def proveTstp(problem: Problem, opts: SearchOptions = SearchOptions()): Either[Clausal.Outcome, TstpRefutation] =
+  def preprocessKernel(p: Problem, opts: SearchOptions)(next: Problem => K.SCProof): K.SCProof =
+    sineKernel(p, opts)(p1 => olKernel(p1, opts)(next))
+
+  /**
+   * A refutation in the form the TSTP printer needs, or the verdict that stopped it.
+   *
+   * `onClausified` runs once, between preprocessing-and-clausification and the search. Nothing here needs it;
+   * it is what lets a caller that is measuring the two phases separate them without reproducing this method,
+   * which is otherwise the only way to get a timer between the two calls below.
+   */
+  def proveTstp(
+      problem: Problem,
+      opts: SearchOptions = SearchOptions(),
+      onClausified: () => Unit = () => ()
+  ): Either[Clausal.Outcome, TstpRefutation] =
     sineTstp(problem, opts) { p1 =>
       olTstp(p1, opts) { p2 =>
         val (clausal, origins) = UncertifiedClausifier.clausalProblemWithOrigins(p2)
+        onClausified()
         Clausal.solve(clausal, opts, goalClauses(p2, origins)) match
           case success: Clausal.Outcome.Success =>
             Right(TstpRefutation(clausal.hypotheses.toIndexedSeq.zip(origins), success, p2.hypotheses.indices.toIndexedSeq))

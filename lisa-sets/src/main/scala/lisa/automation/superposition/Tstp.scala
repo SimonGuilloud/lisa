@@ -19,6 +19,31 @@ import lisa.utils.K
 object Tstp:
 
   /**
+   * The input formulas a derivation's leaves may cite, in the order [[Prover.TstpRefutation.axioms]] indexes,
+   * and the conjecture if there is one.
+   *
+   * [[Prover.fromTptp]] appends one hypothesis per pair of distinct objects, past the parsed formulas. Those
+   * are the only hypotheses with no input formula behind them, and the derivation cites every clause's origin
+   * by name, so they are named here.
+   *
+   * Shared rather than written twice: [[CascProver]] and the benchmark harness both print derivations, and a
+   * second copy of this would let the two drift into naming the same leaves differently.
+   */
+  def inputFormulas(parsed: lisa.tptp.TptpProblem, problem: lisa.automation.Problem): (IndexedSeq[AnnotatedFormula], Option[AnnotatedFormula]) =
+    import lisa.tptp.AnnotatedStatement
+    val axiomLike: IndexedSeq[AnnotatedFormula] = parsed.formulas.collect {
+      case s: AnnotatedStatement if lisa.tptp.KernelParser.axiomLikeRoles.contains(s.role) => s.toFormula
+    }.toIndexedSeq
+    val conjecture: Option[AnnotatedFormula] = parsed.formulas.collectFirst {
+      case s: AnnotatedStatement if s.role == "conjecture" => s.toFormula
+    }
+    val generated: IndexedSeq[AnnotatedFormula] =
+      problem.hypotheses.toIndexedSeq.drop(axiomLike.size).zipWithIndex.map { (s, k) =>
+        AnnotatedFormula("axiom", s"distinct_$k", K.multior(s.left.toSeq.map(e => K.neg(e)) ++ s.right.toSeq), None)
+      }
+    (axiomLike ++ generated, conjecture)
+
+  /**
    * A first-order input formula as a TPTP `fof` body, via the shared [[lisa.tptp.ProofPrinter]] (`strict` =
    *  real un-sanitized names). [[Syntax]] below renders `cnf` clause bodies instead, which need dense `X<n>`
    *  variables and `!=` literals that the FOF printer is not meant to produce.
@@ -208,7 +233,14 @@ object Tstp:
       // Only an `Ind`-sorted variable is a TPTP variable; a `Variable` at any other sort is a *symbol* here (the
       // definitional naming atoms, and `ScreenPhase`'s `usr…` predicate variables). Printing those with `vname`
       // gives invalid TPTP when applied (`X0(X1)`) and a silently *weaker* clause when nullary.
+      //
+      // Skolem functions are the exception to the sort rule: both clausifiers mint them as schematic variables,
+      // and a *nullary* one is `Ind`-sorted, so the test above would print it as a TPTP variable — turning
+      // `p(esk)`, which witnesses `∃X. p(X)`, into `p(X0)`, which claims it for every `X0` and does not follow.
+      // The prover is not fooled (they are in the problem's `frozen` set, hence rigid), but the printed
+      // refutation would be wrong, and two distinct Skolems would collapse onto the same `X0`.
       def symbol(head: Expression): String = head match
+        case v: Variable if v.id.name == lisa.automation.clausification.Clausification.GeneratedNames.skolemFun => functorOf(v.id)
         case v: Variable if v.sort == Ind => vname(v)
         case v: Variable => functorOf(v.id)
         case c: Constant => functorOf(c.id)

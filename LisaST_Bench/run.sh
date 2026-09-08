@@ -101,8 +101,13 @@ failed=()
 } > "$results/$tag.provenance"
 
 # ── one configuration per non-comment line: a name, then the harness arguments for it ─────────────
+#
+# `portfolio` is a marker for the StarExec packager, which turns the lines below it into one configuration
+# whose workers run in parallel on the eight cores a job pair is granted. Here there is one core's worth of
+# attention to give, so the lines are run one after another as ordinary configurations: the same per-strategy
+# measurement, but not a portfolio result, and `run.sh` does not claim to produce one.
 while IFS= read -r line; do
-  case "$line" in '' | \#* | defaults\ *) continue ;; esac
+  case "$line" in '' | \#* | defaults\ * | portfolio | portfolio\ *) continue ;; esac
   name="${line%% *}"
   args="$defaults ${line#* }"
 

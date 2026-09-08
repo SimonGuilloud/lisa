@@ -16,7 +16,7 @@ import Clausification._
  */
 private[clausification] object DistributePhase:
 
-  def certifyDistribute(problem: Problem, prover: ClausificationProver)(using o: ClausifierOptions): ClausificationProof =
+  def certifyDistribute(problem: Problem, prover: ClausificationProver, goal: Set[Int] = Set.empty)(using o: ClausifierOptions): ClausificationProof =
     require(problem.conjecture.isEmpty, "certifyDistribute expects a conjecture-free problem (consumed by certifyNegated)")
     val hypotheses = problem.hypotheses.toIndexedSeq
     val n = hypotheses.size
@@ -28,6 +28,10 @@ private[clausification] object DistributePhase:
     val steps = scala.collection.mutable.ArrayBuffer.empty[ClausificationProofStep]
     val clauseSeqs = scala.collection.mutable.ArrayBuffer.empty[Sequent]
     val clauseRefs = scala.collection.mutable.ArrayBuffer.empty[Int]
+    // Where the goal stops being a hypothesis index and becomes a set of clause indices: each hypothesis
+    // contributes a run of consecutive clauses below, so a clause descends from the goal exactly when the
+    // hypothesis it came from is in `goal`.
+    val goalClauses = scala.collection.mutable.HashSet.empty[Int]
 
     for (i <- 0 until n) {
       checkInterrupted()
@@ -37,6 +41,7 @@ private[clausification] object DistributePhase:
           for (clauseSeq <- clausesOf(phi)) {
             steps += Weakening(clauseSeq, -(i + 1)) //                              a₁, …, aₘ ⊢ b₁, …, bₙ
             clauseRefs += steps.size - 1
+            if goal.contains(i) then goalClauses += clauseSeqs.size
             clauseSeqs += clauseSeq
           }
         case Distribute.Primitive =>
@@ -45,12 +50,13 @@ private[clausification] object DistributePhase:
             val clauseSeq = Sequent(negative, positive)
             steps += Cut(clauseSeq, -(i + 1), ref, phi)
             clauseRefs += steps.size - 1
+            if goal.contains(i) then goalClauses += clauseSeqs.size
             clauseSeqs += clauseSeq
           }
     }
 
     val newProblem = Problem(clauseSeqs.toList, None, problem.frozen)
-    val downstream = prover(newProblem)
+    val downstream = prover(newProblem, goalClauses.toSet)
     require(sameImportList(downstream.imports, newProblem.imports ++ libImports), "Downstream imports must match transformed problem imports")
     steps += ClausificationSubproof(downstream, clauseRefs.toIndexedSeq ++ libRefs(n))
     ClausificationProof(steps.toIndexedSeq, outerImports)

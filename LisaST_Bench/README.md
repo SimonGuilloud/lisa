@@ -52,7 +52,7 @@ Running the jar also drops eight sbt startups from the wall clock and exercises 
 
 | file | question |
 |---|---|
-| `e1a` | how many problems each of the eight strategies solves, uncertified |
+| `e1a` | how many problems the eight-strategy portfolio solves, uncertified |
 | `e1b` | the same certified: what the proof term and the kernel check cost |
 | `e2` | clausification variants (prenex, distribution) against each other, clausify-only |
 | `e3-time` | what each redundancy mechanism is worth, bounded by wall clock |
@@ -60,9 +60,13 @@ Running the jar also drops eight sbt startups from the wall clock and exercises 
 | `e4` | the ortholattice normaliser, on and off |
 | `e5` | SInE axiom selection, on and off |
 
-Each is one strategy per configuration, never a portfolio in one process: a StarExec job pair gets one CPU, so
-a portfolio run there would measure eight strategies contending on one core. The portfolio is reconstructed
-offline as the per-problem minimum, and reported as such.
+`e1a` and `e1b` are portfolios: their `.conf` carries a `portfolio` marker, and on StarExec the packager turns
+each into ONE configuration that starts its eight strategies together, one pinned to each of the eight cores a
+job pair is granted. No worker is killed when another succeeds, so every strategy is measured over the whole
+budget, and the portfolio result is the per-problem minimum over eight rows that really did share a wall clock.
+
+`run.sh` ignores the marker and runs the eight one after another: the same per-strategy measurement on a
+machine with one core's worth of attention to give, but not a portfolio result, and it does not claim to be.
 
 `e2` and `e3-given` are deterministic and run locally; the timed ones belong on the cluster.
 
