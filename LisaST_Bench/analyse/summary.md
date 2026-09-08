@@ -1,6 +1,34 @@
 # Benchmark results
 
-795 rows, 399 problems, configurations: e2_deconstruct, e2_rewrite
+6327 rows, 400 problems, configurations: e1a, e1b
+
+## A1 — strategies and the portfolio
+
+| configuration | strategy | solved |
+|---|---|---:|
+| e1a | occurrence | 190 |
+| e1a | weight-greedy | 185 |
+| e1a | balanced | 183 |
+| e1a | unary-redundancy | 180 |
+| e1a | equational | 179 |
+| e1a | subsumption-light | 175 |
+| e1a | age-fair | 164 |
+| e1a | first-negative | 148 |
+| **e1a** | **portfolio** | **224** |
+
+Portfolio solves 224; best single strategy occurrence solves 190, so the portfolio adds 34.
+
+| e1b | equational | 175 |
+| e1b | subsumption-light | 173 |
+| e1b | balanced | 173 |
+| e1b | occurrence | 173 |
+| e1b | weight-greedy | 173 |
+| e1b | unary-redundancy | 170 |
+| e1b | age-fair | 155 |
+| e1b | first-negative | 142 |
+| **e1b** | **portfolio** | **214** |
+
+Portfolio solves 214; best single strategy equational solves 175, so the portfolio adds 39.
 
 ## A2 — solved counts and where the time goes
 
@@ -8,49 +36,35 @@ Solved, and total time over every problem, charging an unsolved one the 180 s bu
 
 | configuration | solved | total time (s) | clausify | search | reconstruct | check |
 |---|---:|---:|---:|---:|---:|---:|
-| e2_deconstruct | 0 | 71640 | 0 | 0 | 0 | 0 |
-| e2_rewrite | 0 | 71460 | 0 | 0 | 0 | 0 |
+| e1a | 224 | 33273 | 1236 | 10934 | 0 | 0 |
+| e1b | 214 | 35941 | 2304 | 8879 | 184 | 7867 |
 
 Phase columns are summed over that configuration's own refutations, so they say where its time goes, not what it would cost another configuration.
 
-Time compared only where both solved, against `e2_deconstruct`:
+Time compared only where both solved, against `e1a`:
 
-| configuration | both solved | e2_deconstruct (s) | this (s) | ratio |
+| configuration | both solved | e1a (s) | this (s) | ratio |
 |---|---:|---:|---:|---:|
+| e1b | 213 | 1347 | 2533 | 1.88x |
 
 Solved inside the last tenth of the budget, and so able to move between runs:
 
 | configuration | solved | near the boundary |
 |---|---:|---:|
-| e2_deconstruct | 0 | 0 |
-| e2_rewrite | 0 | 0 |
+| e1a | 224 | 0 |
+| e1b | 214 | 1 |
 
-## e2 — against `e2_deconstruct`
+## A3 — does checking scale with proof size?
 
-| configuration | solved | change | attempted | both solved | time vs baseline |
-|---|---:|---:|---:|---:|---:|
-| e2_deconstruct | 0 | — | 398 | 0 | — |
-| e2_rewrite | 0 | +0 | 397 | 0 | — |
-
-`attempted` is how many rows arrived: a configuration with fewer has lost problems to killed workers, and part of its change is missing attempts rather than failures.
-
-## E2 — clausification variants
-
-Over the 289 problems every variant clausified. `sharing` is raw size over shared size: how much the proof reuses.
-
-| variant | clausify (s) | check (s) | proof steps | raw size | shared size | sharing |
-|---|---:|---:|---:|---:|---:|---:|
-| e2_deconstruct | 666.8 | 2783.6 | 11109291 | 2313678287 | 11864682 | 195.0x |
-| e2_rewrite | 793.0 | 3624.1 | 11439749 | 3139858042 | 12257418 | 256.2x |
-
-| variant | clausified | of problems seen |
-|---|---:|---:|
-| e2_deconstruct | 292 | 398 |
-| e2_rewrite | 289 | 397 |
+| against | n | slope of log(check) on log(size) | reading |
+|---|---:|---:|---|
+| proof_steps | 1334 | 0.88 | sub-linear: the cost per unit falls as proofs grow |
+| raw_size | 1334 | 0.59 | sub-linear: the cost per unit falls as proofs grow |
+| shared_size | 1334 | 0.67 | sub-linear: the cost per unit falls as proofs grow |
 
 ## T3, T4 — the trust claims
 
-- refutations: 0
+- refutations: 2738
 - valid only via `Sorry` (T3): **0**
 - rejected by the kernel (T4): **0**
 
