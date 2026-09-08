@@ -1,66 +1,18 @@
-\begin{tabular}{llr}\toprule
-configuration & strategy & solved \\\midrule
-e1a & weight-greedy & 132 \\
-e1a & equational & 129 \\
-e1a & subsumption-light & 127 \\
-e1a & occurrence & 122 \\
-e1a & unary-redundancy & 118 \\
-e1a & balanced & 114 \\
-e1a & age-fair & 84 \\
-e1a & first-negative & 77 \\
-e1a & \textbf{portfolio} & \textbf{196} \\
-e1b & weight-greedy & 127 \\
-e1b & subsumption-light & 123 \\
-e1b & equational & 122 \\
-e1b & occurrence & 110 \\
-e1b & unary-redundancy & 108 \\
-e1b & balanced & 106 \\
-e1b & first-negative & 76 \\
-e1b & age-fair & 69 \\
-e1b & \textbf{portfolio} & \textbf{192} \\
+\begin{tabular}{lrrrrrr}\toprule
+configuration & solved & total (s) & clausify & search & reconstruct & check \\\midrule
+e2_deconstruct & 0 & 71640 & 0 & 0 & 0 & 0 \\
+e2_rewrite & 0 & 71460 & 0 & 0 & 0 & 0 \\
+\bottomrule\end{tabular}
+
+\begin{tabular}{lrrrr}\toprule
+e2 & solved & change & both solved & time vs baseline \\\midrule
+e2\_deconstruct & 0 & — & 0 & — \\
+e2\_rewrite & 0 & +0 & 0 & — \\
 \bottomrule\end{tabular}
 
 \begin{tabular}{lrrrrrr}\toprule
-configuration & solved & total (s) & clausify & search & reconstruct & check \\\midrule
-e1a & 196 & 38741 & 1602 & 11762 & 0 & 0 \\
-e1b & 192 & 41484 & 2780 & 11196 & 118 & 7543 \\
-e3-time_baseline & 112 & 54299 & 188 & 2295 & 9 & 687 \\
-e3-time_bwdsubs-off & 111 & 54368 & 190 & 2181 & 9 & 689 \\
-e3-time_cond-on & 104 & 56321 & 147 & 2309 & 8 & 577 \\
-e3-time_demod-off & 97 & 56948 & 173 & 1792 & 7 & 615 \\
-e3-time_fwdsubs-off & 59 & 62040 & 119 & 887 & 5 & 369 \\
-e3-time_gensimplify-on & 99 & 56261 & 166 & 1270 & 8 & 638 \\
-e3-time_index-off & 113 & 54410 & 178 & 2427 & 9 & 676 \\
-e3-time_sr-and-index-off & 113 & 54754 & 187 & 2379 & 9 & 699 \\
-e3-time_sr-off & 114 & 54387 & 190 & 2549 & 9 & 700 \\
-e4_orthologic-off & 111 & 54846 & 181 & 2157 & 9 & 659 \\
-e4_orthologic-on & 104 & 54486 & 147 & 1775 & 7 & 356 \\
-e5_sine-off & 111 & 54479 & 180 & 2161 & 8 & 650 \\
-e5_sine-on & 123 & 51832 & 185 & 1855 & 8 & 643 \\
-\bottomrule\end{tabular}
-
-\begin{tabular}{lrrrr}\toprule
-e3-time & solved & change & both solved & time vs baseline \\\midrule
-e3-time\_sr-off & 114 & +2 & 112 & 0.99x \\
-e3-time\_index-off & 113 & +1 & 112 & 0.98x \\
-e3-time\_sr-and-index-off & 113 & +1 & 112 & 0.98x \\
-e3-time\_baseline & 112 & — & 112 & — \\
-e3-time\_bwdsubs-off & 111 & -1 & 110 & 0.97x \\
-e3-time\_cond-on & 104 & -8 & 103 & 1.34x \\
-e3-time\_gensimplify-on & 99 & -13 & 97 & 1.03x \\
-e3-time\_demod-off & 97 & -15 & 97 & 1.04x \\
-e3-time\_fwdsubs-off & 59 & -53 & 59 & 1.34x \\
-\bottomrule\end{tabular}
-
-\begin{tabular}{lrrrr}\toprule
-e4 & solved & change & both solved & time vs baseline \\\midrule
-e4\_orthologic-off & 111 & — & 111 & — \\
-e4\_orthologic-on & 104 & -7 & 101 & 1.04x \\
-\bottomrule\end{tabular}
-
-\begin{tabular}{lrrrr}\toprule
-e5 & solved & change & both solved & time vs baseline \\\midrule
-e5\_sine-on & 123 & +12 & 110 & 0.80x \\
-e5\_sine-off & 111 & — & 111 & — \\
+variant & clausify (s) & check (s) & steps & raw & shared & sharing \\\midrule
+e2_deconstruct & 666.8 & 2783.6 & 11109291 & 2313678287 & 11864682 & 195.0 \\
+e2_rewrite & 793.0 & 3624.1 & 11439749 & 3139858042 & 12257418 & 256.2 \\
 \bottomrule\end{tabular}
 

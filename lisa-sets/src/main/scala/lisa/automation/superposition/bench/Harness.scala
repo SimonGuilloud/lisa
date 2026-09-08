@@ -138,6 +138,19 @@ final class Harness(listFileName: String, listEnvVar: String, childMainClass: St
         case "sine" => c.copy(opts = c.opts.copy(sine = if flag then Some(c.opts.sine.getOrElse(SineConfig())) else None))
         case "sineTol" => c.copy(opts = c.opts.copy(sine = Some(c.opts.sine.getOrElse(SineConfig()).copy(tolerance = value.toDouble))))
         case "sineDepth" => c.copy(opts = c.opts.copy(sine = Some(c.opts.sine.getOrElse(SineConfig()).copy(depth = value.toInt))))
+        // The hypothesis count below which SInE keeps everything, so it decides *whether* selection runs at
+        // all rather than how hard it prunes. It is here because raising it from 32 to 500 turned selection
+        // off for every problem between those counts -- 124 of the CASC 400 -- and cost seven problems the
+        // competition entry had solved, three of them in under twelve seconds. Which threshold is right is a
+        // measurement rather than a revert: SInE is incomplete, so pruning can also drop an axiom the proof
+        // needed, and this key is what lets `e5` put the two settings against each other.
+        // Adjusts a configuration that exists; it does not create one. `sineTol` and `sineDepth` above take
+        // the other choice and switch selection on where a strategy had none, which for this key would wreck
+        // the experiment it was added for: `balanced` runs unfiltered by design, so `sineMin=32` on it would
+        // not lower a floor but enable SInE outright, and the A/B would be measuring two changes at once. It
+        // did exactly that on SEV609+1 -- 2900 hypotheses, far above either floor, "recovered" by `balanced`,
+        // which is selection appearing rather than a threshold moving.
+        case "sineMin" => c.copy(opts = c.opts.copy(sine = c.opts.sine.map(_.copy(minAxioms = value.toInt))))
         case "fwdUDIndex" => c.copy(opts = c.opts.copy(forwardUnitDeletionIndexThreshold = value.toInt))
         case "root" => c.copy(problemRoot = Some(value))
         case "problem" => c.copy(problemName = value)

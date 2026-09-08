@@ -129,5 +129,12 @@ object Sine:
   def selection(problem: Problem, cfg: SineConfig, p: Params = Params()): Option[Set[Int]] =
     problem.conjecture.flatMap { conj =>
       val a = analyse(problem.hypotheses.toIndexedSeq, conj)
-      Option.when(a.shouldFilter(p))(a.select(cfg))
+      // The size floor is `cfg`'s, for the gate as well as for the selection. [[Params]] documents it as "the
+      // single size floor ... so that the gate and the selection cannot disagree", but nothing enforced that:
+      // the probe carried whatever `SineConfig`'s default happened to be, so lowering `cfg.minAxioms` opened
+      // the selection while the gate went on refusing at the default, and the filter never ran. Only the
+      // floor is taken from `cfg` -- how aggressively to prune stays the probe's own, deliberately, so that
+      // every strategy makes the same decision about whether filtering would pay.
+      val gate = p.copy(probe = p.probe.copy(minAxioms = cfg.minAxioms))
+      Option.when(a.shouldFilter(gate))(a.select(cfg))
     }
